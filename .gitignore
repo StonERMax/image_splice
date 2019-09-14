@@ -1,0 +1,15 @@
+*.jpg
+*.png
+*.pkl
+*.hd5
+*.pyc
+__pycache__
+tmp*/*
+logs/*
+ckpt/*
+figs/*
+back*/*
+.vscode/*
+*.json
+*/.vscode/*
+*/settings.json
