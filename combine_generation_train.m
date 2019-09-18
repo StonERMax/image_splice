@@ -3,7 +3,7 @@
 % It should be run at the path "cocoapi/MatlabAPI" of MSCOCO API.
 % The MSCOCO API codes can be downloaded from "https://github.com/cocodataset/cocoapi".
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-addpath(genpath('/home/islama6a/tmp/cocoapi/MatlabAPI'));
+addpath(genpath('~/cocoapi/MatlabAPI'));
 dataDir = '~/dataset/coco/'; prefix = 'instances';
 dataType = 'train2014';
 dataType_res = 'train2014resize_512';
@@ -139,19 +139,19 @@ for idx = 1:m_i
 
     %%%%%%%%%%%%%%%%%%%%%%%
     anns = cocoGt.loadAnns(annIds);
-    [bimasks, instance_num] = masksgeneration(I, anns);
+    [bimasks, instance_num] = maskgeneration(I, anns);
     instance_idx = 1;  %ceil(rand() * instance_num);
 
     % while instance_idx < 1 || instance_idx > instance_num
     %     instance_idx = ceil(rand() * instance_num);
     % end
 
-    mask_ori_img = double(bimasks == instance_idx);
-    mask_ori_img_r = imresize(mask_ori_img, [new_size, new_size]);
+    mask_ori_img = (bimasks == instance_idx);
+    mask_ori_img_r = imresize(mask_ori_img, [new_size, new_size], 'nearest');
     prop_rate = sum(sum(mask_ori_img_r)) / (new_size * new_size);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % get the instance lager than prop_low
+    % get the instance larger than prop_low
     if prop_rate < prop_low || prop_rate > prop_easy
         itr_count = 0;
 
@@ -159,8 +159,8 @@ for idx = 1:m_i
             instance_idx = ceil(rand() * instance_num);
 
             if instance_idx >= 1 && instance_idx <= instance_num
-                mask_ori_img = bimasks{instance_idx, 1};
-                mask_ori_img_r = imresize(mask_ori_img, [new_size, new_size]);
+                mask_ori_img = (bimasks == instance_idx);
+                mask_ori_img_r = imresize(mask_ori_img, [new_size, new_size], 'nearest');
                 prop_rate = sum(sum(mask_ori_img_r)) / (new_size * new_size);
             end
 
@@ -190,7 +190,7 @@ for idx = 1:m_i
     end
 
     tmp_mask = cat(3, mask_ori_img_r, mask_ori_img_r, mask_ori_img_r);
-    seg_ori_img_r = I_r .* tmp_mask;
+    seg_ori_img_r = I_r .* uint8(tmp_mask > 0);
 
     %%%%%%%%%%%%%%%%%%%%%%%%
     % any operation on the mask
@@ -325,7 +325,7 @@ for idx = 1:m_i
             end
 
             seg_paste = imresize(seg_paste_, R);
-            mask_paste = imresize(mask_paste_, R);
+            mask_paste = imresize(mask_paste_, R, 'nearest');
             [m, n, c] = size(seg_paste);
 
             if m < new_size
@@ -394,7 +394,7 @@ for idx = 1:m_i
                 transf_factor = 1 / (R_seed * transf_up);
                 transf_edge = floor(transf_factor * new_size);
                 seg_paste = imresize(seg_paste_, [transf_edge, new_size]);
-                mask_paste = imresize(mask_paste_, [transf_edge, new_size]);
+                mask_paste = imresize(mask_paste_, [transf_edge, new_size], 'nearest');
                 new_seg_paste = zeros(new_size, new_size, 3, 'uint8');
                 new_mask_paste = zeros(new_size, new_size, 'uint8');
 
@@ -405,7 +405,7 @@ for idx = 1:m_i
                 transf_factor = R_seed * (transf_up - 1) + 1 / transf_up;
                 transf_edge = floor(transf_factor * new_size);
                 seg_paste = imresize(seg_paste_, [new_size, transf_edge]);
-                mask_paste = imresize(mask_paste_, [new_size, transf_edge]);
+                mask_paste = imresize(mask_paste_, [new_size, transf_edge], 'nearest');
                 new_seg_paste = zeros(new_size, new_size, 3, 'uint8');
                 new_mask_paste = zeros(new_size, new_size, 'uint8');
                 i_idx = floor((new_size - transf_edge) / 2);
@@ -459,7 +459,7 @@ for idx = 1:m_i
 
     mask_paste_opp = 1 - mask_paste;
     mask_paste_opp = cat(3, mask_paste_opp, mask_paste_opp, mask_paste_opp);
-    composite_img = I2_r .* mask_paste_opp + seg_paste;
+    composite_img = I2_r .* uint8(mask_paste_opp) + uint8(seg_paste);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% The foreground label file
