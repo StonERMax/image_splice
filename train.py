@@ -3,7 +3,7 @@ from torch import nn
 import numpy as np
 import torch.nn.functional as F
 
-from loss import *
+from loss import BCE_loss
 
 
 def tval(x):
@@ -15,45 +15,29 @@ def tval(x):
         return x.data.numpy()
 
 
-def train(X, Y, model, optimizer, args, iteration, device,
-          logger=None):
+def train(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()
 
-    X, Y = X.to(device), Y.to(device)
+    Xp, Xq, Yp, Yq, labels = D
+    labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(device)
+    Xp, Xq, Yp, Yq = Xp.to(device), Xq.to(device), Yp.to(device), Yq.to(device)
 
-    Y_bw = Y[:, [-1]]
-    if args.out_channel == 1:
-        Y = Y[:, [0]]
-    else:
-        Y = Y[:, :3]
-    # Y = Y[:, [0]]
+    predp, predq, pred_det = model(Xp, Xq)
 
-    y_det = torch.zeros((Y.shape[0], 1), dtype=torch.float32, device=device)
-    for i in range(Y.shape[0]):
-        if torch.any(Y[i, 0] > 0.5):
-            y_det[i] = 1
+    loss_p = BCE_loss(predp, Yp, with_logits=True)
+    loss_q = BCE_loss(predq, Yq, with_logits=True)
 
-    pred, pred_det = model(X)
+    loss_det = F.binary_cross_entropy_with_logits(pred_det.squeeze(), labels.squeeze())
 
-    if args.out_channel == 3:
-        loss1 = cross_entropy_loss(pred, Y)
-    else:
-        loss1 = BCE_loss(pred, Y, with_logits=True)
-
-    loss_det = F.binary_cross_entropy_with_logits(pred_det, y_det)
-
-    loss_bw = torch.sum(Y_bw * torch.sigmoid(pred)) / Y_bw.shape[0] #/ (torch.sum(Y_bw) + 1e-8) 
-
-    loss = loss1  + args.gamma * loss_det +  loss_bw * args.gamma2
+    loss = loss_p + loss_q + args.gamma * loss_det
 
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
 
     loss_val = loss.data.cpu().numpy()
-    print(f"{iteration:5d}: f: {loss1.data.cpu().numpy():.4f} + {tval(loss_det):.4f} "
-             f"loss     {loss_val:.4f}")
+    print(f"{iteration:5d}: f: {tval(loss_p):.4f} + {tval(loss_q):.4f} ")
 
     if logger is not None:
         logger.add_scalar("train_loss/total", loss, iteration)

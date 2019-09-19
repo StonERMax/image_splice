@@ -15,12 +15,14 @@ from scipy.ndimage import measurements
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+import collections
 
 
 def fscore(T_score):
     Fp, Fn, Tp = T_score[1:]
     f_score = 2 * Tp / (2 * Tp + Fp + Fn)
     return f_score
+
 
 def precision(T_score):
     Fp, _, Tp = T_score[1:]
@@ -31,7 +33,7 @@ def precision(T_score):
 def recall(T_score):
     _, Fn, Tp = T_score[1:]
     recall = Tp / (Tp + Fn + 1e-8)
-    return recall 
+    return recall
 
 
 def conf_mat(labels, preds):
@@ -47,30 +49,24 @@ def conf_mat(labels, preds):
     return np.array([tn, fp, fn, tp])
 
 
-class SimTransform():
+class SimTransform:
     def __init__(self, size=(224, 224)):
         if isinstance(size, int) or isinstance(size, float):
             size = (size, size)
         # scale
-        self.scale = np.random.choice(
-            np.linspace(0.9, 1.1, 30)
-        )
+        self.scale = np.random.choice(np.linspace(0.9, 1.1, 30))
         # rotation
-        self.rot = np.random.choice(
-            np.linspace(-np.pi/10, np.pi/10, 50)
-        )
+        self.rot = np.random.choice(np.linspace(-np.pi / 10, np.pi / 10, 50))
         # translate
         self.translate = (
             np.random.choice(np.linspace(-0.05 * size[1], 0.1 * size[1], 50)),
-            np.random.choice(np.linspace(-0.05 * size[0], 0.1 * size[0], 50))
+            np.random.choice(np.linspace(-0.05 * size[0], 0.1 * size[0], 50)),
         )
 
         # flip lr
         self.flip = np.random.rand() > 0.5
 
-        self.tfm = transform.SimilarityTransform(
-            scale=self.scale,
-            translation=self.translate)
+        self.tfm = transform.SimilarityTransform(scale=self.scale, translation=self.translate)
 
     def __call__(self, im=None, mask=None):
         if im is not None:
@@ -103,13 +99,11 @@ class CustomTransform:
         if img is not None:
             img = skimage.img_as_float32(img)
             if img.shape[0] != self.size[0] or img.shape[1] != self.size[1]:
-                img = cv2.resize(
-                    img, self.size, interpolation=cv2.INTER_LINEAR)
+                img = cv2.resize(img, self.size, interpolation=cv2.INTER_LINEAR)
 
         if mask is not None:
             if mask.shape[0] != self.size[0] or mask.shape[1] != self.size[1]:
-                mask = cv2.resize(
-                    mask, self.size, interpolation=cv2.INTER_NEAREST)
+                mask = cv2.resize(mask, self.size, interpolation=cv2.INTER_NEAREST)
         return img, mask
 
     def inverse(self, x, mask=False):
@@ -220,13 +214,14 @@ class MultiPagePdf:
         plt.close("all")
 
 
-class MMetric():
-    def __init__(self, name=""):
+class MMetric:
+    def __init__(self, name="", thres=0.5):
         self.T = np.zeros(4)
         self.fscore = []
         self.prec = []
         self.rec = []
         self.name = name
+        self.thres = thres
 
     def update(self, gt, pred, batch_mode=True, log=True):
 
@@ -243,8 +238,8 @@ class MMetric():
             self._update(gt, pred, log=log)
 
     def _update(self, gt, pred, log=True):
-        gt = gt.ravel()
-        pred = pred.ravel()
+        gt = gt.ravel() > self.thres
+        pred = pred.ravel() > self.thres
 
         tt = conf_mat(gt, pred)
         self.T += tt
@@ -261,43 +256,40 @@ class MMetric():
         self.fscore.append(fs)
 
         if log:
-            print(
-                f"{self.name} precision : {prec:.4f}, recall : {rec:.4f}, f1 : {fs:.4f}")
+            print(f"{self.name} precision : {prec:.4f}, recall : {rec:.4f}, f1 : {fs:.4f}")
         return fs
 
     def final(self):
         # protocal A
         print(f"\n{self.name} ")
-        print("-"*50)
+        print("-" * 50)
         print("\nProtocol A:")
         print(
-            f"precision : {precision(self.T):.4f}, recall : {recall(self.T):.4f}, f1 : {fscore(self.T):.4f}")
+            f"precision : {precision(self.T):.4f}, recall : {recall(self.T):.4f}, f1 : {fscore(self.T):.4f}"
+        )
 
         # protocol B
         print("\nProtocol B:")
         print(
-            f"precision : {np.mean(self.prec):.4f}, recall : {np.mean(self.rec):.4f}, f1 : {np.mean(self.fscore):.4f}")
+            f"precision : {np.mean(self.prec):.4f}, recall : {np.mean(self.rec):.4f}, f1 : {np.mean(self.fscore):.4f}"
+        )
 
         return np.mean(self.fscore)
 
 
-class Metric():
-    def __init__(self, dims=3, names=["forge", "source", "pristine"]):
+class Metric:
+    def __init__(self, dims=2, names=["source", "forge"], thres=0.5):
         self.names = names
         self.dims = dims
         assert len(names) == dims
 
         self.list_metrics = []
         for i in range(dims):
-            self.list_metrics.append(MMetric(name=names[i]))
+            self.list_metrics.append(MMetric(name=names[i], thres=0.5))
 
     def update(self, gt, pred, batch_mode=True):
-        ind_gt = np.argmax(gt, axis=-3)
-        ind_pred = np.argmax(pred, axis=-3)
         for i in range(self.dims):
-            self.list_metrics[i].update(
-                ind_gt == i, ind_pred == i, batch_mode=batch_mode
-            )
+            self.list_metrics[i].update(gt[i], pred[i], batch_mode=batch_mode)
 
     def final(self):
         sc = []
@@ -305,13 +297,12 @@ class Metric():
             sc.append(self.list_metrics[i].final())
         return np.mean(sc)
 
-import collections
 
 class Metric_image(object):
     def __init__(self):
         self.gt = []
         self.pred = []
-    
+
     def update(self, _gt, _pred, thres=0.5):
         _gt = _gt > thres
         _pred = _pred > thres
@@ -324,7 +315,7 @@ class Metric_image(object):
             self.pred.append(_pred)
 
     def final(self):
-        pr, re, f, _ = precision_recall_fscore_support(self.gt, self.pred, average='binary')
+        pr, re, f, _ = precision_recall_fscore_support(self.gt, self.pred, average="binary")
 
         print("Image level score")
         print(f"precision: {pr:.4f}, recall: {re:.4f}, f-score: {f :.4f} ")

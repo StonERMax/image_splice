@@ -26,7 +26,7 @@ import utils_data
 
 
 class Dataset_COCO_CISDL(torch.utils.data.Dataset):
-    def __init__(self, args, mode=None):
+    def __init__(self, args, mode=None, is_training=True):
         """ mode should be ['easy', 'medi', 'diff']
             default: None (all leels)
         """
@@ -34,7 +34,7 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
         subpath_list = []
 
         args.root = os.path.join(args.data_root,
-                                 "train2014" if not args.test else "val2014")
+                                 "train2014" if is_training else "train2014")
 
         labelfiles_path = Path(args.root) / "labelfiles"
         for each in labelfiles_path.iterdir():
@@ -46,7 +46,7 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
                     if each_level == mode:
                         subpath_list.append(each.name)
 
-        self.pair_list = utils_data.load_pairs(args.root, subpath_list)
+        self.pair_list = utils_data.load_pairs(args.root, subpath_list, args.root)
         self.transform = utils.CustomTransform(size=args.size)
 
     def __len__(self):
@@ -91,7 +91,7 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
 
     def load(self, batch_size=None):
         bs = self.args.batch_size if batch_size is None else batch_size
-        chunk = [seq[pos:pos+bs] for pos in range(0, len(self), bs)]
+        chunk = [np.arange(pos, pos+bs) for pos in range(0, len(self), bs)]
 
         for inds in chunk:
             im1s = []
@@ -102,7 +102,6 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
 
             for i in inds:
                 im1, gt1, lab, im2, gt2 = self[i]
-
                 im1s.append(im1)
                 im2s.append(im2)
                 gt1s.append(gt1)
