@@ -9,6 +9,7 @@ import numpy as np
 # import dmac_vgg_skip as dmac_vgg
 import os
 import math
+from pathlib import Path
 
 
 def load_pairs_csv(input_pairs_csv_file, root):
@@ -33,13 +34,33 @@ def load_pairs_csv(input_pairs_csv_file, root):
     for line in lines:
         fields = line.split(",")
         lut = dict(list(zip(headers, fields)))
-        
+        HOME = os.environ["HOME"]
+
         flag = True
         for k, v in lut.items():
-            if k in ("image1", "image2", "gt1", "gt2"):
-                if not os.path.exists(os.path.join(root, v)):
+            lab = int(lut["label"])
+
+            if lab == 1:
+                if k == "image1":
+                    # replace "image1" with coco path
+                    im1_path = Path(v).name
+                    mode = im1_path.split("_")[1]  # train / val
+                    COCO_PATH = Path(HOME) / "dataset" / "coco" / "images" / mode
+                    lut[k] = str(COCO_PATH / im1_path)
+                elif k in ("image2", "gt1", "gt2"):
+                    lut[k] = os.path.join(root, lut[k])
+                if k != "label" and not os.path.exists(lut[k]):
                     flag = False
                     break
+            else:
+                if k in ("image1", "image2"):
+                    im1_path = Path(v).name
+                    mode = im1_path.split("_")[1]  # train / val
+                    COCO_PATH = Path(HOME) / "dataset" / "coco" / "images" / mode
+                    lut[k] = str(COCO_PATH / im1_path)
+                    if not os.path.exists(lut[k]):
+                        flag = False
+                        break
         if not flag:
             continue
         pair_list.append(

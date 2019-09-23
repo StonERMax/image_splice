@@ -24,6 +24,11 @@ def fscore(T_score):
     return f_score
 
 
+def calc_iou(T_score):
+    tn, fp, fn, tp = T_score
+    return tp / (fn + fp + tp + 1e-8)
+
+
 def precision(T_score):
     Fp, _, Tp = T_score[1:]
     recall = Tp / (Tp + Fp + 1e-8)
@@ -66,7 +71,9 @@ class SimTransform:
         # flip lr
         self.flip = np.random.rand() > 0.5
 
-        self.tfm = transform.SimilarityTransform(scale=self.scale, translation=self.translate)
+        self.tfm = transform.SimilarityTransform(
+            scale=self.scale, translation=self.translate
+        )
 
     def __call__(self, im=None, mask=None):
         if im is not None:
@@ -103,7 +110,9 @@ class CustomTransform:
 
         if mask is not None:
             if mask.shape[0] != self.size[0] or mask.shape[1] != self.size[1]:
-                mask = cv2.resize(mask, self.size, interpolation=cv2.INTER_NEAREST)
+                mask = cv2.resize(
+                    mask, self.size, interpolation=cv2.INTER_NEAREST
+                )
         return img, mask
 
     def inverse(self, x, mask=False):
@@ -220,6 +229,8 @@ class MMetric:
         self.fscore = []
         self.prec = []
         self.rec = []
+        self.iou = []
+
         self.name = name
         self.thres = thres
 
@@ -254,9 +265,13 @@ class MMetric:
         self.prec.append(prec)
         self.rec.append(rec)
         self.fscore.append(fs)
+        self.iou.append(calc_iou(tt))
 
         if log:
-            print(f"{self.name} precision : {prec:.4f}, recall : {rec:.4f}, f1 : {fs:.4f}")
+            print(
+                f"{self.name} precision : {prec:.4f}, recall : {rec:.4f}, "
+                + f"f1 : {fs:.4f}"
+            )
         return fs
 
     def final(self):
@@ -265,13 +280,19 @@ class MMetric:
         print("-" * 50)
         print("\nProtocol A:")
         print(
-            f"precision : {precision(self.T):.4f}, recall : {recall(self.T):.4f}, f1 : {fscore(self.T):.4f}"
+            f"precision : {precision(self.T):.4f}, "
+            + f"recall : {recall(self.T):.4f}, "
+            + f"f1 : {fscore(self.T):.4f}, "
+            + f"iou : {calc_iou(self.T):.4f}"
         )
 
         # protocol B
         print("\nProtocol B:")
         print(
-            f"precision : {np.mean(self.prec):.4f}, recall : {np.mean(self.rec):.4f}, f1 : {np.mean(self.fscore):.4f}"
+            f"precision : {np.mean(self.prec):.4f}, "
+            + f"recall : {np.mean(self.rec):.4f}, "
+            + f"f1 : {np.mean(self.fscore):.4f}, "
+            + f"iou : {np.mean(self.iou):.4f}"
         )
 
         return np.mean(self.fscore)
@@ -315,7 +336,9 @@ class Metric_image(object):
             self.pred.append(_pred)
 
     def final(self):
-        pr, re, f, _ = precision_recall_fscore_support(self.gt, self.pred, average="binary")
+        pr, re, f, _ = precision_recall_fscore_support(
+            self.gt, self.pred, average="binary"
+        )
 
         print("Image level score")
         print(f"precision: {pr:.4f}, recall: {re:.4f}, f-score: {f :.4f} ")

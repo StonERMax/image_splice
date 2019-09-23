@@ -19,16 +19,18 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()
 
-    Xp, Xq, Yp, Yq, labels = D
+    Xs, Xt, Ys, Yt, labels = D
     labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(device)
-    Xp, Xq, Yp, Yq = Xp.to(device), Xq.to(device), Yp.to(device), Yq.to(device)
+    Xs, Xt, Ys, Yt = Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device)
 
-    predp, predq, pred_det = model(Xp, Xq)
+    preds, predt, pred_det = model(Xs, Xt)
 
-    loss_p = BCE_loss(predp, Yp, with_logits=True)
-    loss_q = BCE_loss(predq, Yq, with_logits=True)
+    loss_p = BCE_loss(predt, Yt, with_logits=True)
+    loss_q = BCE_loss(preds, Ys, with_logits=True)
 
-    loss_det = F.binary_cross_entropy_with_logits(pred_det.squeeze(), labels.squeeze())
+    loss_det = F.binary_cross_entropy_with_logits(
+        pred_det.squeeze(), labels.squeeze()
+    )
 
     loss = loss_p + loss_q + args.gamma * loss_det
 
@@ -37,7 +39,10 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
     optimizer.step()
 
     loss_val = loss.data.cpu().numpy()
-    print(f"{iteration:5d}: f: {tval(loss_p):.4f} + {tval(loss_q):.4f} ")
+    print(
+        f"{iteration:5d}: f(probe+donor+det): {tval(loss_p):.4f} + "
+        + f"{tval(loss_q):.4f} + {tval(loss_det):.4f}"
+    )
 
     if logger is not None:
         logger.add_scalar("train_loss/total", loss, iteration)

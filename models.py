@@ -52,7 +52,9 @@ class Corr(nn.Module):
 
 
 def std_mean(x):
-    return (x - x.mean(dim=-3, keepdim=True)) / (1e-8 + x.std(dim=-3, keepdim=True))
+    return (x - x.mean(dim=-3, keepdim=True)) / (
+        1e-8 + x.std(dim=-3, keepdim=True)
+    )
 
 
 def plot_mat(x, name, cmap="jet", size=(120, 120)):
@@ -119,7 +121,11 @@ class DetectionBranch(nn.Module):
         x = self.conv1(x)
 
         x_cat = torch.cat(
-            (F.adaptive_avg_pool2d(x, (1, 1)), F.adaptive_max_pool2d(x, (1, 1))), dim=-3
+            (
+                F.adaptive_avg_pool2d(x, (1, 1)),
+                F.adaptive_max_pool2d(x, (1, 1)),
+            ),
+            dim=-3,
         )
 
         x_cat = x_cat.reshape(b, 128)
@@ -151,16 +157,16 @@ class DOAModel(nn.Module):
             nn.Sigmoid(),
         )
 
-        self.aspp_mask_p = models.segmentation.deeplabv3.ASPP(
+        self.aspp_mask = models.segmentation.deeplabv3.ASPP(
             in_channels=in_cat, atrous_rates=[12, 24, 36]
         )
 
-        self.aspp_mask_q = models.segmentation.deeplabv3.ASPP(
-            in_channels=in_cat, atrous_rates=[12, 24, 36]
+        self.aspp_forge = models.segmentation.deeplabv3.ASPP(
+            in_channels=in_cat, atrous_rates=[6, 12, 24]
         )
 
         self.head_mask_p = nn.Sequential(
-            nn.Conv2d(2 * 256, 2 * 256, 1),
+            nn.Conv2d(4 * 256, 2 * 256, 1),
             nn.BatchNorm2d(2 * 256),
             nn.ReLU(),
             nn.Conv2d(2 * 256, 256, 3, padding=1),
@@ -173,7 +179,7 @@ class DOAModel(nn.Module):
         )
 
         self.head_mask_q = nn.Sequential(
-            nn.Conv2d(2 * 256, 2 * 256, 1),
+            nn.Conv2d(4 * 256, 2 * 256, 1),
             nn.BatchNorm2d(2 * 256),
             nn.ReLU(),
             nn.Conv2d(2 * 256, 256, 3, padding=1),
@@ -192,8 +198,8 @@ class DOAModel(nn.Module):
 
         self.val_conv.apply(weights_init_normal)
 
-    def forward(self, xp, xq):
-        input = xp
+    def forward(self, xq, xp):
+        input1, input2 = xq, xp
         b, c, h, w = xp.shape
         xp_feat = self.encoder(xp, out_size=self.hw)
         xq_feat = self.encoder(xq, out_size=self.hw)
@@ -205,27 +211,39 @@ class DOAModel(nn.Module):
         val_conv_q = self.val_conv(valq)
 
         #### Mask part : M  ####
-        x_as_p = self.aspp_mask_p(xp_feat) * val_conv_p
-        x_as_q = self.aspp_mask_q(xq_feat) * val_conv_q
+        xp_as1 = self.aspp_mask(xp_feat) * val_conv_p
+        xq_as1 = self.aspp_mask(xq_feat) * val_conv_q
+
+        xp_as2 = self.aspp_forge(xp_feat) * val_conv_p
+        xq_as2 = self.aspp_forge(xq_feat) * val_conv_q
 
         # Corrensponding mask and forge
-        x_as_p_2 = self.non_local(x_as_q, indp)
-        x_as_q_2 = self.non_local(x_as_p, indq)
+        xp_as1_nl = self.non_local(xq_as1, indp)
+        xq_as1_nl = self.non_local(xp_as1, indq)
+
+        xp_as2_nl = self.non_local(xq_as2, indp)
+        xq_as2_nl = self.non_local(xp_as2, indq)
 
         # Final Mask
-        x_cat_p = torch.cat((x_as_p, x_as_p_2), dim=-3)
+        x_cat_p = torch.cat((xp_as1, xp_as1_nl, xp_as2, xp_as2_nl), dim=-3)
         outp = self.head_mask_p(x_cat_p)
 
-        x_cat_q = torch.cat((x_as_q, x_as_q_2), dim=-3)
+        x_cat_q = torch.cat((xq_as1, xq_as1_nl, xq_as2, xq_as2_nl), dim=-3)
         outq = self.head_mask_q(x_cat_q)
 
         # final detection
-        out_det = self.detection(torch.cat((x_cat_p, x_cat_q), dim=-3))
+        out_det = self.detection(torch.cat((
+            xp_as2, xq_as1, xp_as1_nl, xq_as2_nl
+        ), dim=-3))
 
-        outp = F.interpolate(outp, size=(h, w), mode="bilinear", align_corners=True)
-        outq = F.interpolate(outq, size=(h, w), mode="bilinear", align_corners=True)
+        outp = F.interpolate(
+            outp, size=(h, w), mode="bilinear", align_corners=True
+        )
+        outq = F.interpolate(
+            outq, size=(h, w), mode="bilinear", align_corners=True
+        )
 
-        return outp, outq, out_det
+        return outq, outp, out_det
 
     def non_local(self, x, ind):
         b, c, h2, w2 = x.shape
@@ -248,24 +266,28 @@ class DOAModel(nn.Module):
         modules = [self.encoder]
         for i in range(len(modules)):
             for m in modules[i].named_modules():
-                if isinstance(m[1], nn.Conv2d) or isinstance(m[1], nn.BatchNorm2d):
+                if isinstance(m[1], nn.Conv2d) or isinstance(
+                    m[1], nn.BatchNorm2d
+                ):
                     for p in m[1].parameters():
                         if p.requires_grad:
                             yield p
 
     def get_10x_lr_params(self):
         modules = [
-            self.aspp_mask_p,
-            self.aspp_mask_q,
+            self.aspp_mask,
+            self.aspp_forge,
             self.head_mask_p,
             self.head_mask_q,
             self.val_conv,
             self.corrLayer,
-            self.detection,
+            # self.detection,
         ]
         for i in range(len(modules)):
             for m in modules[i].named_modules():
-                if isinstance(m[1], nn.Conv2d) or isinstance(m[1], nn.BatchNorm2d):
+                if isinstance(m[1], nn.Conv2d) or isinstance(
+                    m[1], nn.BatchNorm2d
+                ):
                     for p in m[1].parameters():
                         if p.requires_grad:
                             yield p
@@ -291,13 +313,19 @@ class Extractor_VGG19(nn.Module):
 
     def forward(self, x, out_size=(40, 40)):
         x1 = self.layer1(x)
-        x1_u = F.interpolate(x1, size=out_size, mode="bilinear", align_corners=True)
+        x1_u = F.interpolate(
+            x1, size=out_size, mode="bilinear", align_corners=True
+        )
 
         x2 = self.layer2(x1)
-        x2_u = F.interpolate(x2, size=out_size, mode="bilinear", align_corners=True)
+        x2_u = F.interpolate(
+            x2, size=out_size, mode="bilinear", align_corners=True
+        )
 
         x3 = self.layer3(x2)
-        x3_u = F.interpolate(x3, size=out_size, mode="bilinear", align_corners=True)
+        x3_u = F.interpolate(
+            x3, size=out_size, mode="bilinear", align_corners=True
+        )
 
         x_all = torch.cat([x1_u, x2_u, x3_u], dim=-3)
 
@@ -310,7 +338,9 @@ class Discriminator(nn.Module):
 
         def discriminator_block(in_filters, out_filters, normalization=True):
             """Returns downsampling layers of each discriminator block"""
-            layers = [nn.Conv2d(in_filters, out_filters, 4, stride=2, padding=1)]
+            layers = [
+                nn.Conv2d(in_filters, out_filters, 4, stride=2, padding=1)
+            ]
             if normalization:
                 layers.append(nn.BatchNorm2d(out_filters))
             layers.append(nn.LeakyReLU(0.2, inplace=True))
