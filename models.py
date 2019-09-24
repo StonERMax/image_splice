@@ -22,7 +22,7 @@ class Corr(nn.Module):
         super().__init__()
         self.topk = topk
 
-        self.alpha = nn.Parameter(torch.tensor(5.0, dtype=torch.float32))
+        self.alpha = nn.Parameter(torch.tensor(15.0, dtype=torch.float32))
 
     def forward(self, xp, xq):
         b, c, h1, w1 = xp.shape
@@ -39,14 +39,14 @@ class Corr(nn.Module):
             x_aff * self.alpha, dim=-2
         )
         x_c = x_c.reshape(b, h1, w1, h2, w2)
-        xc_o = x_c.view(b, h1 * w1, h2, w2)
-        valp = get_topk(xc_o, k=self.topk, dim=-3)
-
-        xc_o_q = xc_o.permute(0, 2, 3, 1).view(b, h2 * w2, h1, w1)
+        xc_o_q = x_c.view(b, h1 * w1, h2, w2)
         valq = get_topk(xc_o_q, k=self.topk, dim=-3)
 
-        x_soft_p = xc_o_q  #/ (xc_o_q.sum(dim=-3, keepdim=True) + 1e-8)
-        x_soft_q = xc_o  #/ (xc_o.sum(dim=-3, keepdim=True) + 1e-8)
+        xc_o_p = xc_o_q.permute(0, 2, 3, 1).view(b, h2 * w2, h1, w1)
+        valp = get_topk(xc_o_p, k=self.topk, dim=-3)
+
+        x_soft_p = xc_o_p  # / (xc_o_p.sum(dim=-3, keepdim=True) + 1e-8)
+        x_soft_q = xc_o_q  # / (xc_o_q.sum(dim=-3, keepdim=True) + 1e-8)
 
         return valp, valq, x_soft_p, x_soft_q
 
@@ -153,10 +153,14 @@ class GCN(nn.Module):
         ind = ind.reshape(b, h2 * w2, h1 * w1).permute(0, 2, 1)
         # b, h1w1, h2w2
 
-        D_mhalf = torch.diag_embed(torch.sqrt(1./torch.sum(ind, dim=-1)))
+        D_mhalf = torch.diag_embed(
+            torch.sqrt(1.0 / (torch.sum(ind, dim=-1) + 1e-8))
+        )
         # D_mhalf = torch.sqrt(torch.inverse(D))  # b, h1w1, h1w1
 
-        A = torch.bmm(D_mhalf, torch.bmm(ind, D_mhalf))  # b, h1w1, h2w2
+        eye = torch.eye(ind.shape[-1], dtype=ind.dtype)
+        ind_with_e = ind + eye.view(1, *eye.shape)
+        A = torch.bmm(D_mhalf, torch.bmm(ind_with_e, D_mhalf))  # b, h1w1, h2w2
 
         out_inter = torch.bmm(A, x).permute(0, 2, 1).reshape(b, c, h1, w1)
         out = self.conv(out_inter)
