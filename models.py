@@ -45,8 +45,8 @@ class Corr(nn.Module):
         xc_o_q = xc_o.permute(0, 2, 3, 1).view(b, h2 * w2, h1, w1)
         valq = get_topk(xc_o_q, k=self.topk, dim=-3)
 
-        x_soft_p = xc_o_q / (xc_o_q.sum(dim=-3, keepdim=True) + 1e-8)
-        x_soft_q = xc_o / (xc_o.sum(dim=-3, keepdim=True) + 1e-8)
+        x_soft_p = xc_o_q  #/ (xc_o_q.sum(dim=-3, keepdim=True) + 1e-8)
+        x_soft_q = xc_o  #/ (xc_o.sum(dim=-3, keepdim=True) + 1e-8)
 
         return valp, valq, x_soft_p, x_soft_q
 
@@ -133,6 +133,45 @@ class DetectionBranch(nn.Module):
         return y
 
 
+class GCN(nn.Module):
+    def __init__(self, in_feat=256):
+        super().__init__()
+        self.in_feat = in_feat
+
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_feat, in_feat, 3, padding=1),
+            nn.BatchNorm2d(in_feat),
+            nn.ReLU(),
+        )
+        self.conv.apply(weights_init_normal)
+
+    def forward(self, x, ind):
+        b, c, h2, w2 = x.shape
+        _, _, h1, w1 = ind.shape
+
+        x = x.reshape(b, c, -1).permute(0, 2, 1)  # b, h2w2, c
+        ind = ind.reshape(b, h2 * w2, h1 * w1).permute(0, 2, 1)
+        # b, h1w1, h2w2
+
+        D_mhalf = torch.diag_embed(torch.sqrt(1./torch.sum(ind, dim=-1)))
+        # D_mhalf = torch.sqrt(torch.inverse(D))  # b, h1w1, h1w1
+
+        A = torch.bmm(D_mhalf, torch.bmm(ind, D_mhalf))  # b, h1w1, h2w2
+
+        out_inter = torch.bmm(A, x).permute(0, 2, 1).reshape(b, c, h1, w1)
+        out = self.conv(out_inter)
+        return out
+
+        # b, c, h2, w2 = x.shape
+        # _, _, h1, w1 = ind.shape
+
+        # x = x.reshape(b, c, -1)
+        # ind = ind.reshape(b, h2 * w2, h1 * w1)
+        # out_inter = torch.bmm(x, ind).reshape(b, c, h1, w1)
+        # out = self.conv(out_inter)
+        # return out
+
+
 class DOAModel(nn.Module):
     def __init__(self, out_channel=1, topk=20, hw=(40, 40)):
         super().__init__()
@@ -191,6 +230,9 @@ class DOAModel(nn.Module):
             nn.Conv2d(256, out_channel, 1),
         )
 
+        self.gcn_mask = GCN()
+        self.gcn_forge = GCN()
+
         # detection branch
         self.detection = DetectionBranch(4 * 256)
         self.head_mask_p.apply(weights_init_normal)
@@ -218,11 +260,11 @@ class DOAModel(nn.Module):
         xq_as2 = self.aspp_forge(xq_feat) * val_conv_q
 
         # Corrensponding mask and forge
-        xp_as1_nl = self.non_local(xq_as1, indp)
-        xq_as1_nl = self.non_local(xp_as1, indq)
+        xp_as1_nl = self.gcn_mask(xq_as1, indp)
+        xq_as1_nl = self.gcn_mask(xp_as1, indq)
 
-        xp_as2_nl = self.non_local(xq_as2, indp)
-        xq_as2_nl = self.non_local(xp_as2, indq)
+        xp_as2_nl = self.gcn_forge(xq_as2, indp)
+        xq_as2_nl = self.gcn_forge(xp_as2, indq)
 
         # Final Mask
         x_cat_p = torch.cat((xp_as1, xp_as1_nl, xp_as2, xp_as2_nl), dim=-3)
@@ -232,9 +274,9 @@ class DOAModel(nn.Module):
         outq = self.head_mask_q(x_cat_q)
 
         # final detection
-        out_det = self.detection(torch.cat((
-            xp_as2, xq_as1, xp_as1_nl, xq_as2_nl
-        ), dim=-3))
+        out_det = self.detection(
+            torch.cat((xp_as2, xq_as1, xp_as1_nl, xq_as2_nl), dim=-3)
+        )
 
         outp = F.interpolate(
             outp, size=(h, w), mode="bilinear", align_corners=True

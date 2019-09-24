@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     # load dataset
 
-    data_test = dataset.Dataset_COCO_CISDL(args, mode="diff", is_training=False)
+    data_test = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=False)
     if args.test:
         test(
             data_test,
@@ -83,8 +83,8 @@ if __name__ == "__main__":
             iteration=None,
             device=device,
             logger=None,
-            num=5,
-            plot=True,
+            num=50,
+            plot=False,
         )
         logger.close()
         raise SystemExit
