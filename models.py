@@ -39,14 +39,14 @@ class Corr(nn.Module):
             x_aff * self.alpha, dim=-2
         )
         x_c = x_c.reshape(b, h1, w1, h2, w2)
-        xc_o = x_c.view(b, h1 * w1, h2, w2)
-        valp = get_topk(xc_o, k=self.topk, dim=-3)
-
-        xc_o_q = xc_o.permute(0, 2, 3, 1).view(b, h2 * w2, h1, w1)
+        xc_o_q = x_c.view(b, h1 * w1, h2, w2)
         valq = get_topk(xc_o_q, k=self.topk, dim=-3)
 
-        x_soft_p = xc_o_q / (xc_o_q.sum(dim=-3, keepdim=True) + 1e-8)
-        x_soft_q = xc_o / (xc_o.sum(dim=-3, keepdim=True) + 1e-8)
+        xc_o_p = xc_o_q.permute(0, 2, 3, 1).view(b, h2 * w2, h1, w1)
+        valp = get_topk(xc_o_p, k=self.topk, dim=-3)
+
+        x_soft_p = xc_o_p / (xc_o_p.sum(dim=-3, keepdim=True) + 1e-8)
+        x_soft_q = xc_o_q / (xc_o_q.sum(dim=-3, keepdim=True) + 1e-8)
 
         return valp, valq, x_soft_p, x_soft_q
 
