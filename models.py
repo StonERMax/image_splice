@@ -22,7 +22,7 @@ class Corr(nn.Module):
         super().__init__()
         self.topk = topk
 
-        self.alpha = nn.Parameter(torch.tensor(15.0, dtype=torch.float32))
+        self.alpha = nn.Parameter(torch.tensor(10.0, dtype=torch.float32))
 
     def forward(self, xp, xq):
         b, c, h1, w1 = xp.shape
@@ -159,7 +159,7 @@ class GCN(nn.Module):
         # D_mhalf = torch.sqrt(torch.inverse(D))  # b, h1w1, h1w1
 
         eye = torch.eye(ind.shape[-1], dtype=ind.dtype)
-        ind_with_e = ind + eye.view(1, *eye.shape)
+        ind_with_e = ind + eye.view(1, *eye.shape).to(ind.device)
         A = torch.bmm(D_mhalf, torch.bmm(ind_with_e, D_mhalf))  # b, h1w1, h2w2
 
         out_inter = torch.bmm(A, x).permute(0, 2, 1).reshape(b, c, h1, w1)
