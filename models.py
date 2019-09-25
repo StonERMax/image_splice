@@ -45,8 +45,8 @@ class Corr(nn.Module):
         xc_o_p = xc_o_q.permute(0, 2, 3, 1).view(b, h2 * w2, h1, w1)
         valp = get_topk(xc_o_p, k=self.topk, dim=-3)
 
-        x_soft_p = xc_o_p  # / (xc_o_p.sum(dim=-3, keepdim=True) + 1e-8)
-        x_soft_q = xc_o_q  # / (xc_o_q.sum(dim=-3, keepdim=True) + 1e-8)
+        x_soft_p = xc_o_p  / (xc_o_p.sum(dim=-3, keepdim=True) + 1e-8)
+        x_soft_q = xc_o_q  / (xc_o_q.sum(dim=-3, keepdim=True) + 1e-8)
 
         return valp, valq, x_soft_p, x_soft_q
 
@@ -153,14 +153,15 @@ class GCN(nn.Module):
         ind = ind.reshape(b, h2 * w2, h1 * w1).permute(0, 2, 1)
         # b, h1w1, h2w2
 
-        D_mhalf = torch.diag_embed(
-            torch.sqrt(1.0 / (torch.sum(ind, dim=-1) + 1e-8))
-        )
-        # D_mhalf = torch.sqrt(torch.inverse(D))  # b, h1w1, h1w1
+        # D_m = torch.diag_embed(
+        #     1.0 / (torch.sum(ind, dim=-1) + 1e-8)
+        # )
+        # # D_mhalf = torch.sqrt(torch.inverse(D))  # b, h1w1, h1w1
 
-        eye = torch.eye(ind.shape[-1], dtype=ind.dtype)
-        ind_with_e = ind + eye.view(1, *eye.shape).to(ind.device)
-        A = torch.bmm(D_mhalf, torch.bmm(ind_with_e, D_mhalf))  # b, h1w1, h2w2
+        # eye = torch.eye(ind.shape[-1], dtype=ind.dtype)
+        # # ind_with_e = ind + eye.view(1, *eye.shape).to(ind.device)
+        # A = torch.bmm(D_m, ind)  # b, h1w1, h2w2
+        A = ind
 
         out_inter = torch.bmm(A, x).permute(0, 2, 1).reshape(b, c, h1, w1)
         out = self.conv(out_inter)

@@ -3,7 +3,6 @@ import glob
 import pandas as pd
 from pathlib import Path
 from matplotlib import pyplot
-import lmdb
 import json
 import os
 import sys
