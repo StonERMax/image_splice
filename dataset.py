@@ -41,7 +41,7 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
 
         if is_training:
             for each in labelfiles_path.iterdir():
-                if each.suffix == ".csv" and "_back_" not in each.name:
+                if each.suffix == ".csv":
                     if mode is None:
                         subpath_list.append(each.name)
                     else:
