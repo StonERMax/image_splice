@@ -1,27 +1,10 @@
 from __future__ import print_function
-import glob
-import pandas as pd
 from pathlib import Path
-from matplotlib import pyplot
-import lmdb
-import json
 import os
-import sys
-import pickle
-import cv2
 import skimage
-from skimage import io
 import numpy as np
 import torch
-from torchvision import transforms
-from collections import defaultdict
 import utils
-import h5py
-from parse import parse
-from sklearn.metrics import precision_recall_fscore_support
-from pycocotools.coco import COCO
-from tqdm import tqdm
-from collections import defaultdict
 import utils_data
 
 

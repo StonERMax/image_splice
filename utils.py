@@ -139,13 +139,13 @@ class CustomTransform:
         return img, mask
 
 
-def custom_transform_images(images=None, masks=None, size=224, other_tfm=None):
+def custom_transform_images(images=None, masks=None, size=320, other_tfm=None):
     tsfm = CustomTransform(size=size)
     X, Y = None, None
     if images is not None:
         X = torch.zeros((images.shape[0], 3, size, size), dtype=torch.float32)
         for i in range(images.shape[0]):
-            X[i] = tsfm(img=images[i], other_tfm=other_tfm)
+            X[i], _ = tsfm(img=images[i], other_tfm=other_tfm)
     if masks is not None:
         Y = torch.zeros((masks.shape[0], 1, size, size), dtype=torch.float32)
         for i in range(masks.shape[0]):
