@@ -20,7 +20,9 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
     module.train()
 
     Xs, Xt, Ys, Yt, labels = D
-    labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(device)
+    if not isinstance(labels, torch.Tensor):
+        labels = torch.from_numpy(np.array(labels, dtype=np.float32))
+    labels = labels.float().to(device)
     Xs, Xt, Ys, Yt = Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device)
 
     preds, predt, pred_det = model(Xs, Xt)
@@ -28,9 +30,7 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
     loss_p = BCE_loss(predt, Yt, with_logits=True)
     loss_q = BCE_loss(preds, Ys, with_logits=True)
 
-    loss_det = F.binary_cross_entropy_with_logits(
-        pred_det.squeeze(), labels.squeeze()
-    )
+    loss_det = F.binary_cross_entropy_with_logits(pred_det.squeeze(), labels.squeeze())
 
     loss = loss_p + loss_q + args.gamma * loss_det
 

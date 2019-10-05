@@ -84,7 +84,9 @@ def test(
 
     for i, ret in enumerate(data.load()):
         Xs, Xt, Ys, Yt, labels = ret
-        labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(device)
+        if not isinstance(labels, torch.Tensor):
+            labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(device)
+        labels = labels.float().to(device)
         Xs, Xt, Ys, Yt = (
             Xs.to(device),
             Xt.to(device),

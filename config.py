@@ -44,8 +44,6 @@ def config():
 def config_video():
     parser = argparse.ArgumentParser(prog="CISDL_video")
     parser.add_argument("--dataset", type=str, default="tmp_youtube")
-
-
     parser.add_argument(
         "--size", type=str, default="320x320", help="image shape (h x w)"
     )

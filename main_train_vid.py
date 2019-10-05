@@ -12,7 +12,7 @@ import models
 from train import train
 
 from test import test
-import dataset
+import dataset_vid
 
 
 if __name__ == "__main__":
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     else:
         device = torch.device("cpu")
 
-    args = config.config()
+    args = config.config_video()
 
     # seed
     np.random.seed(args.seed)
@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     # load dataset
 
-    data_test = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=False)
+    data_test = dataset_vid.Dataset_vid(args, is_training=False)
     if args.test:
         test(
             data_test,
@@ -80,10 +80,7 @@ if __name__ == "__main__":
         logger.close()
         raise SystemExit
 
-        # TODO: There is a discrepency between test loss and train loss,
-        # even when same dataset is used. Check out why!
-
-    data_train = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=True)
+    data_train = dataset_vid.Dataset_vid(args, is_training=True)
 
     list_loss = []
 
