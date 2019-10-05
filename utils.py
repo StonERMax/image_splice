@@ -139,14 +139,18 @@ class CustomTransform:
 
 
 def custom_transform_images(images=None, masks=None, size=320, other_tfm=None):
+    if isinstance(size, int) or isinstance(size, float):
+        size = (size, size)
+    else:
+        size = size
     tsfm = CustomTransform(size=size)
     X, Y = None, None
     if images is not None:
-        X = torch.zeros((images.shape[0], 3, size, size), dtype=torch.float32)
+        X = torch.zeros((images.shape[0], 3, *size), dtype=torch.float32)
         for i in range(images.shape[0]):
             X[i], _ = tsfm(img=images[i], other_tfm=other_tfm)
     if masks is not None:
-        Y = torch.zeros((masks.shape[0], 1, size, size), dtype=torch.float32)
+        Y = torch.zeros((masks.shape[0], 1, *size), dtype=torch.float32)
         for i in range(masks.shape[0]):
             _, Y[i, 0] = tsfm(img=None, mask=masks[i], other_tfm=other_tfm)
 
@@ -160,11 +164,11 @@ def add_overlay(im, m1, m2=None, alpha=0.5, c1=[0, 1, 0], c2=[1, 0, 0]):
     M2 = np.zeros((r, c, 3), dtype=np.float32)
 
     if m2 is not None:
-        M1[m1 > 0] = c1
-        M2[m2 > 0] = c2
+        M1[m1 > 0.5] = c1
+        M2[m2 > 0.5] = c2
         M = cv2.addWeighted(M1, alpha, M2, 1 - alpha, 0, None)
     else:
-        M1[m1 > 0] = c1
+        M1[m1 > 0.5] = c1
         M = M1
 
     I = cv2.addWeighted(im, alpha, M, 1 - alpha, 0, None)

@@ -225,8 +225,6 @@ class Dataset_vid(torch.utils.data.Dataset):
             gt_time = None
 
             if is_training:
-                # other_tfm = utils.SimTransform(
-                #     size=self.args.size)
                 other_tfm = None
             else:
                 other_tfm = None
