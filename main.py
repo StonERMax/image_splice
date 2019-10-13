@@ -26,10 +26,10 @@ def update_model(model, pretrained_dict):
         k: v
         for k, v in pretrained_dict.items()
         if k in model_dict and not k.startswith("gcn_mask")
-        and not not k.startswith("gcn_forge")
+        and not k.startswith("gcn_forge")
     }
     # 2. overwrite entries in the existing state dict
-    model_dict.update(pretrained_dict)
+    # model_dict.update(pretrained_dict)
     # 3. load the new state dict
     model.load_state_dict(pretrained_dict, strict=False)
     return model
