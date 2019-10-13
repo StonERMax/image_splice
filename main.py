@@ -19,6 +19,22 @@ from test import test
 import dataset
 
 
+def update_model(model, pretrained_dict):
+    model_dict = model.state_dict()
+    # 1. filter out unnecessary keys
+    pretrained_dict = {
+        k: v
+        for k, v in pretrained_dict.items()
+        if k in model_dict and not k.startswith("gcn_mask")
+        and not not k.startswith("gcn_forge")
+    }
+    # 2. overwrite entries in the existing state dict
+    model_dict.update(pretrained_dict)
+    # 3. load the new state dict
+    model.load_state_dict(pretrained_dict, strict=False)
+    return model
+
+
 if __name__ == "__main__":
     # device
     if torch.cuda.is_available():
@@ -52,7 +68,8 @@ if __name__ == "__main__":
 
     if args.ckpt is not None:
         checkpoint = torch.load(args.ckpt)
-        model.load_state_dict(checkpoint["model_state"], strict=False)
+        model = update_model(model, checkpoint["model_state"])
+        # model.load_state_dict(checkpoint["model_state"], strict=False)
 
     # model_params = [
     #     {"params": model.get_1x_lr_params(), "lr": args.lr},
@@ -64,12 +81,7 @@ if __name__ == "__main__":
     # optimizer
     optimizer = torch.optim.Adam(model_params, lr=args.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        factor=0.1,
-        patience=10,
-        verbose=True,
-        threshold=0.1,
-        min_lr=1e-7,
+        optimizer, factor=0.1, patience=10, verbose=True, threshold=0.1, min_lr=1e-7
     )
 
     # load dataset
@@ -99,9 +111,7 @@ if __name__ == "__main__":
     for ep in tqdm(range(init_ep, args.max_epoch)):
         # train
         for ret in data_train.load():
-            loss = train(
-                ret, model, optimizer, args, iteration, device, logger=logger
-            )
+            loss = train(ret, model, optimizer, args, iteration, device, logger=logger)
             list_loss.append(loss)
             iteration += 1
 
