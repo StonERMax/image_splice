@@ -25,7 +25,8 @@ def update_model(model, pretrained_dict):
     pretrained_dict = {
         k: v
         for k, v in pretrained_dict.items()
-        if k in model_dict and not k.startswith("gcn_mask")
+        if k in model_dict
+        and not k.startswith("gcn_mask")
         and not k.startswith("gcn_forge")
     }
     # 2. overwrite entries in the existing state dict
@@ -81,20 +82,22 @@ if __name__ == "__main__":
     # optimizer
     optimizer = torch.optim.Adam(model_params, lr=args.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, factor=0.1, patience=10, verbose=True, threshold=0.1, min_lr=1e-7
+        optimizer,
+        factor=0.1,
+        patience=10,
+        verbose=True,
+        threshold=0.1,
+        min_lr=1e-7,
     )
 
     # load dataset
 
-    data_test = dataset.Dataset_COCO_CISDL(args, mode="diff", is_training=False)
+    data_test = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=False)
     if args.test:
         with torch.no_grad():
             for i, ret in enumerate(data_test.load()):
                 Xs, Xt, Ys, Yt, labels = ret
-                Xs, Xt = (
-                    Xs.to(device),
-                    Xt.to(device)
-                )
+                Xs, Xt = (Xs.to(device), Xt.to(device))
                 _ = model(Xs, Xt)
                 if i > 5:
                     break
@@ -107,7 +110,7 @@ if __name__ == "__main__":
             device=device,
             logger=None,
             num=40,
-            plot=args.plot
+            plot=args.plot,
         )
         logger.close()
         raise SystemExit
@@ -122,7 +125,9 @@ if __name__ == "__main__":
     for ep in tqdm(range(init_ep, args.max_epoch)):
         # train
         for ret in data_train.load():
-            loss = train(ret, model, optimizer, args, iteration, device, logger=logger)
+            loss = train(
+                ret, model, optimizer, args, iteration, device, logger=logger
+            )
             list_loss.append(loss)
             iteration += 1
 
