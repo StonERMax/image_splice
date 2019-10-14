@@ -86,8 +86,20 @@ if __name__ == "__main__":
 
     # load dataset
 
-    data_test = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=False)
+    data_test = dataset.Dataset_COCO_CISDL(args, mode="medi", is_training=False)
     if args.test:
+
+        with torch.no_grad():
+            for i, ret in enumerate(data_test.load()):
+                Xs, Xt, Ys, Yt, labels = ret
+                Xs, Xt = (
+                    Xs.to(device),
+                    Xt.to(device)
+                )
+                _ = model(Xs, Xt)
+                if i > 5:
+                    break
+
         test(
             data_test,
             model,
@@ -95,8 +107,8 @@ if __name__ == "__main__":
             iteration=None,
             device=device,
             logger=None,
-            num=10,
-            plot=False,
+            num=None,
+            plot=args.plot
         )
         logger.close()
         raise SystemExit

@@ -35,6 +35,11 @@ def config():
         "--bw", action="store_true", help="whether to add boundary loss"
     )
 
+    parser.add_argument(
+        "--plot", action="store_true", help="whether to plot"
+    )
+    
+
     args = parser.parse_args()
     args.size = tuple(int(i) for i in args.size.split("x"))
     print(args)

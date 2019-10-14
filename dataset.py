@@ -48,7 +48,7 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
                         each_level = each.stem.split("_")[-1]
                         if each_level == mode:
                             subpath_list.append(each.name)
-        else:  # testing
+        else:  # testing 
             for each in labelfiles_path.iterdir():
                 if each.suffix == ".csv" and "_fore_" in each.name:
                     if mode is None:

@@ -16,6 +16,7 @@ from scipy.ndimage import measurements
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import collections
+import math
 
 
 def fscore(T_score):
@@ -52,6 +53,29 @@ def conf_mat(labels, preds):
     fp = np.sum(preds[labels == 0] == 1)
     fn = np.sum(preds[labels == 1] == 0)
     return np.array([tn, fp, fn, tp])
+
+
+def get_NMM(hist, gt):
+    hist = hist.reshape((2, 2))
+    gt_size = float(np.sum(gt))
+    tp_size = float(hist[1, 1])
+    fn_size = float(hist[1, 0])
+    fp_size = float(hist[0, 1])
+    if gt_size == 0:
+        return 0
+    nmm = (tp_size - fn_size - fp_size) / gt_size
+    if nmm < -1.0:
+        nmm = -1.0
+    return nmm
+
+
+def get_MCC(hist):
+    tn, fp, fn, tp = hist
+    denominator = math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+    if denominator == 0:
+        return 0
+    mcc = (tp * tn - fp * fn) / denominator
+    return mcc
 
 
 class SimTransform:
@@ -110,9 +134,7 @@ class CustomTransform:
 
         if mask is not None:
             if mask.shape[0] != self.size[0] or mask.shape[1] != self.size[1]:
-                mask = cv2.resize(
-                    mask, self.size, interpolation=cv2.INTER_NEAREST
-                )
+                mask = cv2.resize(mask, self.size, interpolation=cv2.INTER_NEAREST)
         return img, mask
 
     def inverse(self, x, mask=False):
@@ -230,6 +252,7 @@ class MMetric:
         self.prec = []
         self.rec = []
         self.iou = []
+        self.mcc = []
 
         self.name = name
         self.thres = thres
@@ -261,16 +284,18 @@ class MMetric:
         prec = precision(tt)
         rec = recall(tt)
         fs = fscore(tt)
+        mcc = get_MCC(tt)
 
         self.prec.append(prec)
         self.rec.append(rec)
         self.fscore.append(fs)
         self.iou.append(calc_iou(tt))
+        self.mcc.append(mcc)
 
         if log:
             print(
                 f"{self.name} precision : {prec:.4f}, recall : {rec:.4f}, "
-                + f"f1 : {fs:.4f}"
+                + f"f1 : {fs:.4f}, " + f"mcc: {mcc:.4f}"
             )
         return fs
 
@@ -292,7 +317,8 @@ class MMetric:
             f"precision : {np.mean(self.prec):.4f}, "
             + f"recall : {np.mean(self.rec):.4f}, "
             + f"f1 : {np.mean(self.fscore):.4f}, "
-            + f"iou : {np.mean(self.iou):.4f}"
+            + f"iou : {np.mean(self.iou):.4f}, "
+            + f"MCC : {np.mean(self.mcc):.4f}"
         )
 
         return np.mean(self.fscore)
