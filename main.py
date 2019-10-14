@@ -86,9 +86,8 @@ if __name__ == "__main__":
 
     # load dataset
 
-    data_test = dataset.Dataset_COCO_CISDL(args, mode="medi", is_training=False)
+    data_test = dataset.Dataset_COCO_CISDL(args, mode="diff", is_training=False)
     if args.test:
-
         with torch.no_grad():
             for i, ret in enumerate(data_test.load()):
                 Xs, Xt, Ys, Yt, labels = ret
@@ -107,7 +106,7 @@ if __name__ == "__main__":
             iteration=None,
             device=device,
             logger=None,
-            num=None,
+            num=40,
             plot=args.plot
         )
         logger.close()
