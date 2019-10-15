@@ -103,7 +103,7 @@ if __name__ == "__main__":
             list_loss.append(loss)
             iteration += 1
 
-            if iteration % 300 == 0:
+            if iteration % 100 == 0:
                 scheduler.step(np.mean(list_loss))
                 list_loss = []
 

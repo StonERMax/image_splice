@@ -75,10 +75,9 @@ def config_video():
     )
 
     # split
-    parser.add_argument("--split", type=float, default=0.7)
+    parser.add_argument("--split", type=float, default=0.5)
 
     args = parser.parse_args()
     args.size = tuple(int(i) for i in args.size.split("x"))
     print(args)
     return args
-

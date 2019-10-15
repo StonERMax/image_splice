@@ -170,10 +170,8 @@ def add_overlay(im, m1, m2=None, alpha=0.5, c1=[0, 1, 0], c2=[1, 0, 0]):
     else:
         M1[m1 > 0.5] = c1
         M = M1
-
-    I = cv2.addWeighted(im, alpha, M, 1 - alpha, 0, None)
-
-    return I
+    Im = cv2.addWeighted(im, alpha, M, 1 - alpha, 0, None)
+    return Im
 
 
 class MultiPagePdf:
@@ -302,13 +300,12 @@ class MMetric:
 
 
 class Metric:
-    def __init__(self, dims=2, names=["source", "forge"], thres=0.5):
+    def __init__(self, names=["source", "forge"], thres=0.5):
         self.names = names
-        self.dims = dims
-        assert len(names) == dims
+        self.dims = len(names)
 
         self.list_metrics = []
-        for i in range(dims):
+        for i in range(self.dims):
             self.list_metrics.append(MMetric(name=names[i], thres=0.5))
 
     def update(self, gt, pred, batch_mode=True):

@@ -25,7 +25,7 @@ import create_volume
 
 
 def iou_time(t1, t2):
-    iou = len(set(t1).intersection(set(t2)))/(
+    iou = len(set(t1).intersection(set(t2))) / (
         len(set(t1).union(set(t2))) + 1e-8
     )
     return iou
@@ -49,7 +49,6 @@ if __name__ == "__main__":
         device = torch.device("cpu")
 
     args = config.config_video()
-    print(args)
     # seed
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -75,15 +74,13 @@ if __name__ == "__main__":
 
     dataset = Dataset_vid(args=args, is_training=False)
     # * path to save
-    root = Path("tmp_affinity")
+    root = Path("tmp_affinity") / args.dataset
 
     mask_processor = utils.Preprocessor(args)
 
-    data_path = Path("./tmp_video_match")
+    data_path = Path("./tmp_video_match") / args.dataset
 
-    TTs = np.zeros(4)
-    TTf = np.zeros(4)
-    TTa = np.zeros(4)
+    metric = utils.Metric(names=["source", "forge", "all"])
 
     for fldr in tqdm(data_path.iterdir()):
         print(str(fldr).upper())
@@ -93,18 +90,27 @@ if __name__ == "__main__":
         Data = torch.load(str(path_data))
         # print("Data loaded from {}".format(path_data))
 
-        X, Y_forge, Y_orig, gt_time, forge_time = Data['X'], \
-            Data['Y_forge'], Data['Y_orig'], Data['gt_time'], \
-            Data['forge_time']
-        D_pred = Data['D_pred']
-        name = Data['name']
+        X, Y_forge, Y_orig, gt_time, forge_time = (
+            Data["X"],
+            Data["Y_forge"],
+            Data["Y_orig"],
+            Data["gt_time"],
+            Data["forge_time"],
+        )
+        D_pred = Data["D_pred"]
+        name = Data["name"]
 
         N = X.shape[0]
         path = root / name
         path.mkdir(parents=True, exist_ok=True)
 
-        pdf = MultiPagePdf(total_im=N*N*2, out_name=str(path / "affinity.pdf"),
-                           nrows=N, ncols=2, figsize=(5, N*2))
+        pdf = MultiPagePdf(
+            total_im=N * N * 2,
+            out_name=str(path / "affinity.pdf"),
+            nrows=N,
+            ncols=2,
+            figsize=(5, N * 2),
+        )
 
         Hist = np.zeros((N, N))
 
@@ -134,8 +140,8 @@ if __name__ == "__main__":
                 if np.all(mask2 == 0):
                     mask1 = mask2
 
-                rat = mask1.sum() * 1. / (mask2.sum() + 1e-8)
-                rat = rat if rat > 1 else 1./rat
+                rat = mask1.sum() * 1.0 / (mask2.sum() + 1e-8)
+                rat = rat if rat > 1 else 1.0 / rat
                 if rat < 0.6:
                     mask1 = mask2 = np.zeros_like(mask1)
 
@@ -148,8 +154,9 @@ if __name__ == "__main__":
                 im2_masked = im2 * mask2[..., None]
 
                 # get histogram comparison
-                vcomp = mask_processor.comp_hist(im1, im2, mask1, mask2,
-                                                 compare_method=3)
+                vcomp = mask_processor.comp_hist(
+                    im1, im2, mask1, mask2, compare_method=3
+                )
 
                 Hist[i, j] = 1 - vcomp
 
@@ -170,7 +177,7 @@ if __name__ == "__main__":
         # matshow
         mat_gt = np.zeros((N, N))
         for _if, _ig in zip(forge_time, gt_time):
-            mat_gt[_if, _ig] = 1.
+            mat_gt[_if, _ig] = 1.0
         out_mat_name = str(path / "mat.pdf")
 
         create_volume.plot_conf_mat(mat_gt, str(path / "mat_gt.png"))
@@ -199,39 +206,24 @@ if __name__ == "__main__":
         Pred_mask_src = np.zeros((N, *list(X.shape[-2:])))
 
         Pred_mask_src[pred_gt_time] = D_np[pred_forge_time, pred_gt_time, 0]
-        Pred_mask_forge[pred_forge_time] = D_np[pred_forge_time,
-                                                pred_gt_time, 1]
-        Pred_mask_all = np.logical_or(Pred_mask_forge > 0.5, Pred_mask_src > 0.5)
+        Pred_mask_forge[pred_forge_time] = D_np[
+            pred_forge_time, pred_gt_time, 1
+        ]
+        Pred_mask_all = np.logical_or(
+            Pred_mask_forge > 0.5, Pred_mask_src > 0.5
+        )
 
         GT_forge = get_data(Y_forge)
         GT_src = get_data(Y_orig)
         GT_all = np.logical_or(GT_forge > 0.5, GT_src > 0.5)
 
-
-        tforge = utils.conf_mat(
-            GT_forge.ravel(), Pred_mask_forge.ravel()).ravel()
-        tsrc = utils.conf_mat(
-            GT_src.ravel(), Pred_mask_src.ravel()).ravel()
-        tall = utils.conf_mat(
-            GT_all.ravel(), Pred_mask_all.ravel()).ravel()
-
-        TTs += tsrc
-        TTf += tforge
-        TTa += tall
-
-        f_forge = utils.fscore(tforge)
-        f_src = utils.fscore(tsrc)
-        f_all = utils.fscore(tall)
-
-
-        print("")
-        print("\t F_src : {:.4f}".format(f_src))
-        print("\t F_forge : {:.4f}".format(f_forge))
-        print("\t F_all : {:.4f}".format(f_all))
+        metric.update(
+            (GT_src, GT_forge, GT_all),
+            (Pred_mask_src, Pred_mask_forge, Pred_mask_all),
+        )
 
         # save all images
-
-        folder_name = Path("tmp_tmp") / name
+        folder_name = Path("tmp_out_final") / args.dataset / name
 
         folder_gt = folder_name / "gt"
         folder_pred = folder_name / "pred"
@@ -247,21 +239,19 @@ if __name__ == "__main__":
 
             skimage.io.imsave(
                 str(folder_gt / f"{i_cnt}.jpg"),
-                skimage.img_as_ubyte(im_with_gt)
+                skimage.img_as_ubyte(im_with_gt),
             )
             skimage.io.imsave(
                 str(folder_pred / f"{i_cnt}.jpg"),
-                skimage.img_as_ubyte(im_with_pred)
+                skimage.img_as_ubyte(im_with_pred),
             )
 
         # plot volume
-        create_volume.create(GT_src, GT_forge,
-                             path=folder_name / "gt_vol.png")
+        create_volume.create(GT_src, GT_forge, path=folder_name / "gt_vol.png")
 
-        create_volume.create(Pred_mask_src, Pred_mask_forge,
-                             path=folder_name / "pred_vol.png")
+        create_volume.create(
+            Pred_mask_src, Pred_mask_forge, path=folder_name / "pred_vol.png"
+        )
 
     print("FINAL Score:")
-    print("Source : {:.4f}".format(utils.fscore(TTs)))
-    print("Forge : {:.4f}".format(utils.fscore(TTf)))
-    print("Mask : {:.4f}".format(utils.fscore(TTa)))
+    metric.final()

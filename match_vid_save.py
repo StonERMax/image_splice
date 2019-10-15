@@ -30,7 +30,6 @@ if __name__ == "__main__":
         device = torch.device("cpu")
 
     args = config.config_video()
-    print(args)
     # seed
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -56,20 +55,27 @@ if __name__ == "__main__":
 
     dataset = Dataset_vid(args=args, is_training=False)
 
-    root = Path("tmp_video_match")
+    root = Path("tmp_video_match") / args.dataset
 
     def to_np(x):
         return x.data.cpu().numpy()
 
     mask_processor = utils.Preprocessor(args)
 
+    # for batch normalization
+    with torch.no_grad():
+        for i, ret in enumerate(dataset.load()):
+            Xs, Xt, Ys, Yt, labels = ret
+            Xs, Xt = (Xs.to(device), Xt.to(device))
+            _ = model(Xs, Xt)
+            if i > 5:
+                break
+
     for ret in tqdm(dataset.load_videos_all(is_training=False,
                                             shuffle=True, to_tensor=True)):
         X, Y_forge, forge_time, Y_orig, gt_time, name = ret
 
         N = X.shape[0]
-        if N > 20:
-            continue
         print(name, " : ", N)
 
         forge_time = np.arange(forge_time[0], forge_time[1]+1)
