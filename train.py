@@ -30,7 +30,12 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
     loss_p = BCE_loss(predt, Yt, with_logits=True)
     loss_q = BCE_loss(preds, Ys, with_logits=True)
 
-    loss_det = F.binary_cross_entropy_with_logits(pred_det.squeeze(), labels.squeeze())
+    if not args.wo_det:
+        loss_det = F.binary_cross_entropy_with_logits(
+            pred_det.squeeze(), labels.squeeze()
+        )
+    else:
+        loss_det = 0
 
     loss = loss_p + loss_q + args.gamma * loss_det
 

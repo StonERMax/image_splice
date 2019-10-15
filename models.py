@@ -9,6 +9,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import skimage
 import cv2
+from other_model import dmac
 
 
 def get_topk(x, k=10, dim=-3):
@@ -139,9 +140,7 @@ class GCN(nn.Module):
         self.in_feat = in_feat
 
         self.conv = nn.Sequential(
-            nn.Conv2d(in_feat, in_feat, 1),
-            nn.BatchNorm2d(in_feat),
-            nn.ReLU(),
+            nn.Conv2d(in_feat, in_feat, 1), nn.BatchNorm2d(in_feat), nn.ReLU()
         )
         self.conv.apply(weights_init_normal)
 
@@ -413,3 +412,12 @@ class Discriminator(nn.Module):
 
         x = self.model(img_input)
         return x
+
+
+def get_dmac(pretrain=True):
+    model = dmac.DMAC_VGG(NoLabels=2, gpu_idx=0, dim=(320, 320))
+    if pretrain:
+        model_path = "./weights/DMAC-adv.pth"
+        state_dict = torch.load(model_path, map_location='cuda:0')
+        model.load_state_dict(state_dict)
+    return model

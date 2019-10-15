@@ -85,7 +85,9 @@ def test(
     for i, ret in enumerate(data.load()):
         Xs, Xt, Ys, Yt, labels = ret
         if not isinstance(labels, torch.Tensor):
-            labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(device)
+            labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(
+                device
+            )
         labels = labels.float().to(device)
         Xs, Xt, Ys, Yt = (
             Xs.to(device),
@@ -117,6 +119,74 @@ def test(
             logger.add_scalar("test_loss/total", loss, iteration)
         if plot:
             plot_dir = Path("tmp_plot") / args.dataset
+            plot_dir.mkdir(exist_ok=True, parents=True)
+
+            for ii in range(Xt.shape[0]):
+                im1, im2 = torch_to_im(Xt[ii]), torch_to_im(Xs[ii])
+                gt1, gt2 = torch_to_im(Yt[ii]), torch_to_im(Ys[ii])
+                pred1, pred2 = torch_to_im(predt[ii]), torch_to_im(preds[ii])
+
+                fig, axes = plt.subplots(nrows=3, ncols=2)
+                axes[0, 0].imshow(im1)
+                axes[0, 1].imshow(im2)
+                axes[1, 0].imshow(gt1, cmap="jet")
+                axes[1, 1].imshow(gt2, cmap="jet")
+                axes[2, 0].imshow(pred1, cmap="jet")
+                axes[2, 1].imshow(pred2, cmap="jet")
+
+                fig.savefig(str(plot_dir / f"{i}_{ii}.jpg"))
+                plt.close("all")
+
+        if num is not None and i >= num:
+            break
+
+    out = metric.final()
+
+    test_loss = np.mean(loss_list)
+    print(f"\ntest loss : {test_loss:.4f}\n")
+
+    return out, test_loss
+
+
+@torch.no_grad()
+def test_dmac(
+    data, model, args, iteration, device, logger=None, num=None, plot=False
+):
+
+    model.eval()
+
+    metric = utils.Metric()
+    # metric_im = utils.Metric_image()
+    loss_list = []
+
+    if iteration is not None:
+        print(f"{iteration}")
+
+    for i, ret in enumerate(data.load()):
+        Xs, Xt, Ys, Yt, labels = ret
+        if not isinstance(labels, torch.Tensor):
+            labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(
+                device
+            )
+        labels = labels.float().to(device)
+        Xs, Xt, Ys, Yt = (
+            Xs.to(device),
+            Xt.to(device),
+            Ys.to(device),
+            Yt.to(device),
+        )
+
+        predt, preds, _ = model(Xt, Xs)
+
+        def fnp(x):
+            return x.data.cpu().numpy()
+
+        predt = torch.softmax(predt, dim=1)[:, [1]]
+        preds = torch.softmax(preds, dim=1)[:, [1]]
+
+        metric.update([fnp(Ys), fnp(Yt)], [fnp(preds), fnp(predt)])
+        if plot:
+            plot_dir = Path("tmp_plot_dmac") / args.dataset
             plot_dir.mkdir(exist_ok=True, parents=True)
 
             for ii in range(Xt.shape[0]):

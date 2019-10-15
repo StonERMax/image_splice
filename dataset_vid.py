@@ -266,7 +266,7 @@ class Dataset_vid(torch.utils.data.Dataset):
                         self.args.size,
                         interpolation=cv2.INTER_NEAREST,
                     )
-                    > 0.5
+                    > 0.05
                 )
                 Y_orig[i - offset] = (
                     cv2.resize(
@@ -274,7 +274,7 @@ class Dataset_vid(torch.utils.data.Dataset):
                         self.args.size,
                         interpolation=cv2.INTER_NEAREST,
                     )
-                    > 0.5
+                    > 0.05
                 )
 
             if forge_time is not None and forge_time[1] == -1:

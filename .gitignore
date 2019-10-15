@@ -13,3 +13,4 @@ back*/*
 *.json
 */.vscode/*
 */settings.json
+*.pth

@@ -16,10 +16,16 @@ def config():
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--batch-size", "-b", type=int, default=10)
     parser.add_argument("--max-epoch", type=int, default=100)
-    parser.add_argument("--resume", type=int, default=1, help="resume from epoch")
+    parser.add_argument(
+        "--resume", type=int, default=1, help="resume from epoch"
+    )
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--suffix", type=str, default="", help="model name suffix")
-    parser.add_argument("--ckpt", type=str, default=None, help="pretrained model path")
+    parser.add_argument(
+        "--suffix", type=str, default="", help="model name suffix"
+    )
+    parser.add_argument(
+        "--ckpt", type=str, default=None, help="pretrained model path"
+    )
     parser.add_argument("--test", action="store_true", help="test only mode")
     parser.add_argument(
         "--thres", type=float, default=0.5, help="threshold for detection"
@@ -33,6 +39,14 @@ def config():
     parser.add_argument("--gamma2", type=float, default=1e-5)
     parser.add_argument(
         "--bw", action="store_true", help="whether to add boundary loss"
+    )
+    parser.add_argument(
+        "--wo-det",
+        action="store_false",
+        help="whether to remove detection loss",
+    )
+    parser.add_argument(
+        "--plot", action="store_true", help="whether to plot during test"
     )
 
     args = parser.parse_args()
@@ -52,10 +66,16 @@ def config_video():
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--batch-size", "-b", type=int, default=10)
     parser.add_argument("--max-epoch", type=int, default=100)
-    parser.add_argument("--resume", type=int, default=1, help="resume from epoch")
+    parser.add_argument(
+        "--resume", type=int, default=1, help="resume from epoch"
+    )
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--suffix", type=str, default="", help="model name suffix")
-    parser.add_argument("--ckpt", type=str, default=None, help="pretrained model path")
+    parser.add_argument(
+        "--suffix", type=str, default="", help="model name suffix"
+    )
+    parser.add_argument(
+        "--ckpt", type=str, default=None, help="pretrained model path"
+    )
     parser.add_argument("--test", action="store_true", help="test only mode")
     parser.add_argument(
         "--thres", type=float, default=0.5, help="threshold for detection"
@@ -73,7 +93,14 @@ def config_video():
     parser.add_argument(
         "--bw", action="store_true", help="whether to add boundary loss"
     )
-
+    parser.add_argument(
+        "--plot", action="store_true", help="whether to plot during test"
+    )
+    parser.add_argument(
+        "--wo-det",
+        action="store_false",
+        help="whether to remove detection loss",
+    )
     # split
     parser.add_argument("--split", type=float, default=0.5)
 

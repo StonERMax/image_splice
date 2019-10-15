@@ -107,7 +107,7 @@ if __name__ == "__main__":
                 "Y_orig": Y_orig,
                 "forge_time": forge_time,
                 "gt_time": gt_time,
-                "D_pred": D_pred, 
+                "D_pred": D_pred,
                 "name": name
             },
             str(path / "data_pred.pt")

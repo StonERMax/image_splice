@@ -61,18 +61,6 @@ if __name__ == "__main__":
 
     tsfm = utils.CustomTransform(size=args.size)
 
-    # model
-    model = models.DOAModel(out_channel=args.out_channel)
-    model.to(device)
-
-    iteration = args.resume
-    init_ep = 0
-
-    if args.ckpt is not None:
-        checkpoint = torch.load(args.ckpt)
-        model.load_state_dict(checkpoint["model_state"], strict=False)
-
-    dataset = Dataset_vid(args=args, is_training=False)
     # * path to save
     root = Path("tmp_affinity") / args.dataset
 
@@ -104,13 +92,13 @@ if __name__ == "__main__":
         path = root / name
         path.mkdir(parents=True, exist_ok=True)
 
-        pdf = MultiPagePdf(
-            total_im=N * N * 2,
-            out_name=str(path / "affinity.pdf"),
-            nrows=N,
-            ncols=2,
-            figsize=(5, N * 2),
-        )
+        # pdf = MultiPagePdf(
+        #     total_im=N * N * 2,
+        #     out_name=str(path / "affinity.pdf"),
+        #     nrows=N,
+        #     ncols=2,
+        #     figsize=(5, N * 2),
+        # )
 
         Hist = np.zeros((N, N))
 
@@ -141,7 +129,7 @@ if __name__ == "__main__":
                     mask1 = mask2
 
                 rat = mask1.sum() * 1.0 / (mask2.sum() + 1e-8)
-                rat = rat if rat > 1 else 1.0 / rat
+                rat = rat if rat > 1 else 1.0 / (rat + 1e-8)
                 if rat < 0.6:
                     mask1 = mask2 = np.zeros_like(mask1)
 
@@ -160,19 +148,19 @@ if __name__ == "__main__":
 
                 Hist[i, j] = 1 - vcomp
 
-                ax = pdf.plot_one(im1_masked)
-                ax.set_xlabel(f"{j}", fontsize="small")
+                # ax = pdf.plot_one(im1_masked)
+                # ax.set_xlabel(f"{j}", fontsize="small")
 
-                ax = pdf.plot_one(im2_masked)
-                ax.set_xlabel(f"{i}", fontsize="small")
+                # ax = pdf.plot_one(im2_masked)
+                # ax.set_xlabel(f"{i}", fontsize="small")
 
-                ax.yaxis.set_label_position("right")
-                ax.set_ylabel(f"Hist: {1-vcomp:.4f}")
+                # ax.yaxis.set_label_position("right")
+                # ax.set_ylabel(f"Hist: {1-vcomp:.4f}")
 
-                if gt_ind is not None and j == gt_ind:
-                    ax.set_title("GT", fontsize="large")
-        pdf.final()
-        print("pdf saved")
+                # if gt_ind is not None and j == gt_ind:
+                #     ax.set_title("GT", fontsize="large")
+        # pdf.final()
+        # print("pdf saved")
 
         # matshow
         mat_gt = np.zeros((N, N))
