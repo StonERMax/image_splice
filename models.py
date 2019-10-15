@@ -139,7 +139,7 @@ class GCN(nn.Module):
         self.in_feat = in_feat
 
         self.conv = nn.Sequential(
-            nn.Conv2d(in_feat, in_feat, 3, padding=1),
+            nn.Conv2d(in_feat, in_feat, 1),
             nn.BatchNorm2d(in_feat),
             nn.ReLU(),
         )

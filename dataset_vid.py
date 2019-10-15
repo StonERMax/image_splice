@@ -121,8 +121,11 @@ class Dataset_vid(torch.utils.data.Dataset):
                 fname_src = os.path.join(
                     self.im_mani_root,
                     cur_file.parts[-2],
-                    f"{int(cur_file.stem)-offset:05d}.png",
+                    f"{int(cur_file.stem)-offset:d}.png",
                 )
+
+                assert os.path.exists(fname_target)
+                assert os.path.exists(fname_src)
 
                 fname_mask = os.path.join(self.mask_root, *cur_file.parts[-2:])
 

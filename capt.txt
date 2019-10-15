@@ -1,0 +1,462 @@
+
+-SSH- ~/l/splicing [video]× » python -m pdb match_vid_load.py                                                                                                                  (torch) 23:35:11
+[2] > /home/islama6a/local/splicing/match_vid_load.py(2)<module>()
+-> """
+(Pdb++) c
+Namespace(batch_size=10, bw=False, ckpt=None, dataset='tmp_youtube', gamma=0.1, gamma2=1e-05, lr=0.0001, max_epoch=100, model='base', out_channel=1, resume=1, root='/home/islama6a/dataset/vid
+eo_forge/', seed=0, size=(320, 320), split=0.7, suffix='', test=False, thres=0.5)
+Namespace(batch_size=10, bw=False, ckpt=None, dataset='tmp_youtube', gamma=0.1, gamma2=1e-05, lr=0.0001, max_epoch=100, model='base', out_channel=1, resume=1, root='/home/islama6a/dataset/vid
+eo_forge/', seed=0, size=(320, 320), split=0.7, suffix='', test=False, thres=0.5)
+Model Name: base_tmp_youtube
+0it [00:00, ?it/s]TMP_VIDEO_MATCH/2_CAT_0002
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.999999995
+
+         F_src : 0.8639
+         F_forge : 0.9284
+         F_all : 0.9052
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+1it [00:02,  2.56s/it]TMP_VIDEO_MATCH/10_BOAT_0009
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999975
+
+         F_src : 0.5345
+         F_forge : 0.8870
+         F_all : 0.6719
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+2it [00:07,  3.14s/it]TMP_VIDEO_MATCH/1_MOTORBIKE_0009
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9333333327111111
+
+         F_src : 0.2882
+         F_forge : 0.5487
+         F_all : 0.4693
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+3it [00:45, 13.68s/it]TMP_VIDEO_MATCH/9_COW_0012
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999985714286
+
+         F_src : 0.5984
+         F_forge : 0.6767
+         F_all : 0.6486
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+4it [01:03, 14.92s/it]TMP_VIDEO_MATCH/1_MOTORBIKE_0011
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999966666667
+
+         F_src : 0.7373
+         F_forge : 0.8857
+         F_all : 0.8564
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+5it [01:07, 11.68s/it]TMP_VIDEO_MATCH/9_COW_0018
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999966666667
+
+         F_src : 0.7946
+         F_forge : 0.8803
+         F_all : 0.8578
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+6it [01:10,  9.08s/it]TMP_VIDEO_MATCH/2_CAT_0017
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999988888888
+
+         F_src : 0.7653
+         F_forge : 0.9248
+         F_all : 0.8436
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+7it [01:30, 12.54s/it]TMP_VIDEO_MATCH/4_BIRD_0012
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999991666666
+
+         F_src : 0.9058
+         F_forge : 0.9604
+         F_all : 0.9378
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+8it [02:14, 21.85s/it]TMP_VIDEO_MATCH/8_AEROPLANE_0013
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.999999995
+
+         F_src : 0.7231
+         F_forge : 0.7799
+         F_all : 0.7653
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+9it [02:17, 16.08s/it]TMP_VIDEO_MATCH/6_HORSE_0022
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999993333333
+
+         F_src : 0.7161
+         F_forge : 0.7506
+         F_all : 0.7336
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+10it [03:07, 26.45s/it]TMP_VIDEO_MATCH/8_AEROPLANE_0011
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.999999995
+
+         F_src : 0.7904
+         F_forge : 0.8195
+         F_all : 0.8051
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+11it [03:09, 18.98s/it]TMP_VIDEO_MATCH/2_CAT_0020
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999994444444
+
+         F_src : 0.8332
+         F_forge : 0.9188
+         F_all : 0.8976
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+12it [03:57, 27.90s/it]TMP_VIDEO_MATCH/5_DOG_0036
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999983333333
+
+         F_src : 0.7261
+         F_forge : 0.9391
+         F_all : 0.8453
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+13it [04:07, 22.52s/it]TMP_VIDEO_MATCH/10_BOAT_0003
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999992307692
+
+         F_src : 0.8313
+         F_forge : 0.9157
+         F_all : 0.9043
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+14it [04:47, 27.59s/it]TMP_VIDEO_MATCH/10_BOAT_0017
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999992307692
+
+         F_src : 0.9078
+         F_forge : 0.8974
+         F_all : 0.9050
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+15it [05:35, 33.64s/it]TMP_VIDEO_MATCH/6_HORSE_0012
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999988888888
+
+         F_src : 0.8295
+         F_forge : 0.8096
+         F_all : 0.8213
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+16it [05:53, 29.06s/it]TMP_VIDEO_MATCH/9_COW_0013
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999991666666
+
+         F_src : 0.5553
+         F_forge : 0.7208
+         F_all : 0.6718
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+17it [06:22, 29.03s/it]TMP_VIDEO_MATCH/5_DOG_0030
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.09090909082644627
+
+         F_src : 0.0116
+         F_forge : 0.0358
+         F_all : 0.0274
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+18it [06:44, 27.02s/it]TMP_VIDEO_MATCH/5_DOG_0010
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999994117647
+
+         F_src : 0.8197
+         F_forge : 0.9526
+         F_all : 0.8997
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+19it [07:39, 35.22s/it]TMP_VIDEO_MATCH/10_BOAT_0007
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999994444444
+
+         F_src : 0.8024
+         F_forge : 0.9181
+         F_all : 0.8573
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+20it [08:29, 39.84s/it]TMP_VIDEO_MATCH/0_BOAT_0011
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.999999999090909
+
+         F_src : 0.7407
+         F_forge : 0.8706
+         F_all : 0.8423
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+21it [08:49, 33.68s/it]TMP_VIDEO_MATCH/4_BIRD_0007
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999993333333
+
+         F_src : 0.9186
+         F_forge : 0.9358
+         F_all : 0.9272
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+22it [09:45, 40.39s/it]TMP_VIDEO_MATCH/2_CAT_0008
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+match_vid_load.py:2: RuntimeWarning: divide by zero encountered in double_scalars
+  """
+pdf saved
+        Time IoU: 0.124999999921875
+
+         F_src : 0.0653
+         F_forge : 0.0766
+         F_all : 0.0734
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+23it [10:41, 45.30s/it]TMP_VIDEO_MATCH/4_BIRD_0010
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.999999999090909
+
+         F_src : 0.8189
+         F_forge : 0.8556
+         F_all : 0.8372
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+24it [11:10, 40.21s/it]TMP_VIDEO_MATCH/1_MOTORBIKE_0012
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999966666667
+
+         F_src : 0.3109
+         F_forge : 0.8682
+         F_all : 0.5306
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+25it [11:13, 29.08s/it]TMP_VIDEO_MATCH/8_AEROPLANE_0001
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999975
+
+         F_src : 0.7729
+         F_forge : 0.8117
+         F_all : 0.8000
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+26it [11:20, 22.55s/it]TMP_VIDEO_MATCH/5_DOG_0027
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999983333333
+
+         F_src : 0.8522
+         F_forge : 0.9482
+         F_all : 0.8996
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+27it [11:35, 20.29s/it]TMP_VIDEO_MATCH/2_CAT_0016
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+match_vid_load.py:2: RuntimeWarning: divide by zero encountered in double_scalars
+  """
+pdf saved
+        Time IoU: 0.8333333328703704
+
+         F_src : 0.5293
+         F_forge : 0.7924
+         F_all : 0.6365
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+28it [12:19, 27.42s/it]TMP_VIDEO_MATCH/10_BOAT_0005
+match_vid_load.py:2: RuntimeWarning: divide by zero encountered in double_scalars
+  """
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999992307692
+
+         F_src : 0.7131
+         F_forge : 0.8307
+         F_all : 0.7754
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+29it [13:02, 31.91s/it]TMP_VIDEO_MATCH/5_DOG_0021
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+match_vid_load.py:2: RuntimeWarning: divide by zero encountered in double_scalars
+  """
+pdf saved
+        Time IoU: 0.9999999988888888
+
+         F_src : 0.8342
+         F_forge : 0.8993
+         F_all : 0.8649
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+30it [13:30, 30.98s/it]TMP_VIDEO_MATCH/5_DOG_0020
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999991666666
+
+         F_src : 0.6101
+         F_forge : 0.8776
+         F_all : 0.7317
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+31it [14:05, 32.05s/it]TMP_VIDEO_MATCH/10_BOAT_0012
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999988888888
+
+         F_src : 0.9397
+         F_forge : 0.9569
+         F_all : 0.9510
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+32it [14:24, 28.12s/it]TMP_VIDEO_MATCH/5_DOG_0009
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.249999999375
+
+         F_src : 0.2995
+         F_forge : 0.4087
+         F_all : 0.3529
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+33it [14:28, 20.90s/it]TMP_VIDEO_MATCH/6_HORSE_0024
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999992857143
+
+         F_src : 0.8369
+         F_forge : 0.9572
+         F_all : 0.8975
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+34it [15:08, 26.63s/it]TMP_VIDEO_MATCH/5_DOG_0026
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float64 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+pdf saved
+        Time IoU: 0.9999999992857143
+
+         F_src : 0.8916
+         F_forge : 0.9485
+         F_all : 0.9307
+/home/islama6a/anaconda3/envs/torch/lib/python3.7/site-packages/skimage/util/dtype.py:135: UserWarning: Possible precision loss when converting from float32 to uint8
+  .format(dtypeobj_in, dtypeobj_out))
+35it [15:37, 26.80s/it]
+FINAL Score:
+Source : 0.6676
+Forge : 0.7828
+Mask : 0.7511
+The program finished and will be restarted
+[2] > /home/islama6a/local/splicing/match_vid_load.py(2)<module>()
+-> """
+(Pdb++) q
+
+-SSH- ~/l/splicing [video]× » clc                                                                                                                                              (torch) 00:01:52
+
+-SSH- ~/l/splicing [video]× »                                                                                                                                                  (torch) 00:04:29
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

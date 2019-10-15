@@ -52,6 +52,9 @@ if __name__ == "__main__":
 
     model_params = model.parameters()
 
+    if torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model)
+
     # optimizer
     optimizer = torch.optim.Adam(model_params, lr=args.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -67,6 +70,13 @@ if __name__ == "__main__":
 
     data_test = dataset_vid.Dataset_vid(args, is_training=False)
     if args.test:
+        with torch.no_grad():
+            for i, ret in enumerate(data_test.load()):
+                Xs, Xt, Ys, Yt, labels = ret
+                Xs, Xt = (Xs.to(device), Xt.to(device))
+                _ = model(Xs, Xt)
+                if i > 5:
+                    break
         test(
             data_test,
             model,
@@ -75,7 +85,7 @@ if __name__ == "__main__":
             device=device,
             logger=None,
             num=5,
-            plot=False,
+            plot=True,
         )
         logger.close()
         raise SystemExit
