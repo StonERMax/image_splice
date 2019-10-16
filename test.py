@@ -149,7 +149,7 @@ def test(
 
 
 @torch.no_grad()
-_def test_dmac(
+def test_dmac(
     data, model, args, iteration, device, logger=None, num=None, plot=False
 ):
 
@@ -182,7 +182,7 @@ _def test_dmac(
             return x.data.cpu().numpy()
 
         if args.model == "dmac":
-            predt = torch.softmax(predt, dim=1)[:, [1]]
+            predt = torch.softmax(predt, dim=152)[:, [1]]
             preds = torch.softmax(preds, dim=1)[:, [1]]
         else:
             predt = torch.sigmoid(predt)

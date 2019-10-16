@@ -65,15 +65,30 @@ class Dataset_vid(torch.utils.data.Dataset):
         # self.test_index = ind[ind_unto:]
 
         filename = f"./split/{self.videoset}.npz"
+
         dat = np.load(filename)
         self.train_index = dat['train']
         self.test_index = dat['test']
+
+        # train_names = [self.data[i]["name"] for i in self.train_index]
+        # test_names = [self.data[i]["name"] for i in self.test_index]
 
         # np.savez(
         #     filename,
         #     train=self.train_index,
         #     test=self.test_index,
         # )
+
+        # np.savetxt(
+        #     f"./split/{self.videoset}_train.txt",
+        #     train_names, fmt="%s"
+        # )
+        # np.savetxt(
+        #     f"./split/{self.videoset}_test.txt",
+        #     test_names, fmt="%s"
+        # )
+        # print("Finished test")
+        # raise SystemExit
 
     def _parse_all_images_with_gt(self):
         self.__im_files_with_gt = []
