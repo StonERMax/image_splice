@@ -13,8 +13,8 @@ env CUDA_VISIBLE_DEVICES=2 python  match_vid_save.py  --model dmvn \
     --dataset davis --ckpt ./ckpt/dmvn_davis.pkl
 env CUDA_VISIBLE_DEVICES=2 python  match_vid_save.py  --model dmac \
     --dataset davis --ckpt ./ckpt/dmac_davis.pkl
-# env CUDA_VISIBLE_DEVICES=2 python  match_vid_save.py  --model base \
-#     --dataset davis --ckpt ./ckpt/base_davis.pkl
+env CUDA_VISIBLE_DEVICES=2 python  match_vid_save.py  --model base \
+    --dataset davis --ckpt ./ckpt/base_davis.pkl
 
 
 # python match_vid_load.py --dataset davis --model base >> ./log_out/davis/base.txt

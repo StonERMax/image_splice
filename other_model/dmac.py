@@ -267,14 +267,14 @@ class DMAC_VGG_Module(nn.Module):
         """
         self.gpu = gpu_idx
         new_indices = get_mapping_indices(h, w)
-        self.new_indices = torch.tensor(new_indices, dtype=torch.long)
+        self.new_indices = torch.tensor(new_indices, dtype=torch.long).cuda(self.gpu)
         self.Corr = Correlation_Module()
 
         """
         The corr maps pooling modules
         """
         sort_indices = [0, 1, 2, 3, 4, 5]
-        sort_indices = torch.tensor(sort_indices, dtype=torch.long)
+        sort_indices = torch.tensor(sort_indices, dtype=torch.long).cuda(self.gpu)
         self.poolopt_on_corrmat = Poolopt_on_Corrmat(sort_indices)
 
         """
