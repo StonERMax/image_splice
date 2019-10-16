@@ -149,7 +149,7 @@ def test(
 
 
 @torch.no_grad()
-def test_dmac(
+_def test_dmac(
     data, model, args, iteration, device, logger=None, num=None, plot=False
 ):
 

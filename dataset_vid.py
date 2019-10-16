@@ -210,7 +210,7 @@ class Dataset_vid(torch.utils.data.Dataset):
         )
         return loader
 
-    def load_videos_all(self, is_training=False, shuffle=True, to_tensor=True):
+    def load_videos_all(self, is_training=False, shuffle=False, to_tensor=True):
         if is_training:
             idx = self.train_index
         else:
