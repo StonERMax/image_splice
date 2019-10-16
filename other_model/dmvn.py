@@ -286,18 +286,14 @@ class dmvn(nn.Module):
         """
         self.gpu = gpu_idx
         new_indices = get_mapping_indices(h, w)
-        self.new_indices = torch.tensor(new_indices, dtype=torch.long).cuda(
-            self.gpu
-        )
+        self.new_indices = torch.tensor(new_indices, dtype=torch.long)
         self.Corr = Correlation_Module()
 
         """
         The corr maps pooling modules
         """
         sort_indices = [0, 1, 2, 3, 4, 5]
-        sort_indices = torch.tensor(sort_indices, dtype=torch.long).cuda(
-            self.gpu
-        )
+        sort_indices = torch.tensor(sort_indices, dtype=torch.long)
         self.poolopt_on_corrmat = Poolopt_on_Corrmat(sort_indices)
 
     def forward(self, x1, x2):
@@ -341,7 +337,7 @@ class dmvn(nn.Module):
 
 
 def DMVN_VGG(NoLabels=2, gpu_idx=0, dim=(320, 320)):
-    w = dim[1] / 16
-    h = dim[0] / 16
+    w = int(dim[1] / 16)
+    h = int(dim[0] / 16)
     model = dmvn(NoLabels, gpu_idx, h, w)
     return model

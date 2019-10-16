@@ -413,7 +413,7 @@ class Discriminator(nn.Module):
         return x
 
 
-def get_dmac(pretrain=True, model_name="dmac"):
+def get_dmac(model_name="dmac", pretrain=True):
 
     if model_name == "dmac":
         from other_model import dmac

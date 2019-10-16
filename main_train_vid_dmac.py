@@ -93,7 +93,7 @@ if __name__ == "__main__":
     logger = SummaryWriter("./logs/" + model_name)
 
     # model
-    model = models.get_dmac(args.model)
+    model = models.get_dmac(model_name=args.model)
 
     iteration = args.resume
     init_ep = 0
