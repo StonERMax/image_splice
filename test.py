@@ -181,8 +181,12 @@ def test_dmac(
         def fnp(x):
             return x.data.cpu().numpy()
 
-        predt = torch.softmax(predt, dim=1)[:, [1]]
-        preds = torch.softmax(preds, dim=1)[:, [1]]
+        if args.model == "dmac":
+            predt = torch.softmax(predt, dim=1)[:, [1]]
+            preds = torch.softmax(preds, dim=1)[:, [1]]
+        else:
+            predt = torch.sigmoid(predt)
+            preds = torch.sigmoid(preds)
 
         metric.update([fnp(Ys), fnp(Yt)], [fnp(preds), fnp(predt)])
         if plot:

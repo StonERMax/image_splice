@@ -105,7 +105,7 @@ if __name__ == "__main__":
             with torch.no_grad():
                 out1, out2, _ = model(Xr, Xt)
 
-            if args.model in ("dmvn", "dmac"):
+            if args.model in ("dmac"):
                 out1 = torch.softmax(out1, dim=1)[:, 1]
                 out2 = torch.softmax(out2, dim=1)[:, 1]
             else:
