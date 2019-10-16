@@ -70,6 +70,7 @@ if __name__ == "__main__":
 
     metric = utils.Metric(names=["source", "forge", "all"])
 
+    counter = 0
     for fldr in tqdm(data_path.iterdir()):
         print(str(fldr).upper())
         if not fldr.is_dir():
@@ -241,6 +242,10 @@ if __name__ == "__main__":
         create_volume.create(
             Pred_mask_src, Pred_mask_forge, path=folder_name / "pred_vol.png"
         )
+
+        counter += 1
+        if counter > 10:
+            break
 
     print("FINAL Score:")
     metric.final()
