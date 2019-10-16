@@ -38,18 +38,23 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
 
     predt, preds, pred_det = model(Xt, Xs)
 
-    criterion = nn.NLLLoss().cuda(device)
+    if args.model == "dmac":
+        criterion = nn.NLLLoss().cuda(device)
 
-    log_op = F.log_softmax(predt, dim=1)
-    log_oq = F.log_softmax(preds, dim=1)
+        log_op = F.log_softmax(predt, dim=1)
+        log_oq = F.log_softmax(preds, dim=1)
 
-    Yq = Ys.squeeze(1).long()
-    Yp = Yt.squeeze(1).long()
+        Yq = Ys.squeeze(1).long()
+        Yp = Yt.squeeze(1).long()
 
-    loss_p = criterion(log_op, Yp)
-    loss_q = criterion(log_oq, Yq)
+        loss_p = criterion(log_op, Yp)
+        loss_q = criterion(log_oq, Yq)
 
-    loss = loss_p + loss_q
+        loss = loss_p + loss_q
+    elif args.model == "dmvn":
+        loss_p = BCE_loss(predt, Yt, with_logits=True)
+        loss_q = BCE_loss(preds, Ys, with_logits=True)
+        loss = loss_p + loss_q
 
     optimizer.zero_grad()
     loss.backward()
@@ -106,8 +111,8 @@ if __name__ == "__main__":
 
     model.to(device)
 
-    if torch.cuda.device_count() > 1:
-        model = nn.DataParallel(model)
+    # if torch.cuda.device_count() > 1:
+    #     model = nn.DataParallel(model)
 
     # optimizer
     optimizer = torch.optim.Adam(model_params, lr=args.lr)

@@ -341,7 +341,7 @@ class dmvn(nn.Module):
 
 
 def DMVN_VGG(NoLabels=2, gpu_idx=0, dim=(320, 320)):
-    w = int(dim[1] / 16)
-    h = int(dim[0] / 16)
+    w = dim[1] // 16
+    h = dim[0] // 16
     model = dmvn(NoLabels, gpu_idx, h, w)
     return model
