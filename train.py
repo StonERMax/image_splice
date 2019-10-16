@@ -53,3 +53,44 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
         logger.add_scalar("train_loss/total", loss, iteration)
 
     return loss_val
+
+
+def train_dmac(D, model, optimizer, args, iteration, device, logger=None):
+    module = model.module if isinstance(model, nn.DataParallel) else model
+    module.train()
+
+    Xs, Xt, Ys, Yt, labels = D
+    if not isinstance(labels, torch.Tensor):
+        labels = torch.from_numpy(np.array(labels, dtype=np.float32))
+    labels = labels.float().to(device)
+    Xs, Xt, Ys, Yt = Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device)
+
+    predt, preds, pred_det = model(Xt, Xs)
+
+    criterion = nn.NLLLoss().cuda(device)
+
+    log_op = F.log_softmax(predt, dim=1)
+    log_oq = F.log_softmax(preds, dim=1)
+
+    Yq = Ys.squeeze(1).long()
+    Yp = Yt.squeeze(1).long()
+
+    loss_p = criterion(log_op, Yp)
+    loss_q = criterion(log_oq, Yq)
+
+    loss = loss_p + loss_q
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    loss_val = loss.data.cpu().numpy()
+    print(
+        f"{iteration:5d}: f(probe+donor+det): {tval(loss_p):.4f} + "
+        + f"{tval(loss_q):.4f}"
+    )
+
+    if logger is not None:
+        logger.add_scalar("train_loss/total", loss, iteration)
+
+    return loss_val
