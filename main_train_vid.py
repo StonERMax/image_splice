@@ -41,7 +41,6 @@ if __name__ == "__main__":
 
     # model
     model = models.DOAModel(out_channel=args.out_channel)
-    model.to(device)
 
     iteration = args.resume
     init_ep = 0
@@ -51,6 +50,8 @@ if __name__ == "__main__":
         model.load_state_dict(checkpoint["model_state"], strict=False)
 
     model_params = model.parameters()
+
+    model.to(device)
 
     if torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)

@@ -43,7 +43,10 @@ if __name__ == "__main__":
     transform = utils.CustomTransform(size=args.size)
 
     # model
-    model = models.DOAModel(out_channel=args.out_channel)
+    if args.model in ("dmvn", "dmac"):
+        model = models.get_dmac(args.model)
+    else:
+        model = models.DOAModel(out_channel=args.out_channel)
     model.to(device)
 
     iteration = args.resume
@@ -52,10 +55,12 @@ if __name__ == "__main__":
     if args.ckpt is not None:
         checkpoint = torch.load(args.ckpt)
         model.load_state_dict(checkpoint["model_state"], strict=False)
+    if torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model)
 
     dataset = Dataset_vid(args=args, is_training=False)
 
-    root = Path("tmp_video_match") / args.dataset
+    root = Path("tmp_video_match") / args.dataset / args.model
 
     def to_np(x):
         return x.data.cpu().numpy()
@@ -70,6 +75,8 @@ if __name__ == "__main__":
             _ = model(Xs, Xt)
             if i > 5:
                 break
+
+    model.eval()
 
     for ret in tqdm(dataset.load_videos_all(is_training=False,
                                             shuffle=True, to_tensor=True)):
@@ -97,8 +104,15 @@ if __name__ == "__main__":
 
             with torch.no_grad():
                 out1, out2, _ = model(Xr, Xt)
-            D_pred[i, :, 0] = out1.squeeze()
-            D_pred[i, :, 1] = out2.squeeze()
+
+            if args.model in ("dmvn", "dmac"):
+                out1 = torch.softmax(out1, dim=1)[:, 1]
+                out2 = torch.softmax(out2, dim=1)[:, 1]
+            else:
+                out1, out2 = torch.sigmoid(out1), torch.sigmoid(out2)
+
+            D_pred[i, :, 0] = out1.squeeze().data.cpu()
+            D_pred[i, :, 1] = out2.squeeze().data.cpu()
 
         torch.save(
             {

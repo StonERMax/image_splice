@@ -62,11 +62,11 @@ if __name__ == "__main__":
     tsfm = utils.CustomTransform(size=args.size)
 
     # * path to save
-    root = Path("tmp_affinity") / args.dataset
+    root = Path("tmp_affinity") / args.dataset / args.model
 
     mask_processor = utils.Preprocessor(args)
 
-    data_path = Path("./tmp_video_match") / args.dataset
+    data_path = Path("./tmp_video_match") / args.dataset / args.model
 
     metric = utils.Metric(names=["source", "forge", "all"])
 
@@ -112,8 +112,9 @@ if __name__ == "__main__":
                 gt_ind = None
             out1 = D_pred[i, :, 0]  # source
             out2 = D_pred[i, :, 1]  # forge
-            out1 = out1.squeeze().data.cpu().numpy()
-            out2 = out2.squeeze().data.cpu().numpy()
+
+            out1 = out1.squeeze()
+            out2 = out2.squeeze()
 
             for j in range(N):
                 mask1 = out1[j]
@@ -211,7 +212,7 @@ if __name__ == "__main__":
         )
 
         # save all images
-        folder_name = Path("tmp_out_final") / args.dataset / name
+        folder_name = Path("tmp_out_final") / args.dataset / args.model / name
 
         folder_gt = folder_name / "gt"
         folder_pred = folder_name / "pred"

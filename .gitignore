@@ -14,3 +14,4 @@ back*/*
 */.vscode/*
 */settings.json
 *.pth
+log*/*

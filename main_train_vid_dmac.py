@@ -75,7 +75,7 @@ if __name__ == "__main__":
         device = torch.device("cpu")
 
     args = config.config_video()
-    args.model = "dmac"
+
 
     # seed
     np.random.seed(args.seed)
@@ -93,8 +93,7 @@ if __name__ == "__main__":
     logger = SummaryWriter("./logs/" + model_name)
 
     # model
-    model = models.get_dmac()
-    model.to(device)
+    model = models.get_dmac(args.model)
 
     iteration = args.resume
     init_ep = 0
@@ -104,6 +103,8 @@ if __name__ == "__main__":
         model.load_state_dict(checkpoint["model_state"], strict=False)
 
     model_params = model.parameters()
+
+    model.to(device)
 
     if torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)

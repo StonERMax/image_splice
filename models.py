@@ -9,7 +9,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 import skimage
 import cv2
-from other_model import dmac
 
 
 def get_topk(x, k=10, dim=-3):
@@ -414,10 +413,19 @@ class Discriminator(nn.Module):
         return x
 
 
-def get_dmac(pretrain=True):
-    model = dmac.DMAC_VGG(NoLabels=2, gpu_idx=0, dim=(320, 320))
-    if pretrain:
+def get_dmac(pretrain=True, model_name="dmac"):
+
+    if model_name == "dmac":
+        from other_model import dmac
+        model = dmac.DMAC_VGG(NoLabels=2, gpu_idx=0, dim=(320, 320))
         model_path = "./weights/DMAC-adv.pth"
+    elif model_name == "dmvn":
+        from other_model import dmvn
+        model = dmvn.DMVN_VGG(NoLabels=2, gpu_idx=0, dim=(320, 320))
+        model_path = "./weights/DMVN-BN.pth"
+    else:
+        raise AssertionError
+    if pretrain:
         state_dict = torch.load(model_path, map_location='cuda:0')
         model.load_state_dict(state_dict)
     return model
