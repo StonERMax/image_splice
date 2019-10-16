@@ -78,6 +78,7 @@ if __name__ == "__main__":
 
     model.eval()
 
+    counter = 0
     for ret in tqdm(dataset.load_videos_all(is_training=False,
                                             shuffle=True, to_tensor=True)):
         X, Y_forge, forge_time, Y_orig, gt_time, name = ret
@@ -103,7 +104,10 @@ if __name__ == "__main__":
                 gt_ind = None
 
             with torch.no_grad():
-                out1, out2, _ = model(Xr, Xt)
+                if args.model in ("dmac", "dmvn"):
+                    out2, out1, _ = model(Xt, Xr)
+                else:
+                    out1, out2, _ = model(Xr, Xt)
 
             if args.model in ("dmac"):
                 out1 = torch.softmax(out1, dim=1)[:, 1]
@@ -126,3 +130,8 @@ if __name__ == "__main__":
             },
             str(path / "data_pred.pt")
         )
+
+        counter += 1
+
+        if counter > 2:
+            break
