@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
                 rat = mask1.sum() * 1.0 / (mask2.sum() + 1e-8)
                 rat = rat if rat > 1 else 1.0 / (rat + 1e-8)
-                if rat < 0.6:
+                if rat < 0.6 or (rat > 0.9999 and rat < 1.01):
                     mask1 = mask2 = np.zeros_like(mask1)
 
                 D_np[i, j, 0] = mask1
