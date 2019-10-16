@@ -58,11 +58,22 @@ class Dataset_vid(torch.utils.data.Dataset):
         self._parse_source_target()
 
     def split_train_test(self):
-        ind = np.arange(len(self.data))
-        np.random.shuffle(ind)
-        ind_unto = int(len(self.data) * self.args.split)
-        self.train_index = ind[:ind_unto]
-        self.test_index = ind[ind_unto:]
+        # ind = np.arange(len(self.data))
+        # np.random.shuffle(ind)
+        # ind_unto = int(len(self.data) * self.args.split)
+        # self.train_index = ind[:ind_unto]
+        # self.test_index = ind[ind_unto:]
+
+        filename = f"./split/{self.videoset}.npz"
+        dat = np.load(filename)
+        self.train_index = dat['train']
+        self.test_index = dat['test']
+
+        # np.savez(
+        #     filename,
+        #     train=self.train_index,
+        #     test=self.test_index,
+        # )
 
     def _parse_all_images_with_gt(self):
         self.__im_files_with_gt = []
@@ -123,9 +134,7 @@ class Dataset_vid(torch.utils.data.Dataset):
                 else:
                     _fsrc = f"{int(cur_file.stem)-offset:05d}.png"
                 fname_src = os.path.join(
-                    self.im_mani_root,
-                    cur_file.parts[-2],
-                    _fsrc,
+                    self.im_mani_root, cur_file.parts[-2], _fsrc
                 )
 
                 assert os.path.exists(fname_target)
