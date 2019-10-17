@@ -104,10 +104,7 @@ if __name__ == "__main__":
                 gt_ind = None
 
             with torch.no_grad():
-                if args.model in ("dmac", "dmvn"):
-                    out2, out1, _ = model(Xt, Xr)
-                else:
-                    out1, out2, _ = model(Xr, Xt)
+                out1, out2, _ = model(Xr, Xt)
 
             if args.model in ("dmac"):
                 out1 = torch.softmax(out1, dim=1)[:, 1]

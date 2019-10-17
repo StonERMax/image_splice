@@ -65,7 +65,7 @@ def train_dmac(D, model, optimizer, args, iteration, device, logger=None):
     labels = labels.float().to(device)
     Xs, Xt, Ys, Yt = Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device)
 
-    predt, preds, pred_det = model(Xt, Xs)
+    preds, predt, pred_det = model(Xs, Xt)
 
     criterion = nn.NLLLoss().cuda(device)
 

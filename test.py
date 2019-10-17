@@ -176,7 +176,7 @@ def test_dmac(
             Yt.to(device),
         )
 
-        predt, preds, _ = model(Xt, Xs)
+        preds, predt, _ = model(Xs, Xt)
 
         def fnp(x):
             return x.data.cpu().numpy()

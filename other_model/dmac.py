@@ -284,7 +284,7 @@ class DMAC_VGG_Module(nn.Module):
             Classify_Module, [6, 12, 18, 24], [6, 12, 18, 24], 16 * 3, NoLabels
         )
 
-    def forward(self, x1, x2):
+    def forward(self, x2, x1):
         b, c, h, w = x1.shape
         x1_3 = self.Scale_3(x1)
         x2_3 = self.Scale_3(x2)
@@ -318,7 +318,7 @@ class DMAC_VGG_Module(nn.Module):
             out2, size=(h, w), mode="bilinear", align_corners=True
         )
 
-        return out1, out2, None  # ,c1,c2
+        return out2, out1, None  # ,c1,c2
 
     def _make_pred_layer(
         self, block, dilation_series, padding_series, inputscale, NoLabels

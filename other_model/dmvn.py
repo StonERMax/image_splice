@@ -300,7 +300,7 @@ class dmvn(nn.Module):
         )
         self.poolopt_on_corrmat = Poolopt_on_Corrmat(sort_indices)
 
-    def forward(self, x1, x2):
+    def forward(self, x2, x1):
         # base feature extraction
         b, c, h, w = x1.shape
         x1 = self.base(x1)
@@ -337,7 +337,7 @@ class dmvn(nn.Module):
             out2, size=(h, w), mode="bilinear", align_corners=True
         )
 
-        return out1, out2, None  # ,c1,c2
+        return out2, out1, None  # ,c1,c2
 
 
 def DMVN_VGG(NoLabels=2, gpu_idx=0, dim=(320, 320)):
