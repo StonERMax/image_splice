@@ -15,3 +15,4 @@ back*/*
 */settings.json
 *.pth
 log*/*
+*.mat
