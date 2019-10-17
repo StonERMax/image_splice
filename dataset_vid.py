@@ -30,9 +30,7 @@ class Dataset_vid(torch.utils.data.Dataset):
     """class for dataset of image manipulation
     """
 
-    def __init__(
-        self, args=None, transform=None, videoset=None, is_training=True
-    ):
+    def __init__(self, args=None, transform=None, videoset=None, is_training=True):
         # args contain necessary argument
         self.args = args
         if videoset is None:
@@ -67,8 +65,8 @@ class Dataset_vid(torch.utils.data.Dataset):
         filename = f"./split/{self.videoset}.npz"
 
         dat = np.load(filename)
-        self.train_index = dat['train']
-        self.test_index = dat['test']
+        self.train_index = dat["train"]
+        self.test_index = dat["test"]
 
         # train_names = [self.data[i]["name"] for i in self.train_index]
         # test_names = [self.data[i]["name"] for i in self.test_index]
@@ -103,9 +101,7 @@ class Dataset_vid(torch.utils.data.Dataset):
                     )
                     if not os.path.exists(mask_file):
                         mask_file = os.path.join(
-                            str(self.mask_root),
-                            name.name,
-                            (_file.stem + ".jpg"),
+                            str(self.mask_root), name.name, (_file.stem + ".jpg")
                         )
                     try:
                         assert os.path.exists(mask_file)
@@ -141,21 +137,26 @@ class Dataset_vid(torch.utils.data.Dataset):
             for i, cur_file in enumerate(filenames):
                 if i < offset:
                     continue
-                fname_target = os.path.join(
-                    self.im_mani_root, *cur_file.parts[-2:]
-                )
+                fname_target = os.path.join(self.im_mani_root, *cur_file.parts[-2:])
                 if self.videoset == "davis":
+                    _fsrc = f"{int(cur_file.stem)-offset:d}.png"
+                elif self.videoset == "SegTrackv2":
                     _fsrc = f"{int(cur_file.stem)-offset:d}.png"
                 else:
                     _fsrc = f"{int(cur_file.stem)-offset:05d}.png"
-                fname_src = os.path.join(
-                    self.im_mani_root, cur_file.parts[-2], _fsrc
-                )
+                fname_src = os.path.join(self.im_mani_root, cur_file.parts[-2], _fsrc)
 
                 assert os.path.exists(fname_target)
                 assert os.path.exists(fname_src)
 
                 fname_mask = os.path.join(self.mask_root, *cur_file.parts[-2:])
+                if not os.path.exists(fname_mask):
+                    fname_mask = os.path.join(
+                        self.mask_root,
+                        cur_file.parts[-2],
+                        Path(fname_mask).stem + ".jpg",
+                    )
+                    assert os.path.exists(fname_mask)
 
                 _list.append((ind, fname_src, fname_target, fname_mask))
 
@@ -278,9 +279,7 @@ class Dataset_vid(torch.utils.data.Dataset):
                 fname = os.path.join(self.im_mani_root, *cur_file.parts[-2:])
                 im = skimage.img_as_float32(io.imread(fname))
 
-                X[i] = cv2.resize(
-                    im, self.args.size, interpolation=cv2.INTER_LINEAR
-                )
+                X[i] = cv2.resize(im, self.args.size, interpolation=cv2.INTER_LINEAR)
                 if mask_new is None:
                     mask_new = np.zeros(self.args.size, dtype=np.float32)
                     mask_orig = np.zeros(self.args.size, dtype=np.float32)
@@ -368,9 +367,7 @@ class Dataset_vid(torch.utils.data.Dataset):
             Xref[k] = im_o  # * (1 - (mask_ref == 0.5)
             #   [..., None]).astype(im_o.dtype)
             Xtem[k] = im_f  # * ((mask_tem == 1)[..., None]).astype(im_f.dtype)
-            Yref[
-                k
-            ] = mask_ref  # * (1 - (mask_ref == 0.5)).astype(mask_ref.dtype)
+            Yref[k] = mask_ref  # * (1 - (mask_ref == 0.5)).astype(mask_ref.dtype)
             Ytem[k] = mask_tem  # * (mask_tem == 1).astype(mask_tem.dtype)
 
         if to_tensor:
@@ -386,12 +383,8 @@ class Dataset_vid(torch.utils.data.Dataset):
             Yreft = torch.zeros(batch_size, 1, *self.args.size)
             Ytemt = torch.zeros(batch_size, 1, *self.args.size)
             for k in range(batch_size):
-                Xreft[k], Yreft[k] = tfm_o(
-                    Xref[k], Yref[k], other_tfm=other_tfm
-                )
-                Xtemt[k], Ytemt[k] = tfm_f(
-                    Xtem[k], Ytem[k], other_tfm=other_tfm
-                )
+                Xreft[k], Yreft[k] = tfm_o(Xref[k], Yref[k], other_tfm=other_tfm)
+                Xtemt[k], Ytemt[k] = tfm_f(Xtem[k], Ytem[k], other_tfm=other_tfm)
             Xref, Xtem, Yref, Ytem = Xreft, Xtemt, Yreft, Ytemt
 
             Ytem[Ytem > 0.5] = 1
@@ -420,9 +413,7 @@ class Dataset_vid(torch.utils.data.Dataset):
             Ytem = fn_cat((Ytem1, Ytem2), 0)
             name = name1 + "_" + name2
             total = Xref1.shape[0] + Xref2.shape[0]
-            ind_rand = np.random.choice(
-                total, size=Xref1.shape[0], replace=False
-            )
+            ind_rand = np.random.choice(total, size=Xref1.shape[0], replace=False)
             return (
                 Xref[ind_rand],
                 Xtem[ind_rand],

@@ -166,11 +166,12 @@ def add_overlay(im, m1, m2=None, alpha=0.5, c1=[0, 1, 0], c2=[1, 0, 0]):
     if m2 is not None:
         M1[m1 > 0.5] = c1
         M2[m2 > 0.5] = c2
-        M = cv2.addWeighted(M1, alpha, M2, 1 - alpha, 0, None)
+        M = cv2.addWeighted(M1, 1, M2, 1, 0, None)
     else:
         M1[m1 > 0.5] = c1
         M = M1
-    Im = cv2.addWeighted(im, alpha, M, 1 - alpha, 0, None)
+    Im = cv2.addWeighted(im, 1, M, alpha, 0, None)
+    Im = np.clip(Im, 0, 1.)
     return Im
 
 

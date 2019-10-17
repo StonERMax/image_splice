@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     counter = 0
     for ret in tqdm(dataset.load_videos_all(is_training=False,
-                                            shuffle=True, to_tensor=True)):
+                                            shuffle=False, to_tensor=True)):
         X, Y_forge, forge_time, Y_orig, gt_time, name = ret
 
         N = X.shape[0]
