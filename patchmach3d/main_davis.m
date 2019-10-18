@@ -1,21 +1,22 @@
 clear all; close all; clc;
 addpath code
 
-dataset_path = '/home/islama6a/dataset/video_forge/davis_tempered/vid';
+HOME = getenv('HOME');
+dataset_path = [HOME, '/dataset/video_forge/tmp_davis_tempered/vid'];
 
-write_dir = 'davis';
+write_dir = 'tmp_davis';
 
 if ~exist(write_dir)
     mkdir(write_dir);
 end
 
-write_dir_map = 'map_davis';
+write_dir_map = 'map_tmp_davis';
 
 if ~exist(write_dir_map)
     mkdir(write_dir_map);
 end
 
-file_test_list = '../split/davis_test.txt';
+file_test_list = '../split/tmp_davis_test.txt';
 file_list = read_file_into_array(file_test_list);
 
 for i = 1:length(file_list)

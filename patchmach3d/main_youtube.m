@@ -1,7 +1,8 @@
 clear all; close all; clc;
 addpath code
 
-dataset_path = '/home/islama6a/dataset/video_forge/tmp_youtube_tempered/vid';
+HOME = getenv('HOME');
+dataset_path = [HOME, '/dataset/video_forge/tmp_youtube_tempered/vid'];
 
 write_dir = 'tmp_youtube';
 
