@@ -89,6 +89,8 @@ if __name__ == "__main__":
         D_pred = Data["D_pred"]
         name = Data["name"]
 
+        print(name)
+
         N = X.shape[0]
         path = root / name
         path.mkdir(parents=True, exist_ok=True)

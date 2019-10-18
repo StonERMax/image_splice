@@ -89,7 +89,7 @@ def config_video():
     )
     parser.add_argument("--out-channel", type=int, default=1)
     parser.add_argument("--gamma", type=float, default=0.1)
-    parser.add_argument("--gamma2", type=float, default=1e-5)
+    parser.add_argument("--gamma2", type=float, default=1)
     parser.add_argument(
         "--bw", action="store_true", help="whether to add boundary loss"
     )

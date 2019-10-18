@@ -4,6 +4,7 @@ import numpy as np
 import torch.nn.functional as F
 
 from loss import BCE_loss
+import kornia
 
 
 def tval(x):
@@ -39,15 +40,35 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
 
     loss = loss_p + loss_q + args.gamma * loss_det
 
+    if args.bw:
+        gauss = kornia.filters.GaussianBlur2d((7, 7), (5, 5))
+        Ys_edge = (kornia.sobel(gauss(Ys)) > 0.01).float()
+        Yt_edge = (kornia.sobel(gauss(Yt)) > 0.01).float()
+
+        loss_edge_s = torch.sum(-Ys_edge * F.logsigmoid(preds)) / torch.sum(
+            Ys_edge
+        )
+        loss_edge_t = torch.sum(-Yt_edge * F.logsigmoid(predt)) / torch.sum(
+            Yt_edge
+        )
+        loss_edge = loss_edge_s + loss_edge_t
+        loss += args.gamma2 * loss_edge
+
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
 
     loss_val = loss.data.cpu().numpy()
-    print(
+
+    _str = (
         f"{iteration:5d}: f(probe+donor+det): {tval(loss_p):.4f} + "
         + f"{tval(loss_q):.4f} + {tval(loss_det):.4f}"
     )
+
+    if args.bw:
+        _str += f" + {tval(loss_edge):.4f}"
+
+    print(_str)
 
     if logger is not None:
         logger.add_scalar("train_loss/total", loss, iteration)
