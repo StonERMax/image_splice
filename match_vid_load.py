@@ -34,6 +34,8 @@ def iou_time(t1, t2):
 def get_data(x, squeeze=True):
     if squeeze:
         x = x.squeeze()
+    if isinstance(x, np.ndarray):
+        return x
     if x.is_cuda:
         x = x.data.cpu().numpy()
     else:
@@ -71,21 +73,24 @@ if __name__ == "__main__":
     metric = utils.Metric(names=["source", "forge", "all"])
 
     counter = 0
-    for fldr in tqdm(data_path.iterdir()):
-        print(str(fldr).upper())
-        if not fldr.is_dir():
-            continue
+    dataset = Dataset_vid(args=args, is_training=False)
+    root = Path("tmp_video_match") / args.dataset / args.model
+
+    for ret in tqdm(dataset.load_videos_all(is_training=False,
+                                            shuffle=False, to_tensor=False)):
+        X, Y_forge, forge_time, Y_orig, gt_time, name = ret
+        forge_time = np.array(forge_time)
+        gt_time = np.array(gt_time)
+
+        fldr = root / name
         path_data = fldr / "data_pred.pt"
+
+        if not path_data.exists():
+            continue
+
         Data = torch.load(str(path_data))
         # print("Data loaded from {}".format(path_data))
 
-        X, Y_forge, Y_orig, gt_time, forge_time = (
-            Data["X"],
-            Data["Y_forge"],
-            Data["Y_orig"],
-            Data["gt_time"],
-            Data["forge_time"],
-        )
         D_pred = Data["D_pred"]
         name = Data["name"]
 
@@ -140,8 +145,10 @@ if __name__ == "__main__":
                 D_np[i, j, 0] = mask1
                 D_np[i, j, 1] = mask2
 
-                im1 = tsfm.inverse(X[j])
-                im2 = tsfm.inverse(X[i])
+                # im1 = tsfm.inverse(X[j])
+                # im2 = tsfm.inverse(X[i])
+                im1 = X[j]
+                im2 = X[i]
                 im1_masked = im1 * mask1[..., None]
                 im2_masked = im2 * mask2[..., None]
 
@@ -194,8 +201,8 @@ if __name__ == "__main__":
         print("\tTime IoU: {}".format(iou_time(pred_forge_time, forge_time)))
 
         # get mask: 0:source, 1:forge
-        Pred_mask_forge = np.zeros((N, *list(X.shape[-2:])))
-        Pred_mask_src = np.zeros((N, *list(X.shape[-2:])))
+        Pred_mask_forge = np.zeros((N, *list(X.shape[1:3])))
+        Pred_mask_src = np.zeros((N, *list(X.shape[1:3])))
 
         Pred_mask_src[pred_gt_time] = D_np[pred_forge_time, pred_gt_time, 0]
         Pred_mask_forge[pred_forge_time] = D_np[
@@ -223,7 +230,8 @@ if __name__ == "__main__":
         folder_pred.mkdir(parents=True, exist_ok=True)
 
         for i_cnt in range(N):
-            im = tsfm.inverse(X[i_cnt])
+            # im = tsfm.inverse(X[i_cnt])
+            im = X[i_cnt]
             im_with_gt = utils.add_overlay(im, GT_src[i_cnt], GT_forge[i_cnt])
             im_with_pred = utils.add_overlay(
                 im, Pred_mask_src[i_cnt], Pred_mask_forge[i_cnt]

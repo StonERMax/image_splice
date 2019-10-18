@@ -33,6 +33,7 @@ if __name__ == "__main__":
         X, Y_forge, forge_time, Y_orig, gt_time, name = ret
         map_file = os.path.join(map_dir, name.split(".")[0]+'.mat')
 
+        print(name)
         Y_all = np.maximum(Y_forge, Y_orig)
         out_all = loadmat(map_file)['map']
         out_all = cv2.resize(out_all, (X.shape[1], X.shape[2]), interpolation=0)

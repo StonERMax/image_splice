@@ -65,7 +65,7 @@ if __name__ == "__main__":
     def to_np(x):
         return x.data.cpu().numpy()
 
-    mask_processor = utils.Preprocessor(args)
+    # mask_processor = utils.Preprocessor(args)
 
     # for batch normalization
     with torch.no_grad():
@@ -117,11 +117,11 @@ if __name__ == "__main__":
 
         torch.save(
             {
-                "X": X,
-                "Y_forge": Y_forge,
-                "Y_orig": Y_orig,
-                "forge_time": forge_time,
-                "gt_time": gt_time,
+                # "X": X,
+                # "Y_forge": Y_forge,
+                # "Y_orig": Y_orig,
+                # "forge_time": forge_time,
+                # "gt_time": gt_time,
                 "D_pred": D_pred,
                 "name": name
             },
