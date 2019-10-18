@@ -73,7 +73,7 @@ if __name__ == "__main__":
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         factor=0.1,
-        patience=10,
+        patience=5,
         verbose=True,
         threshold=0.1,
         min_lr=1e-7,

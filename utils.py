@@ -354,7 +354,7 @@ class MMetric:
             + f"recall : {np.mean(self.rec):.4f}, "
             + f"f1 : {np.mean(self.fscore):.4f}, "
             + f"iou : {np.mean(self.iou):.4f} "
-            + f"iou : {np.mean(self.MCC):.4f}"
+            + f"mcc : {np.mean(self.MCC):.4f}"
         )
 
         return np.mean(self.fscore)
