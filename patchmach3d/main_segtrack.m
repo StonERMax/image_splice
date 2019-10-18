@@ -1,21 +1,21 @@
 clear all; close all; clc;
 addpath code
 
-dataset_path = '/home/islama6a/dataset/video_forge/SegTrackv2_tempered/vid';
+dataset_path = '/home/islama6a/dataset/video_forge/tmp_SegTrackv2_tempered/vid';
 
-write_dir = 'SegTrackv2';
+write_dir = 'tmp_SegTrackv2';
 
 if ~exist(write_dir)
     mkdir(write_dir);
 end
 
-write_dir_map = 'map_SegTrackv2';
+write_dir_map = 'map_tmp_SegTrackv2';
 
 if ~exist(write_dir_map)
     mkdir(write_dir_map);
 end
 
-file_test_list = '../split/SegTrackv2_test.txt';
+file_test_list = '../split/tmp_SegTrackv2_test.txt';
 file_list = read_file_into_array(file_test_list);
 
 for i = 1:length(file_list)
