@@ -42,7 +42,10 @@ class Dataset_vid(torch.utils.data.Dataset):
         assert self.data_root.exists()
 
         if transform is None:
-            self.transform = utils.CustomTransform(size=args.size)
+            if args.model in ("dmac", "dmvn"):
+                self.transform = utils.CustomTransform_vgg(size=args.size)
+            else:
+                self.transform = utils.CustomTransform(size=args.size)
         else:
             self.transform = transform
 
@@ -305,10 +308,12 @@ class Dataset_vid(torch.utils.data.Dataset):
                 gt_time[1] = i - offset
             if to_tensor:
                 X, Y_forge = utils.custom_transform_images(
-                    X, Y_forge, size=self.args.size, other_tfm=other_tfm
+                    X, Y_forge, size=self.args.size, other_tfm=other_tfm,
+                    tsfm=self.transform
                 )
                 _, Y_orig = utils.custom_transform_images(
-                    None, Y_orig, size=self.args.size, other_tfm=other_tfm
+                    None, Y_orig, size=self.args.size, other_tfm=other_tfm,
+                    tsfm=self.transform
                 )
 
             yield X, Y_forge, forge_time, Y_orig, gt_time, name

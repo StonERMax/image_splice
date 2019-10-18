@@ -18,6 +18,14 @@ from matplotlib.backends.backend_pdf import PdfPages
 import collections
 
 
+def get_MCC(hist):
+    tn, fp, fn, tp = hist
+    denominator = np.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn))
+    if denominator == 0:
+        return 0
+    mcc = (tp*tn - fp*fn)/denominator
+    return mcc
+
 def fscore(T_score):
     Fp, Fn, Tp = T_score[1:]
     f_score = 2 * Tp / (2 * Tp + Fp + Fn)
@@ -91,6 +99,52 @@ class SimTransform:
         return im, mask
 
 
+class CustomTransform_vgg:
+    def __init__(self, size=224):
+        if isinstance(size, int) or isinstance(size, float):
+            self.size = (size, size)
+        else:
+            self.size = size
+        self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+        self.std = np.array([1./255, 1./255, 1./255], dtype=np.float32)
+        self.to_tensor = transforms.ToTensor()
+
+    def resize(self, img=None, mask=None):
+        if img is not None:
+            img = skimage.img_as_float32(img)
+            if img.shape[0] != self.size[0] or img.shape[1] != self.size[1]:
+                img = cv2.resize(img, self.size, interpolation=cv2.INTER_LINEAR)
+
+        if mask is not None:
+            if mask.shape[0] != self.size[0] or mask.shape[1] != self.size[1]:
+                mask = cv2.resize(
+                    mask, self.size, interpolation=cv2.INTER_NEAREST
+                )
+        return img, mask
+
+    def inverse(self, x, mask=False):
+        if x.is_cuda:
+            x = x.squeeze().data.cpu().numpy()
+        else:
+            x = x.squeeze().data.numpy()
+        x = x.transpose((1, 2, 0))
+        if not mask:
+            x = x * self.std + self.mean
+        return x
+
+    def __call__(self, img=None, mask=None, other_tfm=None):
+        img, mask = self.resize(img, mask)
+        if other_tfm is not None:
+            img, mask = other_tfm(img, mask)
+        if img is not None:
+            img = (img - self.mean) / self.std
+            img = self.to_tensor(img)
+        if mask is not None:
+            mask = self.to_tensor(mask)
+
+        return img, mask
+
+
 class CustomTransform:
     def __init__(self, size=224):
         if isinstance(size, int) or isinstance(size, float):
@@ -138,12 +192,13 @@ class CustomTransform:
         return img, mask
 
 
-def custom_transform_images(images=None, masks=None, size=320, other_tfm=None):
+def custom_transform_images(images=None, masks=None, size=320, tsfm=None, other_tfm=None):
     if isinstance(size, int) or isinstance(size, float):
         size = (size, size)
     else:
         size = size
-    tsfm = CustomTransform(size=size)
+    if tsfm is None:
+        tsfm = CustomTransform(size=size)
     X, Y = None, None
     if images is not None:
         X = torch.zeros((images.shape[0], 3, *size), dtype=torch.float32)
@@ -233,6 +288,8 @@ class MMetric:
         self.rec = []
         self.iou = []
 
+        self.MCC = []
+
         self.name = name
         self.thres = thres
 
@@ -263,11 +320,13 @@ class MMetric:
         prec = precision(tt)
         rec = recall(tt)
         fs = fscore(tt)
+        mcc = get_MCC(tt)
 
         self.prec.append(prec)
         self.rec.append(rec)
         self.fscore.append(fs)
         self.iou.append(calc_iou(tt))
+        self.MCC.append(mcc)
 
         if log:
             print(
@@ -280,21 +339,22 @@ class MMetric:
         # protocal A
         print(f"\n{self.name} ")
         print("-" * 50)
-        print("\nProtocol A:")
-        print(
-            f"precision : {precision(self.T):.4f}, "
-            + f"recall : {recall(self.T):.4f}, "
-            + f"f1 : {fscore(self.T):.4f}, "
-            + f"iou : {calc_iou(self.T):.4f}"
-        )
+        # print("\nProtocol A:")
+        # print(
+        #     f"precision : {precision(self.T):.4f}, "
+        #     + f"recall : {recall(self.T):.4f}, "
+        #     + f"f1 : {fscore(self.T):.4f}, "
+        #     + f"iou : {calc_iou(self.T):.4f}"
+        # )
 
         # protocol B
-        print("\nProtocol B:")
+        # print("\nProtocol B:")Pmai
         print(
             f"precision : {np.mean(self.prec):.4f}, "
             + f"recall : {np.mean(self.rec):.4f}, "
             + f"f1 : {np.mean(self.fscore):.4f}, "
-            + f"iou : {np.mean(self.iou):.4f}"
+            + f"iou : {np.mean(self.iou):.4f} "
+            + f"iou : {np.mean(self.MCC):.4f}"
         )
 
         return np.mean(self.fscore)

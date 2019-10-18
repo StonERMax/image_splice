@@ -32,6 +32,10 @@ if __name__ == "__main__":
     # model name
     model_name = args.model + "_" + args.dataset + args.suffix
 
+    if args.model in ("dmac", "dmvn"):
+        from test import test_dmac as test
+        from train import train_dmac as train
+
     print(f"Model Name: {model_name}")
 
     # logger
@@ -40,7 +44,10 @@ if __name__ == "__main__":
     logger = SummaryWriter("./logs/" + model_name)
 
     # model
-    model = models.DOAModel(out_channel=args.out_channel)
+    if args.model in ("dmac", "dmvn"):
+        model = models.get_dmac(args.model, pretrain=True)
+    else:
+        model = models.DOAModel(out_channel=args.out_channel)
     model.to(device)
 
     iteration = args.resume
@@ -64,8 +71,8 @@ if __name__ == "__main__":
     )
 
     # load dataset
+    data_test = dataset.Dataset_COCO_CISDL(args, mode=args.mode, is_training=False)
 
-    data_test = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=False)
     if args.test:
         with torch.no_grad():
             for i, ret in enumerate(data_test.load()):
@@ -81,8 +88,8 @@ if __name__ == "__main__":
             iteration=None,
             device=device,
             logger=None,
-            num=5,
-            plot=False,
+            num=50,
+            plot=args.plot,
         )
         logger.close()
         raise SystemExit

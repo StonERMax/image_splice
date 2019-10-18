@@ -1,22 +1,18 @@
 conda activate torch
 
-# env CUDA_VISIBLE_DEVICES=2 python  main_train_vid_dmac.py \
-#  --model dmvn  --batch-size 10 --max-epoch 20 --lr 1e-4 \
-#   --dataset davis
+# env CUDA_VISIBLE_DEVICES=1 python  main.py --model dmac --batch-size 15 --max-epoch 20 --test >> ./log_out/coco/dmac_all.txt
+# env CUDA_VISIBLE_DEVICES=1 python  main.py --model dmac --batch-size 15 --max-epoch 20 --test --mode easy >> ./log_out/coco/dmac_easy.txt
+# env CUDA_VISIBLE_DEVICES=1  python main.py --model dmac --batch-size 15 --max-epoch 20 --test --mode medi >> ./log_out/coco/dmac_medi.txt
+# env CUDA_VISIBLE_DEVICES=1  python main.py --model dmac --batch-size 15 --max-epoch 20 --test --mode diff >> ./log_out/coco/dmac_diff.txt
+
+# env CUDA_VISIBLE_DEVICES=1  python main.py --model dmvn --batch-size 15 --max-epoch 20 --test >> ./log_out/coco/dmvn_all.txt
+# env CUDA_VISIBLE_DEVICES=1  python main.py --model dmvn --batch-size 15 --max-epoch 20 --test --mode easy >> ./log_out/coco/dmvn_easy.txt
+# env CUDA_VISIBLE_DEVICES=1  python main.py --model dmvn --batch-size 15 --max-epoch 20 --test --mode medi >> ./log_out/coco/dmvn_medi.txt
+# env CUDA_VISIBLE_DEVICES=1   python main.py --model dmvn --batch-size 15 --max-epoch 20 --test --mode diff >> ./log_out/coco/dmvn_diff.txt
+
+env CUDA_VISIBLE_DEVICES=1 python  main.py --model base --batch-size 15 --max-epoch 20 --test --ckpt ./ckpt/gcn2_coco.pkl >> ./log_out/coco/ours_all.txt
+env CUDA_VISIBLE_DEVICES=1 python  main.py --model base --batch-size 15 --max-epoch 20 --test --mode easy --ckpt ./ckpt/gcn2_coco.pkl >> ./log_out/coco/ours_easy.txt
+env CUDA_VISIBLE_DEVICES=1  python main.py --model base --batch-size 15 --max-epoch 20 --test --mode medi --ckpt ./ckpt/gcn2_coco.pkl >> ./log_out/coco/ours_medi.txt
+env CUDA_VISIBLE_DEVICES=1  python main.py --model base --batch-size 15 --max-epoch 20 --test --mode diff --ckpt ./ckpt/gcn2_coco.pkl >> ./log_out/coco/ours_diff.txt
 
 
-# env CUDA_VISIBLE_DEVICES=2 python  main_train_vid.py \
-#  --model base --ckpt ./ckpt/refine_davis.pkl  --batch-size 10 --max-epoch 20 \
-#   --lr 1e-4 --dataset davis
-
-env CUDA_VISIBLE_DEVICES=0 python  match_vid_save.py  --model dmvn \
-    --dataset davis --ckpt ./ckpt/dmvn_davis.pkl
-env CUDA_VISIBLE_DEVICES=0 python  match_vid_save.py  --model dmac \
-    --dataset davis --ckpt ./ckpt/dmac_davis.pkl
-env CUDA_VISIBLE_DEVICES=0 python  match_vid_save.py  --model base \
-    --dataset davis --ckpt ./ckpt/base_davis.pkl
-
-
-python match_vid_load.py --dataset davis --model base >> ./log_out/davis/base.txt
-python match_vid_load.py --dataset davis --model dmvn --thres 0.35 >> ./log_out/davis/dmvn.txt
-python match_vid_load.py --dataset davis --model dmac --thres 0.35 >> ./log_out/davis/dmac.txt

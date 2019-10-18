@@ -15,6 +15,7 @@ from test import test_dmac as test
 import dataset_vid
 
 from loss import BCE_loss
+from train import train_dmac as train
 
 
 def tval(x):
@@ -26,52 +27,6 @@ def tval(x):
         return x.data.numpy()
 
 
-def train(D, model, optimizer, args, iteration, device, logger=None):
-    module = model.module if isinstance(model, nn.DataParallel) else model
-    module.train()
-
-    Xs, Xt, Ys, Yt, labels = D
-    if not isinstance(labels, torch.Tensor):
-        labels = torch.from_numpy(np.array(labels, dtype=np.float32))
-    labels = labels.float().to(device)
-    Xs, Xt, Ys, Yt = Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device)
-
-    predt, preds, pred_det = model(Xt, Xs)
-
-    if args.model == "dmac":
-        criterion = nn.NLLLoss().cuda(device)
-
-        log_op = F.log_softmax(predt, dim=1)
-        log_oq = F.log_softmax(preds, dim=1)
-
-        Yq = Ys.squeeze(1).long()
-        Yp = Yt.squeeze(1).long()
-
-        loss_p = criterion(log_op, Yp)
-        loss_q = criterion(log_oq, Yq)
-
-        loss = loss_p + loss_q
-    elif args.model == "dmvn":
-        loss_p = BCE_loss(predt, Yt, with_logits=True)
-        loss_q = BCE_loss(preds, Ys, with_logits=True)
-        loss = loss_p + loss_q
-
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-
-    loss_val = loss.data.cpu().numpy()
-    print(
-        f"{iteration:5d}: f(probe+donor+det): {tval(loss_p):.4f} + "
-        + f"{tval(loss_q):.4f}"
-    )
-
-    if logger is not None:
-        logger.add_scalar("train_loss/total", loss, iteration)
-
-    return loss_val
-
-
 if __name__ == "__main__":
     # device
     if torch.cuda.is_available():
@@ -80,7 +35,6 @@ if __name__ == "__main__":
         device = torch.device("cpu")
 
     args = config.config_video()
-
 
     # seed
     np.random.seed(args.seed)
@@ -98,7 +52,7 @@ if __name__ == "__main__":
     logger = SummaryWriter("./logs/" + model_name)
 
     # model
-    model = models.get_dmac(model_name=args.model)
+    model = models.get_dmac(model_name=args.model, pretrain=True)
 
     iteration = args.resume
     init_ep = 0

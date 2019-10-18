@@ -50,7 +50,10 @@ def to_np(x):
 
 def rev_inv(im, to_numpy=True):
     mean = torch.tensor([0.485, 0.456, 0.406], device=im.device).view(3, 1, 1)
-    std = torch.tensor([0.229, 0.224, 0.225], device=im.device).view(3, 1, 1)
+    if im.max() > 10:
+        std = torch.tensor([1./255, 1./255, 1./255], device=im.device).view(3, 1, 1)
+    else:
+        std = torch.tensor([0.229, 0.224, 0.225], device=im.device).view(3, 1, 1)
     im = im * std + mean
     if to_numpy:
         return to_np(im)
@@ -98,13 +101,13 @@ def test(
 
         preds, predt, pred_det = model(Xs, Xt)
 
-        loss_p = BCE_loss(predt, Yt, with_logits=True)
-        loss_q = BCE_loss(preds, Ys, with_logits=True)
-        loss_det = F.binary_cross_entropy_with_logits(
-            pred_det.squeeze(), labels.squeeze()
-        )
-        loss = loss_p + loss_q + args.gamma * loss_det
-        loss_list.append(loss.data.cpu().numpy())
+        # loss_p = BCE_loss(predt, Yt, with_logits=True)
+        # loss_q = BCE_loss(preds, Ys, with_logits=True)
+        # loss_det = F.binary_cross_entropy_with_logits(
+        #     pred_det.squeeze(), labels.squeeze()
+        # )
+        # loss = loss_p + loss_q + args.gamma * loss_det
+        # loss_list.append(loss.data.cpu().numpy())
         print(f"{i}:")
 
         def fnp(x):
@@ -175,14 +178,13 @@ def test_dmac(
             Ys.to(device),
             Yt.to(device),
         )
-
         preds, predt, _ = model(Xs, Xt)
 
         def fnp(x):
             return x.data.cpu().numpy()
 
         if args.model == "dmac":
-            predt = torch.softmax(predt, dim=152)[:, [1]]
+            predt = torch.softmax(predt, dim=1)[:, [1]]
             preds = torch.softmax(preds, dim=1)[:, [1]]
         else:
             predt = torch.sigmoid(predt)

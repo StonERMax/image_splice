@@ -44,7 +44,11 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
         self.pair_list = utils_data.load_pairs(
             args.root, subpath_list, args.root
         )
-        self.transform = utils.CustomTransform(size=args.size)
+
+        if args.model in ("dmac", "dmvn"):
+            self.transform = utils.CustomTransform_vgg(size=args.size)
+        else:
+            self.transform = utils.CustomTransform(size=args.size)
 
     def __len__(self):
         return len(self.pair_list)

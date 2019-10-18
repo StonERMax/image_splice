@@ -55,8 +55,8 @@ if __name__ == "__main__":
     if args.ckpt is not None:
         checkpoint = torch.load(args.ckpt)
         model.load_state_dict(checkpoint["model_state"], strict=False)
-    if torch.cuda.device_count() > 1:
-        model = nn.DataParallel(model)
+    # if torch.cuda.device_count() > 1:
+    #     model = nn.DataParallel(model)
 
     dataset = Dataset_vid(args=args, is_training=False)
 
