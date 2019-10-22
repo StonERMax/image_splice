@@ -22,7 +22,7 @@ class Corr(nn.Module):
         super().__init__()
         self.topk = topk
 
-        self.alpha = nn.Parameter(torch.tensor(10.0, dtype=torch.float32))
+        self.alpha = nn.Parameter(torch.tensor(3., dtype=torch.float32))
 
     def forward(self, xp, xq):
         b, c, h1, w1 = xp.shape
@@ -45,8 +45,8 @@ class Corr(nn.Module):
         xc_o_p = xc_o_q.permute(0, 2, 3, 1).view(b, h2 * w2, h1, w1)
         valp = get_topk(xc_o_p, k=self.topk, dim=-3)
 
-        x_soft_p = xc_o_p  # / (xc_o_p.sum(dim=-3, keepdim=True) + 1e-8)
-        x_soft_q = xc_o_q  # / (xc_o_q.sum(dim=-3, keepdim=True) + 1e-8)
+        x_soft_p = xc_o_p / (xc_o_p.sum(dim=-3, keepdim=True) + 1e-8)
+        x_soft_q = xc_o_q / (xc_o_q.sum(dim=-3, keepdim=True) + 1e-8)
 
         return valp, valq, x_soft_p, x_soft_q
 
@@ -232,8 +232,8 @@ class DOAModel(nn.Module):
             nn.Conv2d(256, out_channel, 1),
         )
 
-        self.gcn_mask = GCN()
-        self.gcn_forge = GCN()
+        # self.gcn_mask = GCN()
+        # self.gcn_forge = GCN()
 
         # detection branch
         self.detection = DetectionBranch(4 * 256)
@@ -262,11 +262,17 @@ class DOAModel(nn.Module):
         xq_as2 = self.aspp_forge(xq_feat) * val_conv_q
 
         # Corrensponding mask and forge
-        xp_as1_nl = self.gcn_mask(xq_as1, indp)
-        xq_as1_nl = self.gcn_mask(xp_as1, indq)
+        # xp_as1_nl = self.gcn_mask(xq_as1, indp)
+        # xq_as1_nl = self.gcn_mask(xp_as1, indq)
 
-        xp_as2_nl = self.gcn_forge(xq_as2, indp)
-        xq_as2_nl = self.gcn_forge(xp_as2, indq)
+        # xp_as2_nl = self.gcn_forge(xq_as2, indp)
+        # xq_as2_nl = self.gcn_forge(xp_as2, indq)
+
+        xp_as1_nl = self.non_local(xq_as1, indp)
+        xq_as1_nl = self.non_local(xp_as1, indq)
+
+        xp_as2_nl = self.non_local(xq_as2, indp)
+        xq_as2_nl = self.non_local(xp_as2, indq)
 
         # Final Mask
         x_cat_p = torch.cat((xp_as1, xp_as1_nl, xp_as2, xp_as2_nl), dim=-3)

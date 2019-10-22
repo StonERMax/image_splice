@@ -57,6 +57,9 @@ if __name__ == "__main__":
         checkpoint = torch.load(args.ckpt)
         model.load_state_dict(checkpoint["model_state"], strict=False)
 
+    if torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model)
+
     model_params = model.parameters()
 
     # optimizer
