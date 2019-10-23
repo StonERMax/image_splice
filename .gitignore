@@ -16,3 +16,4 @@ back*/*
 *.pth
 log*/*
 *.mat
+tmp*
