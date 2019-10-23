@@ -86,7 +86,7 @@ if __name__ == "__main__":
             device=device,
             logger=None,
             num=5,
-            plot=True,
+            plot=False,
         )
         logger.close()
         raise SystemExit
