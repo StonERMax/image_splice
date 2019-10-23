@@ -59,6 +59,9 @@ if __name__ == "__main__":
 
     model_params = model.parameters()
 
+    # if torch.cuda.device_count() > 1:
+    #     model = nn.DataParallel(model)
+
     # optimizer
     optimizer = torch.optim.Adam(model_params, lr=args.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
