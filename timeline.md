@@ -1,0 +1,1 @@
+**10/24/19** : trained ifa_net on `main.py` for 85,000 iteration, saved checkpoint on `base_coco.ckpt`
