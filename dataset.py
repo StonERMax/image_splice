@@ -139,10 +139,13 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
             inds = seq[_inds]
             im = []
             labels = []
+            segm = []
 
             for i in inds:
-                _, im2, _, _, lab = self[i]
+                _, im2, _, gt2, lab = self[i]
                 im.append(im2)
+                segm.append(gt2)
                 labels.append(lab)
             im = torch.stack(im, 0)
-            yield im, np.array(labels)
+            segm = torch.stack(segm, 0)
+            yield im, segm, np.array(labels)
