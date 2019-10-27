@@ -159,13 +159,14 @@ def test_det(
     model.eval()
 
     metric_im = utils.Metric_image()
-    loss_list = []
+    metric = utils.MMetric()
 
     if iteration is not None:
         print(f"{iteration}")
 
     for i, ret in enumerate(data.load_mani()):
         X, Y, labels = ret
+        Y = Y.data.numpy()
         X = X.to(device)
         pred_det, pred_seg = model(X)
         
@@ -174,13 +175,17 @@ def test_det(
             return x.data.cpu().numpy()
 
         pred_det = fnp(torch.sigmoid(pred_det))
+        pred_seg = fnp(torch.sigmoid(pred_seg))
 
         metric_im.update(labels.flatten(), pred_det.flatten(), thres=0.5)
+        metric.update(Y, pred_seg)
 
         if num is not None and i >= num:
             break
 
     out = metric_im.final()
+    metric.final()
+
     return out
 
 
