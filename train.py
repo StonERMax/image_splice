@@ -76,6 +76,39 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
     return loss_val
 
 
+
+def train_det(D, model, optimizer, args, iteration, device, logger=None):
+    module = model.module if isinstance(model, nn.DataParallel) else model
+    module.train()
+
+    X, labels = D
+    if not isinstance(labels, torch.Tensor):
+        labels = torch.from_numpy(np.array(labels, dtype=np.float32))
+    labels = labels.float().to(device)
+    X = X.to(device)
+
+    pred_det = model(X)
+    loss_det = F.binary_cross_entropy_with_logits(
+        pred_det.squeeze(), labels.squeeze()
+    )
+    loss = loss_det
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    loss_val = loss.data.cpu().numpy()
+
+    print(f"{iteration}: loss: {loss_val:.4f}")
+
+    if logger is not None:
+        logger.add_scalar("train_loss/total", loss, iteration)
+
+    return loss_val
+
+
+
+
 def train_dmac(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()

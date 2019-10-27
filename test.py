@@ -152,6 +152,39 @@ def test(
 
 
 @torch.no_grad()
+def test_det(
+    data, model, args, iteration, device, logger=None, num=None, plot=False
+):
+
+    model.eval()
+
+    metric_im = utils.Metric_image()
+    loss_list = []
+
+    if iteration is not None:
+        print(f"{iteration}")
+
+    for i, ret in enumerate(data.load_mani()):
+        X, labels = ret
+        X = X.to(device)
+        pred_det = model(X)
+        
+        print(f"{i}:")
+        def fnp(x):
+            return x.data.cpu().numpy()
+
+        pred_det = fnp(torch.sigmoid(pred_det))
+
+        metric_im.update(labels.flatten(), pred_det.flatten())
+
+        if num is not None and i >= num:
+            break
+
+    out = metric_im.final()
+    return out
+
+
+@torch.no_grad()
 def test_dmac(
     data, model, args, iteration, device, logger=None, num=None, plot=False
 ):

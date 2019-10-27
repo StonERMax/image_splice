@@ -9,7 +9,7 @@ import utils_data
 
 
 class Dataset_COCO_CISDL(torch.utils.data.Dataset):
-    def __init__(self, args, mode=None, is_training=True):
+    def __init__(self, args, mode=None, is_training=True, test_fore_only=True, no_back=False):
         """ mode should be ['easy', 'medi', 'diff']
             default: None (all leels)
         """
@@ -25,6 +25,9 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
         if is_training:
             for each in labelfiles_path.iterdir():
                 if each.suffix == ".csv":
+                    if no_back:
+                        if "_back_" in each.name:
+                            continue
                     if mode is None:
                         subpath_list.append(each.name)
                     else:
@@ -33,7 +36,13 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
                             subpath_list.append(each.name)
         else:  # testing
             for each in labelfiles_path.iterdir():
-                if each.suffix == ".csv" and "_fore_" in each.name:
+                if each.suffix == ".csv":
+                    if test_fore_only:
+                        if "_fore_" not in each.name:
+                            continue
+                    if no_back:
+                        if "_back_" in each.name:
+                            continue
                     if mode is None:
                         subpath_list.append(each.name)
                     else:
@@ -116,3 +125,24 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
             gt1s = torch.stack(gt1s, 0)
             gt2s = torch.stack(gt2s, 0)
             yield im1s, im2s, gt1s, gt2s, labels
+
+    def load_mani(self, batch_size=None, shuffle=True):
+        bs = self.args.batch_size if batch_size is None else batch_size
+        chunk = [
+            np.arange(pos, pos + bs) for pos in range(0, len(self) - bs, bs)
+        ]
+        seq = np.arange(len(self))
+        if shuffle:
+            np.random.shuffle(seq)
+
+        for _inds in chunk:
+            inds = seq[_inds]
+            im = []
+            labels = []
+
+            for i in inds:
+                _, im2, _, _, lab = self[i]
+                im.append(im2)
+                labels.append(lab)
+            im = torch.stack(im, 0)
+            yield im, np.array(labels)

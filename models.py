@@ -429,3 +429,58 @@ def get_dmac(model_name="dmac", pretrain=True):
         state_dict = torch.load(model_path, map_location='cuda:0')
         model.load_state_dict(state_dict)
     return model
+
+
+class DetModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.in1 = nn.Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.in2 = nn.Conv2d(3, 64, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
+        self.in3 = nn.Conv2d(3, 64, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3))
+
+        self.in_reduce = nn.Conv2d(3 * 64, 64, kernel_size=(1, 1), stride=(1, 1))
+
+        self.conv_det = nn.Sequential(
+            nn.Conv2d(3 * 64, 64, kernel_size=(1, 1), stride=(1, 1)),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1)),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  # 
+            nn.Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1)),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, kernel_size=(1, 1), stride=(1, 1)),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  #
+            nn.Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1)),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1)),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  #
+            nn.Conv2d(256, 512, kernel_size=(1, 1), stride=(1, 1)),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  #
+            nn.AdaptiveMaxPool2d(1),
+            nn.Conv2d(512, 1, kernel_size=(1, 1))
+        )
+
+        self.apply(weights_init_normal)
+
+    def forward(self, x):
+        b = x.shape[0]
+        x1 = self.in1(x)
+        x2 = self.in2(x)
+        x3 = self.in3(x)
+        x_cat = torch.cat((x1, x2, x3), dim=-3)
+        out = self.conv_det(x_cat)
+        out = out.reshape(b, -1)
+        return out
+
+
