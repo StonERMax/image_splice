@@ -165,9 +165,9 @@ def test_det(
         print(f"{iteration}")
 
     for i, ret in enumerate(data.load_mani()):
-        X, labels = ret
+        X, Y, labels = ret
         X = X.to(device)
-        pred_det = model(X)
+        pred_det, pred_seg = model(X)
         
         print(f"{i}:")
         def fnp(x):
@@ -175,7 +175,7 @@ def test_det(
 
         pred_det = fnp(torch.sigmoid(pred_det))
 
-        metric_im.update(labels.flatten(), pred_det.flatten())
+        metric_im.update(labels.flatten(), pred_det.flatten(), thres=0.5)
 
         if num is not None and i >= num:
             break

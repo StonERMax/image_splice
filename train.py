@@ -45,12 +45,8 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
         Ys_edge = (kornia.sobel(gauss(Ys)) > 0.01).float()
         Yt_edge = (kornia.sobel(gauss(Yt)) > 0.01).float()
 
-        loss_edge_s = torch.sum(-Ys_edge * F.logsigmoid(preds)) / torch.sum(
-            Ys_edge
-        )
-        loss_edge_t = torch.sum(-Yt_edge * F.logsigmoid(predt)) / torch.sum(
-            Yt_edge
-        )
+        loss_edge_s = torch.sum(-Ys_edge * F.logsigmoid(preds)) / torch.sum(Ys_edge)
+        loss_edge_t = torch.sum(-Yt_edge * F.logsigmoid(predt)) / torch.sum(Yt_edge)
         loss_edge = loss_edge_s + loss_edge_t
         loss += args.gamma2 * loss_edge
 
@@ -76,22 +72,23 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
     return loss_val
 
 
-
 def train_det(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()
 
-    X, labels = D
+    X, Y, labels = D
     if not isinstance(labels, torch.Tensor):
         labels = torch.from_numpy(np.array(labels, dtype=np.float32))
     labels = labels.float().to(device)
     X = X.to(device)
+    Y = Y.to(device)
 
-    pred_det = model(X)
-    loss_det = F.binary_cross_entropy_with_logits(
-        pred_det.squeeze(), labels.squeeze()
-    )
-    loss = loss_det
+    pred_det, pred_seg = model(X)
+    loss_det = F.binary_cross_entropy_with_logits(pred_det.squeeze(), labels.squeeze())
+
+    loss_seg = F.binary_cross_entropy_with_logits(pred_seg, Y)
+
+    loss = loss_seg + args.gamma * loss_det
 
     optimizer.zero_grad()
     loss.backward()
@@ -99,14 +96,14 @@ def train_det(D, model, optimizer, args, iteration, device, logger=None):
 
     loss_val = loss.data.cpu().numpy()
 
-    print(f"{iteration}: loss: {loss_val:.4f}")
+    print(
+        f"{iteration}: loss: {loss_seg.data.cpu().numpy():.4f} + {loss_det.data.cpu().numpy():.4f}"
+    )
 
     if logger is not None:
         logger.add_scalar("train_loss/total", loss, iteration)
 
     return loss_val
-
-
 
 
 def train_dmac(D, model, optimizer, args, iteration, device, logger=None):

@@ -338,13 +338,15 @@ class DOAModel(nn.Module):
 
 
 def weights_init_normal(m):
-    classname = m.__class__.__name__
-    if classname.find("Conv") != -1 or classname.find("Linear") != -1:
-        torch.nn.init.kaiming_normal_(m.weight.data)
-    elif classname.find("BatchNorm2d") != -1:
-        torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
-        torch.nn.init.constant_(m.bias.data, 0.0)
-
+    try:
+        classname = m.__class__.__name__
+        if classname.find("Conv") != -1 or classname.find("Linear") != -1:
+            torch.nn.init.kaiming_normal_(m.weight.data)
+        elif classname.find("BatchNorm2d") != -1:
+            torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
+            torch.nn.init.constant_(m.bias.data, 0.0)
+    except AttributeError:
+        return
 
 class Extractor_VGG19(nn.Module):
     def __init__(self):
@@ -527,6 +529,8 @@ class Base_DetSegModel(nn.Module):
             nn.Linear(32, 1),
         )
 
+        self.pool = nn.AdaptiveMaxPool2d(1)
+
     def forward(self, x):
         b = x.shape[0]
         x1 = self.in1(x)
@@ -535,7 +539,8 @@ class Base_DetSegModel(nn.Module):
         x_cat = torch.cat((x1, x2, x3), dim=-3)
         out_seg = self.conv_det(x_cat)
 
-        out_det = out_seg.view(b, -1)
+        x_seg = self.pool(out_seg)
+        out_det = x_seg.view(b, -1)
         out_det = self.lin_det(out_det)
 
         return out_det, out_seg
@@ -561,8 +566,12 @@ class DetSegModel(nn.Module):
         self.apply(weights_init_normal)
 
     def forward(self, x):
+        b, c, h, w = x.shape
         out_det, base_seg = self.base(x)
         seg = self.head(base_seg)
+        seg = F.interpolate(
+            seg, size=(h, w), mode="bilinear", align_corners=True
+        )
         return out_det, seg
 
 

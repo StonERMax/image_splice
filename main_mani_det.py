@@ -30,7 +30,7 @@ if __name__ == "__main__":
     torch.cuda.manual_seed_all(args.seed)
 
     # model name
-    model_name = "det_" + args.model + "_" + args.dataset + args.suffix
+    model_name = "detseg_" + args.model + "_" + args.dataset + args.suffix
 
     if args.model in ("dmac", "dmvn"):
         from test import test_dmac as test
@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     # model
 
-    model = models.DetModel()
+    model = models.DetSegModel()
     model.to(device)
 
     iteration = args.resume
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     if args.test:
         with torch.no_grad():
             for i, ret in enumerate(data_test.load_mani()):
-                X, labels = ret
+                X, *_ = ret
                 X = X.to(device)
                 _ = model(X)
                 if i > 5:
