@@ -177,7 +177,7 @@ def test_det(
         pred_det = fnp(torch.sigmoid(pred_det))
         pred_seg = fnp(torch.sigmoid(pred_seg))
 
-        metric_im.update(labels.flatten(), pred_det.flatten(), thres=0.5)
+        metric_im.update(labels.flatten(), pred_det.flatten(), thres=args.thres)
         metric.update(Y, pred_seg)
 
         if num is not None and i >= num:

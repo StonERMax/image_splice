@@ -229,6 +229,23 @@ class Dataset_vid(torch.utils.data.Dataset):
         )
         return loader
 
+    def load_mani(self, shuffle=True, batch_size=None):
+        bs = self.args.batch_size if batch_size is None else batch_size
+        loader = self.load_videos_all(is_training=self.is_training, to_tensor=True)
+        while True:
+            try:
+                ret = next(loader)
+            except StopIteration:
+                return
+            X, Y_forge, forge_time, Y_orig, gt_time, name = ret
+            
+            ind = np.arange(X.shape[0])
+            ind = np.random.choice(ind, bs)
+            im = X[ind]
+            segm = Y_forge[ind]
+            labels = segm.view(bs, -1).sum(-1) > 0
+            yield im, segm, labels.data.numpy()
+
     def load_videos_all(self, is_training=False, shuffle=False, to_tensor=True):
         if is_training:
             idx = self.train_index
