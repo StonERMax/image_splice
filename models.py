@@ -433,57 +433,74 @@ def get_dmac(model_name="dmac", pretrain=True):
     return model
 
 
-class DetModel(nn.Module):
-    def __init__(self):
+class CorrDetector(nn.Module):
+    def __init__(self, pool_stride=8):
         super().__init__()
+        "The pooling of images needs to be researched."
+        # self.img_pool = nn.AvgPool2d(pool_stride, stride=pool_stride)
 
-        self.in1 = nn.Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.in2 = nn.Conv2d(3, 64, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
-        self.in3 = nn.Conv2d(3, 64, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3))
+        self.input_dim = 3
 
-        self.in_reduce = nn.Conv2d(3 * 64, 64, kernel_size=(1, 1), stride=(1, 1))
-
-        self.conv_det = nn.Sequential(
-            nn.Conv2d(3 * 64, 64, kernel_size=(1, 1), stride=(1, 1)),
+        "Feature extraction blocks."
+        self.conv = nn.Sequential(
+            nn.Conv2d(self.input_dim, 16, 3, 1, 1),
+            nn.BatchNorm2d(16),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(16, 32, 3, 1, 1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(32, 64, 3, 1, 1),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  # 
-            nn.Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1)),
+            nn.Conv2d(64, 128, 3, 1, 1),
             nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
-            nn.Conv2d(128, 128, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(128),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
+        )
+
+        "Detection branch."
+        self.classifier_det = nn.Sequential(
+            nn.Linear(128 * 10 * 10, 1024),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  #
-            nn.Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  #
-            nn.Conv2d(256, 512, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(512),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  #
-            nn.AdaptiveMaxPool2d(1),
-            nn.Conv2d(512, 1, kernel_size=(1, 1))
+            nn.Dropout(),
+            nn.Linear(1024, 1),
         )
 
         self.apply(weights_init_normal)
 
-    def forward(self, x):
-        b = x.shape[0]
-        x1 = self.in1(x)
-        x2 = self.in2(x)
-        x3 = self.in3(x)
-        x_cat = torch.cat((x1, x2, x3), dim=-3)
-        out = self.conv_det(x_cat)
-        out = out.reshape(b, -1)
-        return out
+    def forward(self, x, m):
+
+        _, _, h, w = x.shape
+        m = F.interpolate(
+            m, size=(h//2, w//2), align_corners=True, mode="bilinear"
+        )
+        x = F.interpolate(
+            x, size=(h//2, w//2), align_corners=True, mode="bilinear"
+        )
+
+        m1 = m[:, [0]]
+        m2 = m[:, [1]]
+
+        x1 = torch.mul(x, m1)
+        x2 = torch.mul(x, m2)
+
+        x1 = self.conv(x1)
+        x2 = self.conv(x2)
+
+        x1 = F.adaptive_avg_pool2d(x1, (10, 10))
+        x2 = F.adaptive_avg_pool2d(x2, (10, 10))
+
+        x1 = x1.view(x1.size(0), -1)
+        x2 = x2.view(x2.size(0), -1)
+
+        x12_abs = torch.abs(x1 - x2)
+
+        x_det = self.classifier_det(x12_abs)
+
+        return x_det
+
+
 
 class Base_DetSegModel(nn.Module):
     def __init__(self):

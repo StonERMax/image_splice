@@ -82,8 +82,8 @@ if __name__ == "__main__":
         )
     ):
         X, Y_forge, forge_time, Y_orig, gt_time, name = ret
-        forge_time = np.array(forge_time)
-        gt_time = np.array(gt_time)
+        forge_time = np.arange(forge_time[0], forge_time[1]+1)
+        gt_time = np.arange(gt_time[0], gt_time[1]+1)
 
         fldr = root / name
         path_data = fldr / "data_pred.pt"
@@ -92,8 +92,9 @@ if __name__ == "__main__":
             continue
 
         Data = torch.load(str(path_data))
-        # print("Data loaded from {}".format(path_data))
 
+        print("Data loaded from {}".format(path_data))
+        pred_forge_time = Data["forge_time"]
         D_pred = Data["D_pred"]
         name = Data["name"]
 
@@ -115,12 +116,16 @@ if __name__ == "__main__":
 
         D_np = np.zeros(tuple(D_pred.shape))
 
-        for i in range(N):
-            if i in forge_time:
-                i_ind = np.where(forge_time == i)[0][0]
-                gt_ind = gt_time[i_ind]
-            else:
-                gt_ind = None
+        for i in pred_forge_time:
+
+            # # for plot
+            # if i in forge_time:
+            #     i_ind = np.where(forge_time == i)[0][0]
+            #     gt_ind = gt_time[i_ind]
+            # else:
+            #     gt_ind = None
+            # # 
+
             out1 = D_pred[i, :, 0]  # source
             out2 = D_pred[i, :, 1]  # forge
 
@@ -148,8 +153,6 @@ if __name__ == "__main__":
                 D_np[i, j, 0] = mask1
                 D_np[i, j, 1] = mask2
 
-                # im1 = tsfm.inverse(X[j])
-                # im2 = tsfm.inverse(X[i])
                 im1 = X[j]
                 im2 = X[i]
                 im1_masked = im1 * mask1[..., None]
@@ -176,14 +179,14 @@ if __name__ == "__main__":
         # pdf.final()
         # print("pdf saved")
 
-        # matshow
-        mat_gt = np.zeros((N, N))
-        for _if, _ig in zip(forge_time, gt_time):
-            mat_gt[_if, _ig] = 1.0
-        out_mat_name = str(path / "mat.pdf")
+        # # matshow
+        # mat_gt = np.zeros((N, N))
+        # for _if, _ig in zip(forge_time, gt_time):
+        #     mat_gt[_if, _ig] = 1.0
+        # out_mat_name = str(path / "mat.pdf")
 
-        create_volume.plot_conf_mat(mat_gt, str(path / "mat_gt.png"))
-        create_volume.plot_conf_mat(Hist, str(path / "mat_pred.png"))
+        # create_volume.plot_conf_mat(mat_gt, str(path / "mat_gt.png"))
+        # create_volume.plot_conf_mat(Hist, str(path / "mat_pred.png"))
 
         # fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(3, 3))
         # axes[0].matshow(Hist)
@@ -250,11 +253,11 @@ if __name__ == "__main__":
             )
 
         # plot volume
-        # create_volume.create(GT_src, GT_forge, path=folder_name / "gt_vol.png")
+        create_volume.create(GT_src, GT_forge, path=folder_name / "gt_vol.png")
 
-        # create_volume.create(
-        #     Pred_mask_src, Pred_mask_forge, path=folder_name / "pred_vol.png"
-        # )
+        create_volume.create(
+            Pred_mask_src, Pred_mask_forge, path=folder_name / "pred_vol.png"
+        )
 
         counter += 1
         if counter > 20:

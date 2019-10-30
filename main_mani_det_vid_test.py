@@ -19,6 +19,17 @@ from test import test_det_vid
 import dataset_vid
 
 
+def load_state_base(model, state):
+    new_state = {}
+    for k in state:
+        k = str(k)
+        if k.startswith("base"):
+            new_k = k.replace("base.", "")
+            new_state[new_k] = state[k]
+    model.load_state_dict(new_state)
+    return model
+
+
 if __name__ == "__main__":
     # device
     if torch.cuda.is_available():
@@ -49,7 +60,8 @@ if __name__ == "__main__":
 
     # model
 
-    model = models.DetSegModel()
+    model = models.Base_DetSegModel()
+    
     model.to(device)
 
     iteration = args.resume
@@ -57,9 +69,9 @@ if __name__ == "__main__":
 
     if args.ckpt is not None:
         checkpoint = torch.load(args.ckpt)
-        model.load_state_dict(checkpoint["model_state"], strict=False)
+        load_state_base(model, checkpoint['model_state'])
 
-    model = model.base
+    # model = model.base
     # if torch.cuda.device_count() > 1:
     #     model = nn.DataParallel(model)
 

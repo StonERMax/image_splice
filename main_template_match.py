@@ -1,6 +1,3 @@
-"""
-train dmac or dmvn on dmac-coco dataset
-"""
 import os
 import numpy as np
 import torch
@@ -8,26 +5,14 @@ from torch import nn
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
 from matplotlib import pyplot as plt
-import torch.nn.functional as F
 
 # custom module
 import config
 import models
+from train import train_det
 
-from test import test_dmac as test
+from test import test_det
 import dataset_vid
-
-from loss import BCE_loss
-from train import train_dmac as train
-
-
-def tval(x):
-    if not isinstance(x, torch.Tensor):
-        return x
-    if x.is_cuda:
-        return x.data.cpu().numpy()
-    else:
-        return x.data.numpy()
 
 
 if __name__ == "__main__":
@@ -45,7 +30,11 @@ if __name__ == "__main__":
     torch.cuda.manual_seed_all(args.seed)
 
     # model name
-    model_name = args.model + "_" + args.dataset + args.suffix
+    model_name = "detseg_" + args.model + "_" + args.dataset + args.suffix
+
+    if args.model in ("dmac", "dmvn"):
+        from test import test_dmac as test
+        from train import train_dmac as train
 
     print(f"Model Name: {model_name}")
 
@@ -55,7 +44,9 @@ if __name__ == "__main__":
     logger = SummaryWriter("./logs/" + model_name)
 
     # model
-    model = models.get_dmac(model_name=args.model, pretrain=True)
+
+    model = models.DetSegModel()
+    model.to(device)
 
     iteration = args.resume
     init_ep = 0
@@ -66,8 +57,6 @@ if __name__ == "__main__":
 
     model_params = model.parameters()
 
-    model.to(device)
-
     # if torch.cuda.device_count() > 1:
     #     model = nn.DataParallel(model)
 
@@ -76,31 +65,31 @@ if __name__ == "__main__":
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         factor=0.1,
-        patience=5,
+        patience=10,
         verbose=True,
         threshold=0.1,
         min_lr=1e-7,
     )
 
     # load dataset
-
     data_test = dataset_vid.Dataset_vid(args, is_training=False)
+
     if args.test:
-        with torch.no_grad():
-            for i, ret in enumerate(data_test.load()):
-                Xs, Xt, Ys, Yt, labels = ret
-                Xs, Xt = (Xs.to(device), Xt.to(device))
-                _ = model(Xs, Xt)
-                if i > 5:
-                    break
-        test(
+        # with torch.no_grad():
+        #     for i, ret in enumerate(data_test.load_mani()):
+        #         X, *_ = ret
+        #         X = X.to(device)
+        #         _ = model(X)
+        #         if i > 30:
+        #             break
+        test_det(
             data_test,
             model,
             args,
             iteration=None,
             device=device,
             logger=None,
-            num=5,
+            num=10,
             plot=args.plot,
         )
         logger.close()
@@ -112,8 +101,8 @@ if __name__ == "__main__":
 
     for ep in tqdm(range(init_ep, args.max_epoch)):
         # train
-        for ret in data_train.load():
-            loss = train(
+        for ret in data_train.load_mani():
+            loss = train_det(
                 ret, model, optimizer, args, iteration, device, logger=logger
             )
             list_loss.append(loss)
@@ -123,7 +112,7 @@ if __name__ == "__main__":
                 scheduler.step(np.mean(list_loss))
                 list_loss = []
 
-                test(
+                test_det(
                     data_test,
                     model,
                     args,

@@ -1,3 +1,7 @@
+"""
+forge detection for dmac-coco dataset
+"""
+
 import os
 import numpy as np
 import torch
