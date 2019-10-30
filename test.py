@@ -152,6 +152,38 @@ def test(
 
 
 @torch.no_grad()
+def test_det_vid(
+    data, model, args, iteration, device, logger=None, num=None, plot=False
+):
+
+    model.eval()
+
+    metric_im = utils.Metric_image()
+    def fnp(x):
+        return x.data.cpu().numpy()
+
+    for i, ret in enumerate(data.load_mani_vid()):
+        X, Y, labels, name = ret
+        Y = Y.data.numpy()
+        X = X.to(device)
+        pred_det, _ = model(X)
+        
+        print(f"{i}", end=": ")
+        pred_det = fnp(torch.sigmoid(pred_det))
+
+        print(name, end=" : ")
+        metric_im.update(labels.flatten(), pred_det.flatten(), thres=args.thres, log=True)
+
+        if num is not None and i >= num:
+            break
+
+    out = metric_im.final()
+
+    return out
+
+
+
+@torch.no_grad()
 def test_det(
     data, model, args, iteration, device, logger=None, num=None, plot=False
 ):

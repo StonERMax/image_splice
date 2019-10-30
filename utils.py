@@ -385,7 +385,7 @@ class Metric_image(object):
         self.gt = []
         self.pred = []
 
-    def update(self, _gt, _pred, thres=0.5):
+    def update(self, _gt, _pred, thres=0.5, log=False):
         _gt = _gt > thres
         _pred = _pred > thres
 
@@ -395,6 +395,11 @@ class Metric_image(object):
         else:
             self.gt.append(_gt)
             self.pred.append(_pred)
+        if log:
+            pr, re, f, _ = precision_recall_fscore_support(
+                _gt, _pred, average="binary"
+            )
+            print(f"precision: {pr:.4f}, recall: {re:.4f}, f-score: {f :.4f} ")
 
     def final(self):
         pr, re, f, _ = precision_recall_fscore_support(
