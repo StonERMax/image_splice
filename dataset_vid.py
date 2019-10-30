@@ -229,7 +229,65 @@ class Dataset_vid(torch.utils.data.Dataset):
         )
         return loader
 
-    def load_mani(self, shuffle=True, batch_size=None):
+    def load_mani(self, batch_size=None, shuffle=True):
+        if self.is_training:
+            idx = self.train_index
+        else:
+            idx = self.test_index
+        bs = self.args.batch_size if batch_size is None else batch_size
+
+        counter = 0
+        im = []
+        labels = []
+        segm = []
+
+        df = self.im_files_with_src_target
+        df = df[df["id"].isin(idx)]
+
+        inds = np.arange(len(self))
+        if shuffle:
+            np.random.shuffle(inds)
+
+        for i in inds:
+            if len(im) == bs:
+                im = torch.stack(im, 0)
+                segm = torch.stack(segm, 0)
+                yield im, segm, np.array(labels, dtype=np.float)
+                im = []
+                labels = []
+                segm = []
+                counter = 0
+
+            row = df.iloc[i]
+            fsrc = row["src"]
+            ftar = row["target"]
+            fmask = row["mask"]
+
+            im_s = self.get_im(fsrc, to_tensor=True)
+            im_t = self.get_im(ftar, to_tensor=True)
+            im_mask = self.get_im(fmask, is_mask=True, to_tensor=True)
+
+            im.append(im_t)
+            segm.append(im_mask[[-1]])
+            labels.append(im_mask[[-1]].data.numpy().sum() > 0)
+            counter += 1
+
+            if len(im) == bs:
+                im = torch.stack(im, 0)
+                segm = torch.stack(segm, 0)
+                yield im, segm, np.array(labels, dtype=np.float)
+                im = []
+                labels = []
+                segm = []
+                counter = 0
+
+            if df[df["target"] == fsrc].empty:
+                im.append(im_s)
+                segm.append(torch.zeros_like(im_mask[[-1]]))
+                labels.append(0)
+                counter += 1
+
+    def load_mani_vid(self, shuffle=True, batch_size=None):
         bs = self.args.batch_size if batch_size is None else batch_size
         loader = self.load_videos_all(is_training=self.is_training, to_tensor=True)
         while True:
@@ -238,7 +296,7 @@ class Dataset_vid(torch.utils.data.Dataset):
             except StopIteration:
                 return
             X, Y_forge, forge_time, Y_orig, gt_time, name = ret
-            
+
             ind = np.arange(X.shape[0])
             ind = np.random.choice(ind, bs)
             im = X[ind]
@@ -325,12 +383,18 @@ class Dataset_vid(torch.utils.data.Dataset):
                 gt_time[1] = i - offset
             if to_tensor:
                 X, Y_forge = utils.custom_transform_images(
-                    X, Y_forge, size=self.args.size, other_tfm=other_tfm,
-                    tsfm=self.transform
+                    X,
+                    Y_forge,
+                    size=self.args.size,
+                    other_tfm=other_tfm,
+                    tsfm=self.transform,
                 )
                 _, Y_orig = utils.custom_transform_images(
-                    None, Y_orig, size=self.args.size, other_tfm=other_tfm,
-                    tsfm=self.transform
+                    None,
+                    Y_orig,
+                    size=self.args.size,
+                    other_tfm=other_tfm,
+                    tsfm=self.transform,
                 )
 
             yield X, Y_forge, forge_time, Y_orig, gt_time, name

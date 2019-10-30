@@ -545,6 +545,12 @@ class Base_DetSegModel(nn.Module):
 
         return out_det, out_seg
 
+def set_bn_eval(m):
+    classname = m.__class__.__name__
+    if classname.find('BatchNorm') != -1:
+      m.eval()
+
+
 class DetSegModel(nn.Module):
     def __init__(self):
         super().__init__()
@@ -573,6 +579,9 @@ class DetSegModel(nn.Module):
             seg, size=(h, w), mode="bilinear", align_corners=True
         )
         return out_det, seg
+
+    def freeze_bn(self):
+        self.apply(set_bn_eval)
 
 
         

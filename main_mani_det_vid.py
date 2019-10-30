@@ -75,13 +75,13 @@ if __name__ == "__main__":
     data_test = dataset_vid.Dataset_vid(args, is_training=False)
 
     if args.test:
-        with torch.no_grad():
-            for i, ret in enumerate(data_test.load_mani()):
-                X, *_ = ret
-                X = X.to(device)
-                _ = model(X)
-                if i > 5:
-                    break
+        # with torch.no_grad():
+        #     for i, ret in enumerate(data_test.load_mani()):
+        #         X, *_ = ret
+        #         X = X.to(device)
+        #         _ = model(X)
+        #         if i > 30:
+        #             break
         test_det(
             data_test,
             model,
@@ -108,7 +108,7 @@ if __name__ == "__main__":
             list_loss.append(loss)
             iteration += 1
 
-            if iteration % 300 == 0:
+            if iteration % 100 == 0:
                 scheduler.step(np.mean(list_loss))
                 list_loss = []
 

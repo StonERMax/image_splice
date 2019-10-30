@@ -75,6 +75,8 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
 def train_det(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()
+    # if iteration > 0:
+    #     module.freeze_bn()
 
     X, Y, labels = D
     if not isinstance(labels, torch.Tensor):
@@ -85,7 +87,6 @@ def train_det(D, model, optimizer, args, iteration, device, logger=None):
 
     pred_det, pred_seg = model(X)
     loss_det = F.binary_cross_entropy_with_logits(pred_det.squeeze(), labels.squeeze())
-
     loss_seg = F.binary_cross_entropy_with_logits(pred_seg, Y)
 
     loss = loss_seg + args.gamma * loss_det
