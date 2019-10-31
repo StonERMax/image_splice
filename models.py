@@ -89,7 +89,8 @@ def plot_plt(x, name="1", size=(240, 240), cmap="jet"):
 def plot(x, name="1", size=(240, 240)):
     if x.shape[0] == 2:
         x = torch.cat((x, x[[0]]), dim=-3)
-    x = F.interpolate(x.unsqueeze(0), size=size, mode="bilinear").squeeze(0)
+    if size is not None:
+        x = F.interpolate(x.unsqueeze(0), size=size, mode="bilinear").squeeze(0)
 
     def fn(x):
         return (x - x.min()) / (x.max() - x.min() + 1e-8)

@@ -24,7 +24,7 @@ import utils
 
 def iou_time(t1, t2):
     iou = len(set(t1).intersection(set(t2))) / (
-        len(set(t1).union(set(t2))) + 1e-8
+        max(len(set(t1).union(set(t2))), 1e-8)
     )
     return iou
 
@@ -127,23 +127,16 @@ if __name__ == "__main__":
             pred_det, _ = model_forge(X_tensor)
 
         pred_det = torch.sigmoid(pred_det).data.cpu().numpy()
-        D_pred = torch.zeros((N, N, 2, *args.size))
+        D_pred = np.zeros((N, N, 2, *args.size))
         _ind = np.where(pred_det > args.thres)[0]
         pred_forge_time = np.arange(_ind.min(), _ind.max() + 1)
         N_forge = len(pred_forge_time)
 
         Xt = X[pred_forge_time].to(device)
 
-        for i in pred_forge_time:
-            Xr = X_tensor
-            Xt = X[[i]].repeat((Xr.shape[0], 1, 1, 1)).to(device)
-
-            if i in forge_time:
-                i_ind = np.where(forge_time == i)[0][0]
-                gt_ind = gt_time[i_ind]
-            else:
-                gt_ind = None
-
+        for i in range(0, N - N_forge + 1):
+            Xr = X_tensor[i : i + N_forge]
+            
             with torch.no_grad():
                 out1, out2, _ = model(Xr, Xt)
 
@@ -153,16 +146,17 @@ if __name__ == "__main__":
             else:
                 out1, out2 = torch.sigmoid(out1), torch.sigmoid(out2)
 
-            D_pred[i, :, 0] = out1.squeeze().data.cpu()
-            D_pred[i, :, 1] = out2.squeeze().data.cpu()
+            # D_pred[pred_forge_time, i : i + N_forge, 0] = out1.squeeze().data.cpu()
+            # D_pred[pred_forge_time, i : i + N_forge, 1] = out2.squeeze().data.cpu()
+            out1_np = out1.squeeze().data.cpu()
+            out2_np = out2.squeeze().data.cpu()
+            for cnt, (ki, kj) in enumerate(zip(pred_forge_time, range(i, i+N_forge))):
+                    D_pred[ki, kj, 0] = out1_np[cnt]
+                    D_pred[ki, kj, 1] = out2_np[cnt]
 
         torch.save(
             {
-                # "X": X,
-                # "Y_forge": Y_forge,
-                # "Y_orig": Y_orig,
                 "forge_time": pred_forge_time,
-                # "gt_time": gt_time,
                 "D_pred": D_pred,
                 "name": name
             },
@@ -175,5 +169,5 @@ if __name__ == "__main__":
         counter += 1
 
         # TODO:  Keep an eye here
-        if counter > 3:
+        if counter > 20:
             break

@@ -26,7 +26,7 @@ import create_volume
 
 def iou_time(t1, t2):
     iou = len(set(t1).intersection(set(t2))) / (
-        len(set(t1).union(set(t2))) + 1e-8
+        max(len(set(t1).union(set(t2))), 1e-8)
     )
     return iou
 
@@ -116,15 +116,9 @@ if __name__ == "__main__":
 
         D_np = np.zeros(tuple(D_pred.shape))
 
-        for i in pred_forge_time:
+        N_forge = len(pred_forge_time)
 
-            # # for plot
-            # if i in forge_time:
-            #     i_ind = np.where(forge_time == i)[0][0]
-            #     gt_ind = gt_time[i_ind]
-            # else:
-            #     gt_ind = None
-            # # 
+        for c_i, i in enumerate(pred_forge_time):
 
             out1 = D_pred[i, :, 0]  # source
             out2 = D_pred[i, :, 1]  # forge
@@ -132,7 +126,7 @@ if __name__ == "__main__":
             out1 = out1.squeeze()
             out2 = out2.squeeze()
 
-            for j in range(N):
+            for j in range(N-N_forge+c_i+1):
                 mask1 = out1[j]
                 mask2 = out2[j]
 
