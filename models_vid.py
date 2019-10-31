@@ -127,6 +127,20 @@ class DetectionBranch(nn.Module):
         y = self.lin(x_cat)
         return y
 
+class TGCN(nn.Module):
+    """ temporal GCN """
+    def __init__(self, in_feat=4 * 256, out_feat=256):
+        super().__init__()
+        self.in_feat = in_feat
+
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_feat, out_feat, 1), nn.BatchNorm2d(out_feat), nn.ReLU()
+        )
+        self.conv.apply(weights_init_normal)
+
+    def forward(self, X):
+        b, t, cin, h, w = X.shape
+        
 
 class GCN(nn.Module):
     def __init__(self, in_feat=256):
@@ -268,7 +282,7 @@ class DOAModel(nn.Module):
         # Final Mask
         x_cat_p = torch.cat((xp_as1, xp_as1_nl, xp_as2, xp_as2_nl), dim=-3)
 
-        
+
         outp = self.head_mask_p(x_cat_p)
 
         x_cat_q = torch.cat((xq_as1, xq_as1_nl, xq_as2, xq_as2_nl), dim=-3)
