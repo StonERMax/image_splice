@@ -107,6 +107,43 @@ def train_det(D, model, optimizer, args, iteration, device, logger=None):
     return loss_val
 
 
+def train_temporal(D, model, optimizer, args, iteration, device, logger=None):
+    module = model.module if isinstance(model, nn.DataParallel) else model
+    module.train()
+
+    Xs, Xt, Ys, Yt, labels = D
+    Xs, Xt, Ys, Yt = Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device)
+    labels = labels.to(device)
+
+    preds, predt, pred_det = model(Xs, Xt)
+
+    mask_label = torch.tensor(pred_det, device=device) > 0.5
+    loss_t = BCE_loss(predt[mask_label], Yt[mask_label], with_logits=True)
+    loss_s = BCE_loss(preds[mask_label], Ys[mask_label], with_logits=True)
+
+    # detection whether video clips are copy move
+    loss_det = F.binary_cross_entropy_with_logits(pred_det, labels)
+
+    loss = loss_s + loss_t + args.gamma * loss_det
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    loss_val = loss.data.cpu().numpy()
+
+    _str = (
+        f"{iteration:5d}: f(probe+donor+det): {tval(loss_s):.4f} + "
+        + f"{tval(loss_t):.4f} + {tval(loss_det):.4f}"
+    )
+
+    print(_str)
+    if logger is not None:
+        logger.add_scalar("train_loss/total", loss, iteration)
+
+    return loss_val
+
+
 def train_dmac(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()

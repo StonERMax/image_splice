@@ -257,7 +257,7 @@ if __name__ == "__main__":
         # )
 
         counter += 1
-        if counter > 20:
+        if counter > 10:
             break
 
     print("FINAL Score:")

@@ -135,12 +135,12 @@ class DetectionBranch(nn.Module):
 
 
 class GCN(nn.Module):
-    def __init__(self, in_feat=256):
+    def __init__(self, in_feat=256, out_feat=256):
         super().__init__()
         self.in_feat = in_feat
 
         self.conv = nn.Sequential(
-            nn.Conv2d(in_feat, in_feat, 1), nn.BatchNorm2d(in_feat), nn.ReLU()
+            nn.Conv2d(in_feat, out_feat, 1), nn.BatchNorm2d(out_feat), nn.ReLU()
         )
         self.conv.apply(weights_init_normal)
 
@@ -164,15 +164,6 @@ class GCN(nn.Module):
         out_inter = torch.bmm(A, x).permute(0, 2, 1).reshape(b, c, h1, w1)
         out = self.conv(out_inter)
         return out
-
-        # b, c, h2, w2 = x.shape
-        # _, _, h1, w1 = ind.shape
-
-        # x = x.reshape(b, c, -1)
-        # ind = ind.reshape(b, h2 * w2, h1 * w1)
-        # out_inter = torch.bmm(x, ind).reshape(b, c, h1, w1)
-        # out = self.conv(out_inter)
-        # return out
 
 
 class DOAModel(nn.Module):
@@ -208,7 +199,7 @@ class DOAModel(nn.Module):
         )
 
         self.head_mask_p = nn.Sequential(
-            nn.Conv2d(4 * 256, 2 * 256, 1),
+            nn.Conv2d(2 * 256, 2 * 256, 1),
             nn.BatchNorm2d(2 * 256),
             nn.ReLU(),
             nn.Conv2d(2 * 256, 256, 3, padding=1),
@@ -221,7 +212,7 @@ class DOAModel(nn.Module):
         )
 
         self.head_mask_q = nn.Sequential(
-            nn.Conv2d(4 * 256, 2 * 256, 1),
+            nn.Conv2d(2 * 256, 2 * 256, 1),
             nn.BatchNorm2d(2 * 256),
             nn.ReLU(),
             nn.Conv2d(2 * 256, 256, 3, padding=1),
@@ -233,15 +224,22 @@ class DOAModel(nn.Module):
             nn.Conv2d(256, out_channel, 1),
         )
 
-        self.gcn_mask = GCN()
-        self.gcn_forge = GCN()
+        self.conv_as = nn.Sequential(
+            nn.Conv2d(2 * 256, 256, 1),
+            nn.BatchNorm2d(256),
+            nn.ReLU()
+        )
+        # self.gcn_mask = GCN()
+        # self.gcn_forge = GCN()
+        self.gcn = GCN(in_feat=256, out_feat=256)
 
         # detection branch
-        self.detection = DetectionBranch(4 * 256)
+        # self.detection = DetectionBranch(4 * 256)
         self.head_mask_p.apply(weights_init_normal)
         self.head_mask_q.apply(weights_init_normal)
 
         self.val_conv.apply(weights_init_normal)
+        self.conv_as.apply(weights_init_normal)
 
     def forward(self, xq, xp):
         input1, input2 = xq, xp
@@ -262,24 +260,24 @@ class DOAModel(nn.Module):
         xp_as2 = self.aspp_forge(xp_feat) * val_conv_p
         xq_as2 = self.aspp_forge(xq_feat) * val_conv_q
 
-        # Corrensponding mask and forge
-        xp_as1_nl = self.gcn_mask(xq_as1, indp)
-        xq_as1_nl = self.gcn_mask(xp_as1, indq)
+        xp_as = self.conv_as(torch.cat((xp_as1, xp_as2), dim=-3))
+        xq_as = self.conv_as(torch.cat((xq_as1, xq_as2), dim=-3))
 
-        xp_as2_nl = self.gcn_forge(xq_as2, indp)
-        xq_as2_nl = self.gcn_forge(xp_as2, indq)
+        # Corrensponding mask and forge
+        xp_as_nl = self.gcn(xq_as, indp)
+        xq_as_nl = self.gcn(xp_as, indq)
 
         # Final Mask
-        x_cat_p = torch.cat((xp_as1, xp_as1_nl, xp_as2, xp_as2_nl), dim=-3)
+        x_cat_p = torch.cat((xp_as, xp_as_nl), dim=-3)
         outp = self.head_mask_p(x_cat_p)
 
-        x_cat_q = torch.cat((xq_as1, xq_as1_nl, xq_as2, xq_as2_nl), dim=-3)
+        x_cat_q = torch.cat((xq_as, xq_as_nl), dim=-3)
         outq = self.head_mask_q(x_cat_q)
 
         # final detection
-        out_det = self.detection(
-            torch.cat((xp_as2, xq_as1, xp_as1_nl, xq_as2_nl), dim=-3)
-        )
+        # out_det = self.detection(
+        #     torch.cat((xp_as, xq_as, xp_as_nl, xq_as_nl), dim=-3)
+        # )
 
         outp = F.interpolate(
             outp, size=(h, w), mode="bilinear", align_corners=True
@@ -288,7 +286,7 @@ class DOAModel(nn.Module):
             outq, size=(h, w), mode="bilinear", align_corners=True
         )
 
-        return outq, outp, out_det
+        return outq, outp, None
 
     def non_local(self, x, ind):
         b, c, h2, w2 = x.shape
@@ -502,7 +500,6 @@ class CorrDetector(nn.Module):
         return x_det
 
 
-
 class Base_DetSegModel(nn.Module):
     def __init__(self):
         super().__init__()
@@ -563,10 +560,11 @@ class Base_DetSegModel(nn.Module):
 
         return out_det, out_seg
 
+
 def set_bn_eval(m):
     classname = m.__class__.__name__
     if classname.find('BatchNorm') != -1:
-      m.eval()
+        m.eval()
 
 
 class DetSegModel(nn.Module):

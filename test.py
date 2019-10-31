@@ -51,9 +51,13 @@ def to_np(x):
 def rev_inv(im, to_numpy=True):
     mean = torch.tensor([0.485, 0.456, 0.406], device=im.device).view(3, 1, 1)
     if im.max() > 10:
-        std = torch.tensor([1./255, 1./255, 1./255], device=im.device).view(3, 1, 1)
+        std = torch.tensor(
+            [1.0 / 255, 1.0 / 255, 1.0 / 255], device=im.device
+        ).view(3, 1, 1)
     else:
-        std = torch.tensor([0.229, 0.224, 0.225], device=im.device).view(3, 1, 1)
+        std = torch.tensor([0.229, 0.224, 0.225], device=im.device).view(
+            3, 1, 1
+        )
     im = im * std + mean
     if to_numpy:
         return to_np(im)
@@ -152,6 +156,48 @@ def test(
 
 
 @torch.no_grad()
+def test_temporal(
+    data, model, args, iteration, device, logger=None, num=None, plot=False
+):
+
+    model.eval()
+
+    metric = utils.Metric()
+    metric_im = utils.Metric_image()
+
+    if iteration is not None:
+        print(f"{iteration}")
+
+    for i, ret in enumerate(data.load_temporal()):
+        Xs, Xt, Ys, Yt, labels = ret
+        labels = labels.data.numpy()
+
+        Xs, Xt = (Xs.to(device), Xt.to(device))
+
+        preds, predt, pred_det = model(Xs, Xt)
+        print(f"{i}:")
+
+        predt = torch.sigmoid(predt)
+        preds = torch.sigmoid(preds)
+        pred_det = torch.sigmoid(pred_det)
+
+        metric.update(
+            [to_np(Ys)[labels == 1], to_np(Yt)[labels == 1]],
+            [to_np(preds)[labels == 1], to_np(predt)[labels == 1]],
+        )
+
+        metric_im.update(labels, to_np(pred_det), log=True)
+
+        if num is not None and i >= num:
+            break
+
+    out = metric.final()
+    metric_im.final()
+
+    return out
+
+
+@torch.no_grad()
 def test_det_vid(
     data, model, args, iteration, device, logger=None, num=None, plot=False
 ):
@@ -159,6 +205,7 @@ def test_det_vid(
     model.eval()
 
     metric_im = utils.Metric_image()
+
     def fnp(x):
         return x.data.cpu().numpy()
 
@@ -167,12 +214,14 @@ def test_det_vid(
         Y = Y.data.numpy()
         X = X.to(device)
         pred_det, _ = model(X)
-        
+
         print(f"{i}", end=": ")
         pred_det = fnp(torch.sigmoid(pred_det))
 
         print(name, end=" : ")
-        metric_im.update(labels.flatten(), pred_det.flatten(), thres=args.thres, log=True)
+        metric_im.update(
+            labels.flatten(), pred_det.flatten(), thres=args.thres, log=True
+        )
 
         if num is not None and i >= num:
             break
@@ -180,7 +229,6 @@ def test_det_vid(
     out = metric_im.final()
 
     return out
-
 
 
 @torch.no_grad()
@@ -201,15 +249,18 @@ def test_det(
         Y = Y.data.numpy()
         X = X.to(device)
         pred_det, pred_seg = model(X)
-        
+
         print(f"{i}:")
+
         def fnp(x):
             return x.data.cpu().numpy()
 
         pred_det = fnp(torch.sigmoid(pred_det))
         pred_seg = fnp(torch.sigmoid(pred_seg))
 
-        metric_im.update(labels.flatten(), pred_det.flatten(), thres=args.thres)
+        metric_im.update(
+            labels.flatten(), pred_det.flatten(), thres=args.thres
+        )
         metric.update(Y, pred_seg)
 
         if num is not None and i >= num:
