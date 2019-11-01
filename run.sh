@@ -2,7 +2,7 @@ conda activate torch
 set -x CUDA_VISIBLE_DEVICES 1
 
 git checkout ablation_a1
-env CUDA_VISIBLE_DEVICES=1 python main_template_match.py  \
+env CUDA_VISIBLE_DEVICES=1 python main.py  \
  --model wo_a1 --suffix _exp --max-epoch 5
 
 git checkout ablation_a1
