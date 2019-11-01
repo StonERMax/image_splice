@@ -113,7 +113,8 @@ if __name__ == "__main__":
         print(name, " : ", N)
 
         if N < 5:
-            continue
+            print("-----")
+            # continue    
 
         forge_time = np.arange(forge_time[0], forge_time[1]+1)
         gt_time = np.arange(gt_time[0], gt_time[1]+1)
@@ -124,10 +125,20 @@ if __name__ == "__main__":
         """Forge time prediction
         """
         X_tensor = X.to(device)
-        with torch.no_grad():
-            pred_det, _ = model_forge(X_tensor)
+        if X.shape[0] > 20:
+            ind_splits = np.array_split(np.arange(X.shape[0]), int(np.ceil(X.shape[0]/20)))
+            pred_det = []
+            for _ind in ind_splits:
+                with torch.no_grad():
+                    _pred_det, _ = model_forge(X_tensor[_ind])
+                    _pred_det = torch.sigmoid(_pred_det).data.cpu().numpy()
+                    pred_det.append(_pred_det)
+            pred_det = np.concatenate(pred_det)
+        else:
+            with torch.no_grad():
+                pred_det, _ = model_forge(X_tensor)
+                pred_det = torch.sigmoid(pred_det).data.cpu().numpy()
 
-        pred_det = torch.sigmoid(pred_det).data.cpu().numpy()
         D_pred = np.zeros((N, N, 2, *args.size))
         _ind = np.where(pred_det > args.thres)[0]
         pred_forge_time = np.arange(_ind.min(), _ind.max() + 1)

@@ -147,12 +147,16 @@ class TemporalDetectionBranch(nn.Module):
             nn.ReLU(),
         )
         self.conv_1d = nn.Sequential(
+            nn.ReplicationPad1d(1),
             nn.Conv1d(128, 64, 3),
             nn.ReLU(),
+            nn.ReplicationPad1d(1),
             nn.Conv1d(64, 32, 3),
             nn.ReLU()
         )
         self.final_conv = nn.Conv1d(32, 1, 1)
+        self.pad = nn.ReplicationPad1d(1)
+
         self.apply(weights_init_normal)
 
     def forward(self, xp, xq):
