@@ -65,8 +65,10 @@ if __name__ == "__main__":
 
     if args.ckpt is not None:
         checkpoint = torch.load(args.ckpt)
-        # model.load_state_dict(checkpoint["model_state"], strict=False)
-        load_model(model, checkpoint["model_state"])
+        if args.tune:
+            load_model(model, checkpoint["model_state"])
+        else:
+            model.load_state_dict(checkpoint["model_state"], strict=False)
 
     # model_params = filter(lambda x: x.requires_grad, model.parameters())
     model_params = model.parameters()
