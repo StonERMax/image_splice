@@ -182,25 +182,25 @@ class DOAModel(nn.Module):
 
         in_cat = 896
 
-        self.val_conv = nn.Sequential(
-            nn.Conv2d(topk, 16, 3, padding=1),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.Conv2d(16, 16, 3, padding=1),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.Conv2d(16, 16, 3, padding=1),
-            nn.Conv2d(16, 1, 1),
-            nn.Sigmoid(),
-        )
+        # self.val_conv = nn.Sequential(
+        #     nn.Conv2d(topk, 16, 3, padding=1),
+        #     nn.BatchNorm2d(16),
+        #     nn.ReLU(),
+        #     nn.Conv2d(16, 16, 3, padding=1),
+        #     nn.BatchNorm2d(16),
+        #     nn.ReLU(),
+        #     nn.Conv2d(16, 16, 3, padding=1),
+        #     nn.Conv2d(16, 1, 1),
+        #     nn.Sigmoid(),
+        # )
 
         self.aspp_mask = models.segmentation.deeplabv3.ASPP(
             in_channels=in_cat, atrous_rates=[12, 24, 36]
         )
 
-        # self.aspp_forge = models.segmentation.deeplabv3.ASPP(
-        #     in_channels=in_cat, atrous_rates=[6, 12, 24]
-        # )
+        self.aspp_forge = models.segmentation.deeplabv3.ASPP(
+            in_channels=in_cat, atrous_rates=[6, 12, 24]
+        )
 
         self.head_mask_p = nn.Sequential(
             nn.Conv2d(2 * 256, 2 * 256, 1),
@@ -228,22 +228,20 @@ class DOAModel(nn.Module):
             nn.Conv2d(256, out_channel, 1),
         )
 
-        # self.conv_as = nn.Sequential(
-        #     nn.Conv2d(2 * 256, 256, 1),
-        #     nn.BatchNorm2d(256),
-        #     nn.ReLU()
-        # )
-        # self.gcn_mask = GCN()
-        # self.gcn_forge = GCN()
+        self.conv_as = nn.Sequential(
+            nn.Conv2d(2 * 256, 256, 1),
+            nn.BatchNorm2d(256),
+            nn.ReLU()
+        )
+
         self.gcn = GCN(in_feat=256, out_feat=256)
 
         # detection branch
-        # self.detection = DetectionBranch(4 * 256)
         self.head_mask_p.apply(weights_init_normal)
         self.head_mask_q.apply(weights_init_normal)
 
-        self.val_conv.apply(weights_init_normal)
-        # self.conv_as.apply(weights_init_normal)
+        # self.val_conv.apply(weights_init_normal)
+        self.conv_as.apply(weights_init_normal)
 
     def forward(self, xq, xp):
         input1, input2 = xq, xp
@@ -254,18 +252,18 @@ class DOAModel(nn.Module):
         valp, valq, indp, indq = self.corrLayer(xp_feat, xq_feat)
 
         # attention weight
-        val_conv_p = self.val_conv(valp)
-        val_conv_q = self.val_conv(valq)
+        # val_conv_p = self.val_conv(valp)
+        # val_conv_q = self.val_conv(valq)
 
         #### Mask part : M  ####
-        xp_as = self.aspp_mask(xp_feat) * val_conv_p
-        xq_as = self.aspp_mask(xq_feat) * val_conv_q
+        xp_as1 = self.aspp_mask(xp_feat) #* val_conv_p
+        xq_as1 = self.aspp_mask(xq_feat) #* val_conv_q
 
-        # xp_as2 = self.aspp_forge(xp_feat) * val_conv_p
-        # xq_as2 = self.aspp_forge(xq_feat) * val_conv_q
+        xp_as2 = self.aspp_forge(xp_feat) #* val_conv_p
+        xq_as2 = self.aspp_forge(xq_feat) #* val_conv_q
 
-        # xp_as = self.conv_as(torch.cat((xp_as1, xp_as2), dim=-3))
-        # xq_as = self.conv_as(torch.cat((xq_as1, xq_as2), dim=-3))
+        xp_as = self.conv_as(torch.cat((xp_as1, xp_as2), dim=-3))
+        xq_as = self.conv_as(torch.cat((xq_as1, xq_as2), dim=-3))
 
         # Corrensponding mask and forge
         xp_as_nl = self.gcn(xq_as, indp)
