@@ -29,6 +29,7 @@ def iou_time(t1, t2):
     )
     return iou
 
+
 def load_state_base(model, state):
     new_state = {}
     for k in state:
@@ -65,7 +66,7 @@ if __name__ == "__main__":
     model_forge = models.Base_DetSegModel()
     if args.ckptM is not None:
         checkpoint = torch.load(args.ckptM)
-        load_state_base(model_forge, checkpoint['model_state'])
+        load_state_base(model_forge, checkpoint["model_state"])
     model_forge.to(device)
 
     # model
@@ -92,7 +93,9 @@ if __name__ == "__main__":
 
     # for batch normalization
     with torch.no_grad():
-        for i, ret in enumerate(dataset.load_temporal(t_t_max=5, batch_size=5)):
+        for i, ret in enumerate(
+            dataset.load_temporal(t_t_max=5, batch_size=5)
+        ):
             Xs, Xt, Ys, Yt, labels = ret
             Xs, Xt = Xs.to(device), Xt.to(device)
             _ = model(Xs, Xt)
@@ -105,8 +108,11 @@ if __name__ == "__main__":
     metric = utils.Metric(names=["source", "forge"])
 
     counter = 0
-    for ret in tqdm(dataset.load_videos_all(is_training=False,
-                                            shuffle=False, to_tensor=True)):
+    for ret in tqdm(
+        dataset.load_videos_all(
+            is_training=False, shuffle=False, to_tensor=True
+        )
+    ):
         X, Y_forge, forge_time, Y_orig, gt_time, name = ret
 
         N = X.shape[0]
@@ -114,10 +120,10 @@ if __name__ == "__main__":
 
         if N < 5:
             print("-----")
-            # continue    
+            # continue
 
-        forge_time = np.arange(forge_time[0], forge_time[1]+1)
-        gt_time = np.arange(gt_time[0], gt_time[1]+1)
+        forge_time = np.arange(forge_time[0], forge_time[1] + 1)
+        gt_time = np.arange(gt_time[0], gt_time[1] + 1)
 
         path = root / name
         path.mkdir(parents=True, exist_ok=True)
@@ -126,7 +132,9 @@ if __name__ == "__main__":
         """
         X_tensor = X.to(device)
         if X.shape[0] > 20:
-            ind_splits = np.array_split(np.arange(X.shape[0]), int(np.ceil(X.shape[0]/20)))
+            ind_splits = np.array_split(
+                np.arange(X.shape[0]), int(np.ceil(X.shape[0] / 20))
+            )
             pred_det = []
             for _ind in ind_splits:
                 with torch.no_grad():
@@ -151,7 +159,7 @@ if __name__ == "__main__":
         D_pred = []
         for i in range(0, N - N_forge + 1):
             Xr = X_tensor[i : i + N_forge]
-            
+
             with torch.no_grad():
                 out1, out2, out_det = model(Xr.unsqueeze(0), Xt.unsqueeze(0))
             out1 = torch.sigmoid(out1)
@@ -167,11 +175,11 @@ if __name__ == "__main__":
             D_pred.append((out1_np, out2_np))
 
         amax = np.argmax(list_out_det_score)
-        pred_source_time = np.arange(amax, amax+N_forge)
+        pred_source_time = np.arange(amax, amax + N_forge)
 
         iou_forge_time = iou_time(pred_forge_time, forge_time)
         iou_source_time = iou_time(pred_source_time, gt_time)
-        
+
         print(f"time iou forge : {iou_forge_time: .4f}")
         print(f"time iou source : {iou_source_time: .4f}")
 
@@ -186,10 +194,7 @@ if __name__ == "__main__":
         Y_pred_forge[pred_forge_time] = pred_t
         Y_pred_source[pred_source_time] = pred_s
 
-        metric.update(
-            (Y_orig, Y_forge),
-            (Y_pred_source, Y_pred_forge)
-        )
+        metric.update((Y_orig, Y_forge), (Y_pred_source, Y_pred_forge), batch_mode=False)
         counter += 1
 
         # TODO:  Keep an eye here
