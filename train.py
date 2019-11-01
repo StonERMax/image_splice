@@ -117,7 +117,7 @@ def train_temporal(D, model, optimizer, args, iteration, device, logger=None):
 
     preds, predt, pred_det = model(Xs, Xt)
 
-    mask_label = torch.tensor(pred_det, device=device) > 0.5
+    mask_label = (labels > 0.5).clone()
     loss_t = BCE_loss(predt[mask_label], Yt[mask_label], with_logits=True)
     loss_s = BCE_loss(preds[mask_label], Ys[mask_label], with_logits=True)
 

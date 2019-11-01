@@ -207,7 +207,7 @@ class GCN(nn.Module):
 
 
 class DOAModel(nn.Module):
-    def __init__(self, out_channel=1, topk=20, hw=(32, 32)):
+    def __init__(self, out_channel=1, topk=20, hw=(40, 40)):
         super().__init__()
         self.hw = hw
         self.topk = topk

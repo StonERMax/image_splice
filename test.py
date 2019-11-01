@@ -168,7 +168,7 @@ def test_temporal(
     if iteration is not None:
         print(f"{iteration}")
 
-    for i, ret in enumerate(data.load_temporal()):
+    for i, ret in enumerate(data.load_temporal(evaluate=True)):
         Xs, Xt, Ys, Yt, labels = ret
         labels = labels.data.numpy()
 
@@ -192,6 +192,7 @@ def test_temporal(
             break
 
     out = metric.final()
+    print("")
     metric_im.final()
 
     return out

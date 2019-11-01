@@ -55,8 +55,8 @@ if __name__ == "__main__":
 
     model.to(device)
 
-    if torch.cuda.device_count() > 1:
-        model = nn.DataParallel(model)
+    # if torch.cuda.device_count() > 1:
+    #     model = nn.DataParallel(model)
 
     # optimizer
     optimizer = torch.optim.Adam(model_params, lr=args.lr)

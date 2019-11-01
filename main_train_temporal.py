@@ -17,6 +17,22 @@ from test import test_temporal
 import dataset_vid
 
 
+def load_model(model, state):
+    mod_state = {}
+    name_req_grad = []
+
+    for k in state:
+        k = str(k)
+        if not k.startswith("head_mask"):
+            mod_state[k] = state[k]
+            name_req_grad.append(k)
+    model.load_state_dict(mod_state, strict=False)
+
+    for name, param in model.named_parameters():
+        if name in name_req_grad:
+            param.requires_grad = False
+
+
 if __name__ == "__main__":
     # device
     if torch.cuda.is_available():
@@ -49,9 +65,10 @@ if __name__ == "__main__":
 
     if args.ckpt is not None:
         checkpoint = torch.load(args.ckpt)
-        model.load_state_dict(checkpoint["model_state"], strict=False)
+        # model.load_state_dict(checkpoint["model_state"], strict=False)
+        load_model(model, checkpoint["model_state"])
 
-    model_params = model.parameters()
+    model_params = filter(lambda x: x.requires_grad, model.parameters())
 
     model.to(device)
 
@@ -73,13 +90,13 @@ if __name__ == "__main__":
 
     data_test = dataset_vid.Dataset_vid(args, is_training=False)
     if args.test:
-        with torch.no_grad():
-            for i, ret in enumerate(data_test.load_temporal()):
-                Xs, Xt, Ys, Yt, labels = ret
-                Xs, Xt = Xs.to(device), Xt.to(device)
-                _ = model(Xs, Xt)
-                if i > 5:
-                    break
+        # with torch.no_grad():
+        #     for i, ret in enumerate(data_test.load_temporal(t_t_max=5, batch_size=5)):
+        #         Xs, Xt, Ys, Yt, labels = ret
+        #         Xs, Xt = Xs.to(device), Xt.to(device)
+        #         _ = model(Xs, Xt)
+        #         if i > 5:
+        #             break
         test_temporal(
             data_test,
             model,
