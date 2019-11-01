@@ -193,6 +193,6 @@ if __name__ == "__main__":
         counter += 1
 
         # TODO:  Keep an eye here
-        if counter > 30:
+        if counter > 5:
             break
     metric.final()
