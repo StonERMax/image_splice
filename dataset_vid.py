@@ -276,8 +276,8 @@ class Dataset_vid(torch.utils.data.Dataset):
                     flag = True
 
                 if mask_orig is None and flag:
-                    gt_time[1] = i
-                    forge_time[1] = i - offset
+                    gt_time[1] = i - offset
+                    forge_time[1] = i
 
                 fname = os.path.join(self.im_mani_root, *cur_file.parts[-2:])
                 im = skimage.img_as_float32(io.imread(fname))
