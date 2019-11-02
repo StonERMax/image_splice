@@ -489,13 +489,9 @@ class Dataset_vid(torch.utils.data.Dataset):
                     # positive match
                     t1 = np.random.choice(len(forge_indices) - t_max)
                     t2 = t1 + t_max
-                    forge_pos = forge_indices[t1 : t2]
-                    gt_pos = gt_indices[t1 : t2]
                 elif len(forge_indices) == t_max:
                     t1 = 0
                     t2 = len(forge_indices)
-                    forge_pos = forge_indices
-                    gt_pos = gt_indices
                 else:
                     # not enough forge frames as `t_max`
                     continue
@@ -505,7 +501,7 @@ class Dataset_vid(torch.utils.data.Dataset):
                     t1_n_gt = np.random.choice(
                         np.concatenate((
                             np.arange(0, gt_indices[t1]),
-                            np.arange(gt_indices[t1]+1, X.shape[0]-t_max)
+                            np.arange(gt_indices[t1]+1, X.shape[0]-t_max+1)
                         ))
                     )
                 except ValueError:
@@ -527,24 +523,23 @@ class Dataset_vid(torch.utils.data.Dataset):
                         # positive match
                         t1 = np.random.choice(len(forge_indices) - t_max)
                         t2 = t1 + t_max
-                        forge_pos = forge_indices[t1 : t2]
-                        gt_pos = gt_indices[t1 : t2]
                     elif len(forge_indices) == t_max:
                         t1 = 0
                         t2 = len(forge_indices)
-                        forge_pos = forge_indices
-                        gt_pos = gt_indices
                     else:
                         # not enough forge frames as `t_max`
                         continue
                     forge_neg = forge_indices[t1 : t2]
 
-                    t1_n_gt = np.random.choice(
-                        np.concatenate((
-                            np.arange(0, gt_indices[t1]),
-                            np.arange(gt_indices[t1]+1, X.shape[0]-t_max)
-                        ))
-                    )
+                    try:
+                        t1_n_gt = np.random.choice(
+                            np.concatenate((
+                                np.arange(0, gt_indices[t1]),
+                                np.arange(gt_indices[t1]+1, X.shape[0]-t_max+1)
+                            ))
+                        )
+                    except ValueError:
+                        continue
                     gt_neg = np.arange(t1_n_gt, t1_n_gt + t_max)
 
                     Xfn = X[forge_neg]
@@ -556,8 +551,7 @@ class Dataset_vid(torch.utils.data.Dataset):
                         yield rr
                         x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = [], [], [], [], []
                         break
-
-
+                
 
     def _load(self, ret, to_tensor=True, batch=None, is_training=True):
         X, Y_forge, forge_time, Y_orig, gt_time, name = ret

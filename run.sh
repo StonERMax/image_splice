@@ -1,9 +1,9 @@
 conda activate torch
 set -x CUDA_VISIBLE_DEVICES 0
 
-git checkout ablation_1_aspp
-env CUDA_VISIBLE_DEVICES=0 python main.py  \
- --model aspp1 --suffix _exp --max-epoch 5
+# git checkout ablation_1_aspp
+# env CUDA_VISIBLE_DEVICES=0 python main.py  \
+#  --model aspp1 --suffix _exp --max-epoch 5
 
 git checkout ablation_1_aspp
 env CUDA_VISIBLE_DEVICES=0 python main_train_temporal.py  --tune\
