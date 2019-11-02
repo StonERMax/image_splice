@@ -26,7 +26,7 @@ python main_train_vid.py --dataset $DATASET --ckpt ./ckpt/base_coco.pkl \
 python main_train_temporal.py --dataset $DATASET --ckpt ./ckpt/base_$DATASET.pkl \
     --tune --max-epoch 30 | tee -a ./log_out/run_$DATASET.txt
 
-python main_train_temporal.py --dataset $DATASET \ 
+python main_train_temporal.py --dataset $DATASET \
     --ckpt ./ckpt/temporal_base_$DATASET.pkl   --max-epoch 30 | tee -a ./log_out/run_$DATASET.txt
 
 # save on detseg_base_[dataset].pkl
