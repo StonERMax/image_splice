@@ -142,8 +142,7 @@ if __name__ == "__main__":
                 )
 
                 print(f"weight saved in {model_name}.pkl")
-
-
+                
                 test_temporal(
                     data_test,
                     model,
