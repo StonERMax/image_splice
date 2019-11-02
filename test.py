@@ -150,9 +150,8 @@ def test(
     out = metric.final()
 
     test_loss = np.mean(loss_list)
-    print(f"\ntest loss : {test_loss:.4f}\n")
-
-    return out, test_loss
+    # print(f"\ntest loss : {test_loss:.4f}\n")
+    return out
 
 
 @torch.no_grad()

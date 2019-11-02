@@ -147,12 +147,12 @@ class Dataset_vid(torch.utils.data.Dataset):
                 fname_target = os.path.join(
                     self.im_mani_root, *cur_file.parts[-2:]
                 )
-                if "davis" in self.videoset:
-                    _fsrc = f"{int(cur_file.stem)-offset:d}.png"
-                elif "SegTrackv2" in self.videoset:
-                    _fsrc = f"{int(cur_file.stem)-offset:d}.png"
-                else:
-                    _fsrc = f"{int(cur_file.stem)-offset:05d}.png"
+                # if "davis" in self.videoset:
+                #     _fsrc = f"{int(cur_file.stem)-offset:d}.png"
+                # elif "SegTrackv2" in self.videoset:
+                #     _fsrc = f"{int(cur_file.stem)-offset:d}.png"
+                # else:
+                _fsrc = f"{int(cur_file.stem)-offset:d}.png"
                 fname_src = os.path.join(
                     self.im_mani_root, cur_file.parts[-2], _fsrc
                 )
