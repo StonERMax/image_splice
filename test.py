@@ -105,13 +105,13 @@ def test(
 
         preds, predt, pred_det = model(Xs, Xt)
 
-        # loss_p = BCE_loss(predt, Yt, with_logits=True)
-        # loss_q = BCE_loss(preds, Ys, with_logits=True)
+        loss_p = BCE_loss(predt, Yt, with_logits=True)
+        loss_q = BCE_loss(preds, Ys, with_logits=True)
         # loss_det = F.binary_cross_entropy_with_logits(
         #     pred_det.squeeze(), labels.squeeze()
         # )
-        # loss = loss_p + loss_q + args.gamma * loss_det
-        # loss_list.append(loss.data.cpu().numpy())
+        loss = loss_p + loss_q # + args.gamma * loss_det
+        loss_list.append(loss.data.cpu().numpy())
         print(f"{i}:")
 
         def fnp(x):
@@ -122,8 +122,6 @@ def test(
 
         metric.update([fnp(Ys), fnp(Yt)], [fnp(preds), fnp(predt)])
 
-        if logger:
-            logger.add_scalar("test_loss/total", loss, iteration)
         if plot:
             plot_dir = Path("tmp_plot") / args.dataset
             plot_dir.mkdir(exist_ok=True, parents=True)
@@ -150,8 +148,8 @@ def test(
     out = metric.final()
 
     test_loss = np.mean(loss_list)
-    # print(f"\ntest loss : {test_loss:.4f}\n")
-    return out
+    print(f"\ntest loss : {test_loss:.4f}\n")
+    return test_loss
 
 
 @torch.no_grad()

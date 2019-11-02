@@ -19,6 +19,7 @@ def tval(x):
 def train(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()
+    module.set_bn_to_eval()
 
     Xs, Xt, Ys, Yt, labels = D
     if not isinstance(labels, torch.Tensor):
@@ -58,7 +59,7 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
 
     _str = (
         f"{iteration:5d}: f(probe+donor+det): {tval(loss_p):.4f} + "
-        + f"{tval(loss_q):.4f} + {tval(loss_det):.4f}"
+        + f"{tval(loss_q):.4f} + {tval(loss_det):.4f} = {tval(loss):.4f}"
     )
 
     if args.bw:

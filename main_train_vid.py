@@ -59,7 +59,7 @@ if __name__ == "__main__":
     #     model = nn.DataParallel(model)
 
     # optimizer
-    optimizer = torch.optim.Adam(model_params, lr=args.lr)
+    optimizer = torch.optim.Adam(model_params, lr=args.lr, weight_decay=0.0001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         factor=0.1,
@@ -106,7 +106,7 @@ if __name__ == "__main__":
             list_loss.append(loss)
             iteration += 1
 
-            if iteration % 100 == 0:
+            if iteration % 20 == 0:
                 scheduler.step(np.mean(list_loss))
                 list_loss = []
 
