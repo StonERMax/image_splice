@@ -59,10 +59,10 @@ if __name__ == "__main__":
     #     model = nn.DataParallel(model)
 
     # optimizer
-    optimizer = torch.optim.Adam(model_params, lr=args.lr, weight_decay=0.0001)
+    optimizer = torch.optim.Adam(model_params, lr=args.lr, weight_decay=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
-        factor=0.1,
+        factor=0.5,
         patience=10,
         verbose=True,
         threshold=0.1,
@@ -73,13 +73,14 @@ if __name__ == "__main__":
 
     data_test = dataset_vid.Dataset_vid(args, is_training=False)
     if args.test:
-        with torch.no_grad():
-            for i, ret in enumerate(data_test.load()):
-                Xs, Xt, Ys, Yt, labels = ret
-                Xs, Xt = (Xs.to(device), Xt.to(device))
-                _ = model(Xs, Xt)
-                if i > 5:
-                    break
+        if not args.eval_bn:
+            with torch.no_grad():
+                for i, ret in enumerate(data_test.load()):
+                    Xs, Xt, Ys, Yt, labels = ret
+                    Xs, Xt = (Xs.to(device), Xt.to(device))
+                    _ = model(Xs, Xt)
+                    if i > 5:
+                        break
         test(
             data_test,
             model,
@@ -100,17 +101,15 @@ if __name__ == "__main__":
     for ep in tqdm(range(init_ep, args.max_epoch)):
         # train
         for ret in data_train.load():
-            loss = train(
+            train(
                 ret, model, optimizer, args, iteration, device, logger=logger
             )
-            list_loss.append(loss)
+            
             iteration += 1
 
             if iteration % 20 == 0:
-                scheduler.step(np.mean(list_loss))
-                list_loss = []
 
-                test(
+                loss = test(
                     data_test,
                     model,
                     args,
@@ -119,6 +118,8 @@ if __name__ == "__main__":
                     logger=None,
                     num=5,
                 )
+
+                scheduler.step(np.mean(loss))
 
                 state = (
                     model.module.state_dict()

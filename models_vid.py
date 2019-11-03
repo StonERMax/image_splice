@@ -277,6 +277,9 @@ class DOAModel(nn.Module):
 
         self.temporal_detection = TemporalDetectionBranch(3*256)
 
+        self.drop2d = nn.Dropout2d(p=0.5)
+        self.drop = nn.Dropout(p=0.5)
+
         self.head_mask_p.apply(weights_init_normal)
         self.head_mask_q.apply(weights_init_normal)
 
@@ -290,28 +293,28 @@ class DOAModel(nn.Module):
         xpr = xp.reshape(-1, c, h, w)
         xqr = xq.reshape(-1, c, h, w)
 
-        xp_feat = self.encoder(xpr, out_size=self.hw)
-        xq_feat = self.encoder(xqr, out_size=self.hw)
+        xp_feat = self.drop2d(self.encoder(xpr, out_size=self.hw))
+        xq_feat = self.drop2d(self.encoder(xqr, out_size=self.hw))
 
         valp, valq, indp, indq = self.corrLayer(xp_feat, xq_feat)
 
         # attention weight
-        val_conv_p = self.val_conv(valp)
-        val_conv_q = self.val_conv(valq)
+        val_conv_p = self.drop(self.val_conv(valp))
+        val_conv_q = self.drop(self.val_conv(valq))
 
         #### Mask part : M  ####
-        xp_as1 = self.aspp_mask(xp_feat) * val_conv_p
-        xq_as1 = self.aspp_mask(xq_feat) * val_conv_q
+        xp_as1 = self.drop2d(self.aspp_mask(xp_feat)) * val_conv_p
+        xq_as1 = self.drop2d(self.aspp_mask(xq_feat)) * val_conv_q
 
-        xp_as2 = self.aspp_forge(xp_feat) * val_conv_p
-        xq_as2 = self.aspp_forge(xq_feat) * val_conv_q
+        xp_as2 = self.drop2d(self.aspp_forge(xp_feat)) * val_conv_p
+        xq_as2 = self.drop2d(self.aspp_forge(xq_feat)) * val_conv_q
 
-        xp_as = self.conv_as(torch.cat((xp_as1, xp_as2), dim=-3))
-        xq_as = self.conv_as(torch.cat((xq_as1, xq_as2), dim=-3))
+        xp_as = self.drop2d(self.conv_as(torch.cat((xp_as1, xp_as2), dim=-3)))
+        xq_as = self.drop2d(self.conv_as(torch.cat((xq_as1, xq_as2), dim=-3)))
 
         # Corrensponding mask and forge
-        xp_as_nl = self.gcn(xq_as, indp)
-        xq_as_nl = self.gcn(xp_as, indq)
+        xp_as_nl = self.drop2d(self.gcn(xq_as, indp))
+        xq_as_nl = self.drop2d(self.gcn(xp_as, indq))
 
         # Final Mask
         # b*t, c, h, w
@@ -319,8 +322,8 @@ class DOAModel(nn.Module):
         x_cat_q = torch.cat((xq_as, xq_as_nl), dim=-3)
 
         # b*t, c, h, w --> b*t, c', h, w
-        x_tgcn_p = self.t_gcn(x_cat_p.reshape(b, t, *x_cat_p.shape[1:]))
-        x_tgcn_q = self.t_gcn(x_cat_q.reshape(b, t, *x_cat_q.shape[1:]))
+        x_tgcn_p = self.drop2d(self.t_gcn(x_cat_p.reshape(b, t, *x_cat_p.shape[1:])))
+        x_tgcn_q = self.drop2d(self.t_gcn(x_cat_q.reshape(b, t, *x_cat_q.shape[1:])))
 
         x_final_p = torch.cat((x_cat_p, x_tgcn_p), dim=-3)
         x_final_q = torch.cat((x_cat_q, x_tgcn_q), dim=-3)
@@ -530,6 +533,14 @@ class CorrDetector(nn.Module):
         x_det = self.classifier_det(x12_abs)
 
         return x_det
+    
+    def set_bn_to_eval(self):
+        def fn(m):
+            classname = m.__class__.__name__
+            if classname.find("BatchNorm") != -1:
+                m.eval()
+
+        self.apply(fn)
 
 
 class Base_DetSegModel(nn.Module):
@@ -591,6 +602,14 @@ class Base_DetSegModel(nn.Module):
         out_det = self.lin_det(out_det)
 
         return out_det, out_seg
+    
+    def set_bn_to_eval(self):
+        def fn(m):
+            classname = m.__class__.__name__
+            if classname.find("BatchNorm") != -1:
+                m.eval()
+
+        self.apply(fn)
 
 
 def set_bn_eval(m):
@@ -626,6 +645,11 @@ class DetSegModel(nn.Module):
         seg = F.interpolate(seg, size=(h, w), mode="bilinear", align_corners=True)
         return out_det, seg
 
-    def freeze_bn(self):
-        self.apply(set_bn_eval)
+    def set_bn_to_eval(self):
+        def fn(m):
+            classname = m.__class__.__name__
+            if classname.find("BatchNorm") != -1:
+                m.eval()
+
+        self.apply(fn)
 

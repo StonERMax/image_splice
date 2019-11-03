@@ -19,7 +19,8 @@ def tval(x):
 def train(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()
-    module.set_bn_to_eval()
+    if args.eval_bn:
+        module.set_bn_to_eval()
 
     Xs, Xt, Ys, Yt, labels = D
     if not isinstance(labels, torch.Tensor):
@@ -76,8 +77,8 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
 def train_det(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()
-    # if iteration > 0:
-    #     module.freeze_bn()
+    if args.eval_bn:
+        module.set_bn_to_eval()
 
     X, Y, labels = D
     if not isinstance(labels, torch.Tensor):
@@ -111,6 +112,9 @@ def train_det(D, model, optimizer, args, iteration, device, logger=None):
 def train_temporal(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()
+    if args.eval_bn:
+        module.set_bn_to_eval()
+    
 
     Xs, Xt, Ys, Yt, labels = D
     Xs, Xt, Ys, Yt = Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device)
@@ -148,6 +152,8 @@ def train_temporal(D, model, optimizer, args, iteration, device, logger=None):
 def train_dmac(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()
+    if args.eval_bn:
+        module.set_bn_to_eval()
 
     Xs, Xt, Ys, Yt, labels = D
     if not isinstance(labels, torch.Tensor):

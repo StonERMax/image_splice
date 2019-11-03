@@ -67,11 +67,15 @@ if __name__ == "__main__":
         checkpoint = torch.load(args.ckpt)
         if args.tune:
             load_model(model, checkpoint["model_state"])
+            model_params = filter(lambda x: x.requires_grad, model.parameters())
         else:
             model.load_state_dict(checkpoint["model_state"])
+            model_params = model.parameters()
+    else:
+        model_params = model.parameters()
 
     # model_params = filter(lambda x: x.requires_grad, model.parameters())
-    model_params = model.parameters()
+    # model_params = model.parameters()
 
     model.to(device)
 
@@ -79,7 +83,7 @@ if __name__ == "__main__":
     #     model = nn.DataParallel(model)
 
     # optimizer
-    optimizer = torch.optim.Adam(model_params, lr=args.lr)
+    optimizer = torch.optim.Adam(model_params, lr=args.lr,  weight_decay=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         factor=0.1,
@@ -93,13 +97,14 @@ if __name__ == "__main__":
 
     data_test = dataset_vid.Dataset_vid(args, is_training=False)
     if args.test:
-        # with torch.no_grad():
-        #     for i, ret in enumerate(data_test.load_temporal(t_t_max=5, batch_size=5)):
-        #         Xs, Xt, Ys, Yt, labels = ret
-        #         Xs, Xt = Xs.to(device), Xt.to(device)
-        #         _ = model(Xs, Xt)
-        #         if i > 5:
-        #             break
+        # if not args.eval_bn:
+            # with torch.no_grad():
+            #     for i, ret in enumerate(data_test.load_temporal(t_t_max=5, batch_size=5)):
+            #         Xs, Xt, Ys, Yt, labels = ret
+            #         Xs, Xt = Xs.to(device), Xt.to(device)
+            #         _ = model(Xs, Xt)
+            #         if i > 5:
+            #             break
         test_temporal(
             data_test,
             model,

@@ -156,11 +156,10 @@ def test(
 def test_temporal(
     data, model, args, iteration, device, logger=None, num=None, plot=False
 ):
-
     model.eval()
-
     metric = utils.Metric()
     metric_im = utils.Metric_image()
+    loss_list = []
 
     if iteration is not None:
         print(f"{iteration}")
@@ -170,9 +169,13 @@ def test_temporal(
         labels = labels.data.numpy()
 
         Xs, Xt = (Xs.to(device), Xt.to(device))
-
         preds, predt, pred_det = model(Xs, Xt)
         print(f"{i}:")
+
+        loss_p = BCE_loss(predt, Yt, with_logits=True)
+        loss_q = BCE_loss(preds, Ys, with_logits=True)
+        loss = loss_p + loss_q 
+        loss_list.append(loss.data.cpu().numpy())
 
         predt = torch.sigmoid(predt)
         preds = torch.sigmoid(preds)
@@ -182,7 +185,6 @@ def test_temporal(
             [to_np(Ys)[labels == 1], to_np(Yt)[labels == 1]],
             [to_np(preds)[labels == 1], to_np(predt)[labels == 1]],
         )
-
         metric_im.update(labels, to_np(pred_det), log=True)
 
         if num is not None and i >= num:
@@ -192,7 +194,9 @@ def test_temporal(
     print("")
     metric_im.final()
 
-    return out
+    test_loss = np.mean(loss_list)
+    print(f"\ntest loss : {test_loss:.4f}\n")
+    return test_loss
 
 
 @torch.no_grad()

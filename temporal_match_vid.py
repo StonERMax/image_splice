@@ -92,15 +92,16 @@ if __name__ == "__main__":
     # mask_processor = utils.Preprocessor(args)
 
     # for batch normalization
-    with torch.no_grad():
-        for i, ret in enumerate(
-            dataset.load_temporal(t_t_max=5, batch_size=5)
-        ):
-            Xs, Xt, Ys, Yt, labels = ret
-            Xs, Xt = Xs.to(device), Xt.to(device)
-            _ = model(Xs, Xt)
-            if i > 5:
-                break
+    if not args.eval_bn:
+        with torch.no_grad():
+            for i, ret in enumerate(
+                dataset.load_temporal(t_t_max=5, batch_size=5)
+            ):
+                Xs, Xt, Ys, Yt, labels = ret
+                Xs, Xt = Xs.to(device), Xt.to(device)
+                _ = model(Xs, Xt)
+                if i > 5:
+                    break
 
     model.eval()
     model_forge.eval()

@@ -49,6 +49,8 @@ def config():
         "--plot", action="store_true", help="whether to plot during test"
     )
 
+    parser.add_argument("--eval-bn", action="store_true")
+
     parser.add_argument("--mode", type=str, default=None)
 
     args = parser.parse_args()
@@ -105,6 +107,7 @@ def config_video():
     )
     # split
     parser.add_argument("--split", type=float, default=0.5)
+    parser.add_argument("--eval-bn", action="store_true")
 
     args = parser.parse_args()
     args.size = tuple(int(i) for i in args.size.split("x"))
@@ -163,6 +166,7 @@ def config_video_full():
     )
     # split
     parser.add_argument("--split", type=float, default=0.5)
+    parser.add_argument("--eval-bn", action="store_true")
 
     args = parser.parse_args()
     args.size = tuple(int(i) for i in args.size.split("x"))
@@ -221,6 +225,7 @@ def config_video_temporal():
     # split
     parser.add_argument("--split", type=float, default=0.5)
     parser.add_argument("--tune", action="store_true")
+    parser.add_argument("--eval-bn", action="store_true")
 
 
     args = parser.parse_args()

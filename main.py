@@ -79,13 +79,14 @@ if __name__ == "__main__":
     )
 
     if args.test:
-        with torch.no_grad():
-            for i, ret in enumerate(data_test.load()):
-                Xs, Xt, Ys, Yt, labels = ret
-                Xs, Xt = (Xs.to(device), Xt.to(device))
-                _ = model(Xs, Xt)
-                if i > 5:
-                    break
+        if not args.eval_bn:
+            with torch.no_grad():
+                for i, ret in enumerate(data_test.load()):
+                    Xs, Xt, Ys, Yt, labels = ret
+                    Xs, Xt = (Xs.to(device), Xt.to(device))
+                    _ = model(Xs, Xt)
+                    if i > 5:
+                        break
         test(
             data_test,
             model,

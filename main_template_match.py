@@ -1,3 +1,6 @@
+"""
+forgeery detection
+"""
 import os
 import numpy as np
 import torch
@@ -75,13 +78,14 @@ if __name__ == "__main__":
     data_test = dataset_vid.Dataset_vid(args, is_training=False)
 
     if args.test:
-        # with torch.no_grad():
-        #     for i, ret in enumerate(data_test.load_mani()):
-        #         X, *_ = ret
-        #         X = X.to(device)
-        #         _ = model(X)
-        #         if i > 30:
-        #             break
+        # if not args.eval_bn:
+            # with torch.no_grad():
+            #     for i, ret in enumerate(data_test.load_mani()):
+            #         X, *_ = ret
+            #         X = X.to(device)
+            #         _ = model(X)
+            #         if i > 30:
+            #             break
         test_det(
             data_test,
             model,
