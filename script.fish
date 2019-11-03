@@ -27,7 +27,7 @@ python main_train_temporal.py --dataset $DATASET --ckpt ./ckpt/base_$DATASET.pkl
     --tune --max-epoch 30 --eval-bn | tee -a ./log_out/run_$DATASET.txt
 
 python main_train_temporal.py --dataset $DATASET --eval-bn \
-    --ckpt ./ckpt/temporal_base_$DATASET.pkl   --max-epoch 30 --lr 1e-5 | tee -a ./log_out/run_$DATASET.txt
+    --ckpt ./ckpt/temporal_base_$DATASET.pkl  --batch-size 2 --max-epoch 30 --lr 1e-5 | tee -a ./log_out/run_$DATASET.txt
 
 # save on detseg_base_[dataset].pkl
 python main_template_match.py --dataset $DATASET --max-epoch 50 | tee -a ./log_out/run_$DATASET.txt

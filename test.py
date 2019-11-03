@@ -166,15 +166,20 @@ def test_temporal(
 
     for i, ret in enumerate(data.load_temporal(evaluate=True)):
         Xs, Xt, Ys, Yt, labels = ret
-        labels = labels.data.numpy()
 
+        labels_gpu = labels.to(device)
+        labels = labels.data.numpy()
         Xs, Xt = (Xs.to(device), Xt.to(device))
+        Ys, Yt = (Ys.to(device), Yt.to(device))
+        
         preds, predt, pred_det = model(Xs, Xt)
         print(f"{i}:")
 
         loss_p = BCE_loss(predt, Yt, with_logits=True)
         loss_q = BCE_loss(preds, Ys, with_logits=True)
-        loss = loss_p + loss_q 
+        loss_det = F.binary_cross_entropy_with_logits(pred_det, labels_gpu)
+
+        loss = loss_p + loss_q + args.gamma * loss_det
         loss_list.append(loss.data.cpu().numpy())
 
         predt = torch.sigmoid(predt)
