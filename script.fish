@@ -19,8 +19,8 @@ echo "dataset : " $DATASET
 echo "cuda devices: " $CUDA_VISIBLE_DEVICES
 
 # output model name: base_[dataset].pkl
-# python main_train_vid.py --dataset $DATASET --ckpt ./ckpt/base_coco.pkl \
-#     --max-epoch 10 --eval-bn | tee  ./log_out/run_$DATASET.txt
+python main_train_vid.py --dataset $DATASET --ckpt ./ckpt/base_coco.pkl \
+    --max-epoch 10 --eval-bn | tee  ./log_out/run_$DATASET.txt
 
 # save on temporal_base_[dataset].pkl
 python main_train_temporal.py --dataset $DATASET --ckpt ./ckpt/base_$DATASET.pkl \

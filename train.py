@@ -127,7 +127,11 @@ def train_temporal(D, model, optimizer, args, iteration, device, logger=None):
     loss_s = BCE_loss(preds[mask_label], Ys[mask_label], with_logits=True)
 
     # detection whether video clips are copy move
-    loss_det = F.binary_cross_entropy_with_logits(pred_det, labels)
+    pred_det = torch.sigmoid(pred_det)
+    pos_mean = torch.sum(labels * pred_det) / (torch.sum(labels)+1e-8)
+    neg_mean = torch.sum((1-labels) * pred_det) / (torch.sum(1-labels)+1e-8)
+    # loss_det = F.binary_cross_entropy_with_logits(pred_det, labels)
+    loss_det = torch.max(neg_mean - pos_mean + args.gamma2, torch.tensor(0.).to(device))
 
     loss = loss_s + loss_t + args.gamma * loss_det
 
