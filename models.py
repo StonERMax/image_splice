@@ -22,7 +22,7 @@ class Corr(nn.Module):
         super().__init__()
         self.topk = topk
 
-        self.alpha = nn.Parameter(torch.tensor(10.0, dtype=torch.float32))
+        self.alpha = nn.Parameter(torch.tensor(1.0, dtype=torch.float32))
 
     def forward(self, xp, xq):
         b, c, h1, w1 = xp.shape
@@ -233,8 +233,8 @@ class DOAModel(nn.Module):
         # self.gcn_forge = GCN()
         self.gcn = GCN(in_feat=256, out_feat=256)
 
-        self.drop2d = nn.Dropout2d(p=0.5)
-        self.drop = nn.Dropout(p=0.5)
+        self.drop2d = lambda x: x  #nn.Dropout2d(p=0.5)
+        self.drop = lambda x: x   #nn.Dropout(p=0.5)
 
         # detection branch
         # self.detection = DetectionBranch(4 * 256)

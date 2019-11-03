@@ -277,8 +277,8 @@ class DOAModel(nn.Module):
 
         self.temporal_detection = TemporalDetectionBranch(3*256)
 
-        self.drop2d = nn.Dropout2d(p=0.5)
-        self.drop = nn.Dropout(p=0.5)
+        self.drop2d = lambda x: x  #nn.Dropout2d(p=0.5)
+        self.drop = lambda x: x   #nn.Dropout(p=0.5)
 
         self.head_mask_p.apply(weights_init_normal)
         self.head_mask_q.apply(weights_init_normal)
