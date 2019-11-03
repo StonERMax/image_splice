@@ -131,7 +131,7 @@ def train_temporal(D, model, optimizer, args, iteration, device, logger=None):
     pos_mean = torch.sum(labels * pred_det) / (torch.sum(labels)+1e-8)
     neg_mean = torch.sum((1-labels) * pred_det) / (torch.sum(1-labels)+1e-8)
     # loss_det = F.binary_cross_entropy_with_logits(pred_det, labels)
-    loss_det = torch.max(neg_mean - pos_mean + args.gamma2, torch.tensor(0.).to(device))
+    loss_det = torch.max(neg_mean - pos_mean + args.beta, torch.tensor(0.).to(device))
 
     loss = loss_s + loss_t + args.gamma * loss_det
 

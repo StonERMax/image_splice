@@ -232,11 +232,23 @@ class Dataset_vid(torch.utils.data.Dataset):
     def load(self, shuffle=True, batch_size=None):
         if batch_size is None:
             batch_size = self.args.batch_size
-        loader = torch.utils.data.DataLoader(
-            self, batch_size=batch_size, num_workers=4, shuffle=True
-        )
-        return loader
-
+        # loader = torch.utils.data.DataLoader(
+        #     self, batch_size=batch_size, num_workers=4, shuffle=True
+        # )
+        ind = np.arange(len(self))
+        if shuffle:
+            np.random.shuffle(ind)
+        for i in range(0, len(ind)-batch_size, batch_size):
+            Xs, Xt, Ys, Yt, labels = [], [], [], [], []
+            for j in range(i, i+batch_size):
+                im_s, im_t, mask_s, mask_t, label = self[ind[j]]
+                Xs.append(im_s)
+                Xt.append(im_t)
+                Ys.append(mask_s)
+                Yt.append(mask_t)
+                labels.append(label)
+            yield torch.stack(Xs, 0), torch.stack(Xt, 0), torch.stack(Ys, 0), torch.stack(Yt, 0), np.array(labels)
+        
     def load_mani(self, batch_size=None, shuffle=True):
         if self.is_training:
             idx = self.train_index

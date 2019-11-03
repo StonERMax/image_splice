@@ -150,6 +150,9 @@ if __name__ == "__main__":
 
         D_pred = np.zeros((N, N, 2, *args.size))
         _ind = np.where(pred_det > args.thres)[0]
+        if len(_ind) == 0:
+            pred_det = (pred_det - pred_det.min()) / (pred_det.max()-pred_det.min())
+            _ind = np.where(pred_det > args.thres)[0]
         pred_forge_time = np.arange(_ind.min(), _ind.max() + 1)
         N_forge = len(pred_forge_time)
 

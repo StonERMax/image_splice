@@ -90,7 +90,7 @@ if __name__ == "__main__":
     #     model = nn.DataParallel(model)
 
     # optimizer
-    optimizer = torch.optim.Adam(model_params, lr=args.lr,  weight_decay=0.001)
+    optimizer = torch.optim.Adam(model_params, lr=args.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         factor=0.1,
