@@ -32,6 +32,11 @@ def load_model(model, state):
         if name in name_req_grad:
             param.requires_grad = False
 
+def set_req_grad(model):
+    for name, param in model.named_parameters():
+        if name.find("t_gcn") == -1 and name.find("temporal_detection") == -1 and name.find("head_mask") == -1:
+            param.requires_grad = False
+
 
 if __name__ == "__main__":
     # device
@@ -66,7 +71,9 @@ if __name__ == "__main__":
     if args.ckpt is not None:
         checkpoint = torch.load(args.ckpt)
         if args.tune:
-            load_model(model, checkpoint["model_state"])
+            # load_model(model, checkpoint["model_state"])
+            model.load_state_dict(checkpoint["model_state"], strict=False)
+            set_req_grad(model)
             model_params = filter(lambda x: x.requires_grad, model.parameters())
         else:
             model.load_state_dict(checkpoint["model_state"])
@@ -131,7 +138,7 @@ if __name__ == "__main__":
             list_loss.append(loss)
             iteration += 1
 
-            if iteration % 100 == 0:
+            if iteration % 50 == 0:
                 scheduler.step(np.mean(list_loss))
                 list_loss = []
 

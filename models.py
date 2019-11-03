@@ -229,8 +229,7 @@ class DOAModel(nn.Module):
             nn.BatchNorm2d(256),
             nn.ReLU()
         )
-        # self.gcn_mask = GCN()
-        # self.gcn_forge = GCN()
+
         self.gcn = GCN(in_feat=256, out_feat=256)
 
         self.drop2d = lambda x: x  #nn.Dropout2d(p=0.5)

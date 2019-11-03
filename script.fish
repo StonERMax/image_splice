@@ -20,13 +20,13 @@ echo "cuda devices: " $CUDA_VISIBLE_DEVICES
 
 # output model name: base_[dataset].pkl
 python main_train_vid.py --dataset $DATASET --ckpt ./ckpt/base_coco.pkl \
-    --max-epoch 10 --eval-bn | tee  ./log_out/run_$DATASET.txt
+    --max-epoch 10 | tee  ./log_out/run_$DATASET.txt
 
 # save on temporal_base_[dataset].pkl
 python main_train_temporal.py --dataset $DATASET --ckpt ./ckpt/base_$DATASET.pkl \
-    --tune --max-epoch 30 --eval-bn | tee -a ./log_out/run_$DATASET.txt
+    --tune --max-epoch 30 | tee -a ./log_out/run_$DATASET.txt
 
-python main_train_temporal.py --dataset $DATASET --eval-bn \
+python main_train_temporal.py --dataset $DATASET\
     --ckpt ./ckpt/temporal_base_$DATASET.pkl  --batch-size 2 --max-epoch 30 --lr 1e-5 | tee -a ./log_out/run_$DATASET.txt
 
 # save on detseg_base_[dataset].pkl

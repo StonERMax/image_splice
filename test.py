@@ -158,8 +158,9 @@ def test_temporal(
 ):
     model.eval()
     metric = utils.Metric()
-    metric_im = utils.Metric_image()
+    # metric_im = utils.Metric_image()
     loss_list = []
+    im_pred = []
 
     if iteration is not None:
         print(f"{iteration}")
@@ -177,9 +178,9 @@ def test_temporal(
 
         loss_p = BCE_loss(predt, Yt, with_logits=True)
         loss_q = BCE_loss(preds, Ys, with_logits=True)
-        loss_det = F.binary_cross_entropy_with_logits(pred_det, labels_gpu)
+        # loss_det = F.binary_cross_entropy_with_logits(pred_det, labels_gpu)
 
-        loss = loss_p + loss_q + args.gamma * loss_det
+        loss = loss_p + loss_q #+ args.gamma * loss_det
         loss_list.append(loss.data.cpu().numpy())
 
         predt = torch.sigmoid(predt)
@@ -190,14 +191,18 @@ def test_temporal(
             [to_np(Ys)[labels == 1], to_np(Yt)[labels == 1]],
             [to_np(preds)[labels == 1], to_np(predt)[labels == 1]],
         )
-        metric_im.update(labels, to_np(pred_det), log=True)
+
+        im_pred.append(to_np(pred_det).argmax()==labels.argmax())
+        # metric_im.update(labels, _pred, log=True)
 
         if num is not None and i >= num:
             break
 
     out = metric.final()
     print("")
-    metric_im.final()
+    # metric_im.final()
+
+    print(f"\nDetection accuracy: {np.sum(im_pred)/len(im_pred)*100: .2f}%\n")
 
     test_loss = np.mean(loss_list)
     print(f"\ntest loss : {test_loss:.4f}\n")

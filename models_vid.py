@@ -27,7 +27,7 @@ def create_temp_affinity(t=5):
 class TGCN(nn.Module):
     """ temporal GCN """
 
-    def __init__(self, in_feat=4 * 256, out_feat=256):
+    def __init__(self, in_feat=2 * 256, out_feat=256):
         super().__init__()
         self.in_feat = in_feat
 
@@ -243,7 +243,7 @@ class DOAModel(nn.Module):
         )
 
         self.head_mask_p = nn.Sequential(
-            nn.Conv2d(3 * 256, 2 * 256, 1),
+            nn.Conv2d(2 * 256, 2 * 256, 1),
             nn.BatchNorm2d(2 * 256),
             nn.ReLU(),
             nn.Conv2d(2 * 256, 256, 3, padding=1),
@@ -256,7 +256,7 @@ class DOAModel(nn.Module):
         )
 
         self.head_mask_q = nn.Sequential(
-            nn.Conv2d(3 * 256, 2 * 256, 1),
+            nn.Conv2d(2 * 256, 2 * 256, 1),
             nn.BatchNorm2d(2 * 256),
             nn.ReLU(),
             nn.Conv2d(2 * 256, 256, 3, padding=1),
@@ -273,9 +273,9 @@ class DOAModel(nn.Module):
         )
 
         self.gcn = GCN(in_feat=256, out_feat=256)
-        self.t_gcn = TGCN(in_feat=2 * 256, out_feat=256)
+        self.t_gcn = TGCN(in_feat=2 * 256, out_feat=2*256)
 
-        self.temporal_detection = TemporalDetectionBranch(3*256)
+        self.temporal_detection = TemporalDetectionBranch(2*256)
 
         self.drop2d = lambda x: x  #nn.Dropout2d(p=0.5)
         self.drop = lambda x: x   #nn.Dropout(p=0.5)
@@ -325,8 +325,11 @@ class DOAModel(nn.Module):
         x_tgcn_p = self.drop2d(self.t_gcn(x_cat_p.reshape(b, t, *x_cat_p.shape[1:])))
         x_tgcn_q = self.drop2d(self.t_gcn(x_cat_q.reshape(b, t, *x_cat_q.shape[1:])))
 
-        x_final_p = torch.cat((x_cat_p, x_tgcn_p), dim=-3)
-        x_final_q = torch.cat((x_cat_q, x_tgcn_q), dim=-3)
+        # x_final_p = torch.cat((x_cat_p, x_tgcn_p), dim=-3)
+        # x_final_q = torch.cat((x_cat_q, x_tgcn_q), dim=-3)
+
+        x_final_p = (x_cat_p + x_tgcn_p) / 2
+        x_final_q = (x_cat_q + x_tgcn_q) / 2
 
         outp = self.head_mask_p(x_final_p)
         outq = self.head_mask_q(x_final_q)
