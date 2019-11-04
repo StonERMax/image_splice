@@ -604,6 +604,8 @@ class DetSegModel(nn.Module):
     def forward(self, x):
         b, c, h, w = x.shape
         out_det, base_seg = self.base(x)
+
+        seg = self.aspp(base_seg)
         seg = self.head(base_seg)
         seg = F.interpolate(
             seg, size=(h, w), mode="bilinear", align_corners=True

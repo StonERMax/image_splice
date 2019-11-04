@@ -9,7 +9,7 @@ def config():
     parser.add_argument("--dataset", type=str, default="coco")
 
     parser.add_argument(
-        "--size", type=str, default="320x320", help="image shape (h x w)"
+        "--size", type=str, default="320x320", help="image shape (w x h)"
     )
     parser.add_argument("--model", type=str, default="base", help="model name")
     # network config
@@ -36,9 +36,9 @@ def config():
     )
     parser.add_argument("--out-channel", type=int, default=1)
     parser.add_argument("--gamma", type=float, default=0.1)
-    parser.add_argument("--gamma2", type=float, default=1e-5)
+    parser.add_argument("--gamma2", type=float, default=0.1)
     parser.add_argument(
-        "--bw", action="store_true", help="whether to add boundary loss"
+        "--bw", action="store_false", help="whether to add boundary loss"
     )
     parser.add_argument(
         "--wo-det",
@@ -48,6 +48,8 @@ def config():
     parser.add_argument(
         "--plot", action="store_true", help="whether to plot during test"
     )
+
+    parser.add_argument("--tune", action="store_true")
 
     parser.add_argument("--eval-bn", action="store_true")
 
@@ -63,7 +65,7 @@ def config_video():
     parser = argparse.ArgumentParser(prog="CISDL_video")
     parser.add_argument("--dataset", type=str, default="tmp_youtube")
     parser.add_argument(
-        "--size", type=str, default="320x320", help="image shape (h x w)"
+        "--size", type=str, default="320x320", help="image shape (w x h)"
     )
     parser.add_argument("--model", type=str, default="base", help="model name")
     # network config
@@ -93,9 +95,9 @@ def config_video():
     )
     parser.add_argument("--out-channel", type=int, default=1)
     parser.add_argument("--gamma", type=float, default=0.1)
-    parser.add_argument("--gamma2", type=float, default=1)
+    parser.add_argument("--gamma2", type=float, default=0.1)
     parser.add_argument(
-        "--bw", action="store_true", help="whether to add boundary loss"
+        "--bw", action="store_false", help="whether to add boundary loss"
     )
     parser.add_argument(
         "--plot", action="store_true", help="whether to plot during test"
@@ -109,6 +111,8 @@ def config_video():
     parser.add_argument("--split", type=float, default=0.5)
     parser.add_argument("--eval-bn", action="store_true")
 
+    parser.add_argument("--tune", action="store_true")
+
     args = parser.parse_args()
     args.size = tuple(int(i) for i in args.size.split("x"))
     print(args)
@@ -119,7 +123,7 @@ def config_video_full():
     parser = argparse.ArgumentParser(prog="CISDL_video")
     parser.add_argument("--dataset", type=str, default="tmp_youtube")
     parser.add_argument(
-        "--size", type=str, default="320x320", help="image shape (h x w)"
+        "--size", type=str, default="320x320", help="image shape (w x h)"
     )
     parser.add_argument("--model", type=str, default="base", help="model name")
     # network config
@@ -152,9 +156,9 @@ def config_video_full():
     )
     parser.add_argument("--out-channel", type=int, default=1)
     parser.add_argument("--gamma", type=float, default=0.1)
-    parser.add_argument("--gamma2", type=float, default=1)
+    parser.add_argument("--gamma2", type=float, default=0.1)
     parser.add_argument(
-        "--bw", action="store_true", help="whether to add boundary loss"
+        "--bw", action="store_false", help="whether to add boundary loss"
     )
     parser.add_argument(
         "--plot", action="store_true", help="whether to plot during test"
@@ -167,6 +171,7 @@ def config_video_full():
     # split
     parser.add_argument("--split", type=float, default=0.5)
     parser.add_argument("--eval-bn", action="store_true")
+    parser.add_argument("--tune", action="store_true")
 
     args = parser.parse_args()
     args.size = tuple(int(i) for i in args.size.split("x"))
@@ -179,7 +184,7 @@ def config_video_temporal():
     parser = argparse.ArgumentParser(prog="CISDL_video")
     parser.add_argument("--dataset", type=str, default="tmp_youtube")
     parser.add_argument(
-        "--size", type=str, default="320x320", help="image shape (h x w)"
+        "--size", type=str, default="320x320", help="image shape (w x h)"
     )
     parser.add_argument("--model", type=str, default="base", help="model name")
     # network config
@@ -213,7 +218,7 @@ def config_video_temporal():
     parser.add_argument("--gamma2", type=float, default=0.3)
     parser.add_argument("--beta", type=float, default=0.1)
     parser.add_argument(
-        "--bw", action="store_true", help="whether to add boundary loss"
+        "--bw", action="store_false", help="whether to add boundary loss"
     )
     parser.add_argument(
         "--plot", action="store_true", help="whether to plot during test"

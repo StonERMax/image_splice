@@ -30,7 +30,7 @@ python main_train_temporal.py --dataset $DATASET\
     --ckpt ./ckpt/temporal_base_$DATASET.pkl  --batch-size 2 --max-epoch 30 --lr 1e-5 | tee -a ./log_out/run_$DATASET.txt
 
 # save on detseg_base_[dataset].pkl
-python main_template_match.py --dataset $DATASET --max-epoch 50 | tee -a ./log_out/run_$DATASET.txt
+python main_template_match.py --dataset $DATASET --max-epoch 50 --ckpt ./ckpt/detseg_base_coco.pkl | tee -a ./log_out/run_$DATASET.txt
 
 ######## Test #########
 python temporal_match_vid.py --dataset $DATASET --ckpt ./ckpt/temporal_base_$DATASET.pkl \

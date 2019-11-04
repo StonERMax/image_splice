@@ -18,6 +18,12 @@ from test import test_det
 import dataset_vid
 
 
+def set_req_grad(model):
+    for name, param in model.named_parameters():
+        if name.find("base") != -1:
+            param.requires_grad = False
+
+
 if __name__ == "__main__":
     # device
     if torch.cuda.is_available():
@@ -58,10 +64,10 @@ if __name__ == "__main__":
         checkpoint = torch.load(args.ckpt)
         model.load_state_dict(checkpoint["model_state"], strict=False)
 
-    model_params = model.parameters()
+    if args.tune:
+        set_req_grad(model)
 
-    # if torch.cuda.device_count() > 1:
-    #     model = nn.DataParallel(model)
+    model_params = filter(lambda x: x.requires_grad, model.parameters())
 
     # optimizer
     optimizer = torch.optim.Adam(model_params, lr=args.lr)
@@ -78,14 +84,14 @@ if __name__ == "__main__":
     data_test = dataset_vid.Dataset_vid(args, is_training=False)
 
     if args.test:
-        # if not args.eval_bn:
-            # with torch.no_grad():
-            #     for i, ret in enumerate(data_test.load_mani()):
-            #         X, *_ = ret
-            #         X = X.to(device)
-            #         _ = model(X)
-            #         if i > 30:
-            #             break
+        if not args.eval_bn:
+            with torch.no_grad():
+                for i, ret in enumerate(data_test.load_mani()):
+                    X, *_ = ret
+                    X = X.to(device)
+                    _ = model(X)
+                    if i > 30:
+                        break
         test_det(
             data_test,
             model,

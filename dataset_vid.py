@@ -604,17 +604,17 @@ class Dataset_vid(torch.utils.data.Dataset):
             # mask_tem[Y_orig[ind_forge] > 0.5] = 0.5
             mask_tem[Y_forge[ind_forge] > 0.5] = 1
 
-            im_f = skimage.transform.resize(
-                im_forge, self.args.size, order=1, anti_aliasing=False
+            im_f = cv2.resize(
+                im_forge, self.args.size, interpolation=1
             )
-            im_o = skimage.transform.resize(
-                im_orig, self.args.size, order=1, anti_aliasing=False
+            im_o = cv2.resize(
+                im_orig, self.args.size, interpolation=1
             )
-            mask_ref = skimage.transform.resize(
-                mask_ref, self.args.size, order=0, anti_aliasing=False
+            mask_ref = cv2.resize(
+                mask_ref, self.args.size, interpolation=0
             )
-            mask_tem = skimage.transform.resize(
-                mask_tem, self.args.size, order=0, anti_aliasing=False
+            mask_tem = cv2.resize(
+                mask_tem, self.args.size, interpolation=0
             )
 
             Xref[k] = im_o  # * (1 - (mask_ref == 0.5)

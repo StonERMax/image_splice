@@ -88,7 +88,7 @@ if __name__ == "__main__":
             iteration=None,
             device=device,
             logger=None,
-            num=5,
+            num=10,
             plot=True,
         )
         logger.close()

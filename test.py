@@ -192,7 +192,9 @@ def test_temporal(
             [to_np(preds)[labels == 1], to_np(predt)[labels == 1]],
         )
 
-        im_pred.append(to_np(pred_det).argmax()==labels.argmax())
+        out_ = to_np(pred_det).argmax()==labels.argmax()
+        im_pred.append(out_)
+        print("CORRECTLY DETECTED!!" if out_ else "WRONG DETECTION!!")
         # metric_im.update(labels, _pred, log=True)
 
         if num is not None and i >= num:

@@ -92,6 +92,12 @@ def train_det(D, model, optimizer, args, iteration, device, logger=None):
     loss_seg = F.binary_cross_entropy_with_logits(pred_seg, Y)
 
     loss = loss_seg + args.gamma * loss_det
+    if args.bw:
+        gauss = kornia.filters.GaussianBlur2d((7, 7), (5, 5))
+        Yt_edge = (kornia.sobel(gauss(Y)) > 0.01).float()
+
+        loss_edge = torch.sum(-Yt_edge * F.logsigmoid(pred_seg)) / (torch.sum(Yt_edge)+1e-8)
+        loss += args.gamma2 * loss_edge
 
     optimizer.zero_grad()
     loss.backward()
@@ -99,9 +105,14 @@ def train_det(D, model, optimizer, args, iteration, device, logger=None):
 
     loss_val = loss.data.cpu().numpy()
 
-    print(
+    _str = (
         f"{iteration}: loss: {loss_seg.data.cpu().numpy():.4f} + {loss_det.data.cpu().numpy():.4f}"
     )
+
+    if args.bw:
+        _str += f" + {tval(loss_edge):.4f}"
+
+    print(_str)
 
     if logger is not None:
         logger.add_scalar("train_loss/total", loss, iteration)
