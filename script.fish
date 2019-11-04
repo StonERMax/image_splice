@@ -20,20 +20,19 @@ echo "cuda devices: " $CUDA_VISIBLE_DEVICES
 
 # output model name: base_[dataset].pkl
 python main_train_vid.py --dataset $DATASET --ckpt ./ckpt/base_coco.pkl \
-    --max-epoch 10 | tee  ./log_out/run_$DATASET.txt
+    --max-epoch 30 --lr 1e-4 | tee  ./log_out/run_$DATASET.txt
 
 # save on temporal_base_[dataset].pkl
 python main_train_temporal.py --dataset $DATASET --ckpt ./ckpt/base_$DATASET.pkl \
-    --tune --max-epoch 30 | tee -a ./log_out/run_$DATASET.txt
+    --tune --max-epoch 30 --lr 1e-4 | tee -a ./log_out/run_$DATASET.txt
 
-python main_train_temporal.py --dataset $DATASET\
+python main_train_temporal.py --dataset $DATASET  \
     --ckpt ./ckpt/temporal_base_$DATASET.pkl  --batch-size 2 --max-epoch 30 --lr 1e-5 | tee -a ./log_out/run_$DATASET.txt
 
 # save on detseg_base_[dataset].pkl
 python main_template_match.py --dataset $DATASET --max-epoch 50 --ckpt ./ckpt/detseg_base_coco.pkl | tee -a ./log_out/run_$DATASET.txt
-python main_template_match.py --dataset $DATASET --max-epoch 50 --tune \
+python main_template_match.py --dataset $DATASET --max-epoch 50 --tune --lr 1e-4 \
     --ckpt ./ckpt/detseg_base_$DATASET.pkl | tee -a ./log_out/run_$DATASET.txt
-
 
 ######## Test #########
 python temporal_match_vid.py --dataset $DATASET --ckpt ./ckpt/temporal_base_$DATASET.pkl \

@@ -63,7 +63,7 @@ def config():
 
 def config_video():
     parser = argparse.ArgumentParser(prog="CISDL_video")
-    parser.add_argument("--dataset", type=str, default="tmp_youtube")
+    parser.add_argument("--dataset", type=str, default="youtube")
     parser.add_argument(
         "--size", type=str, default="320x320", help="image shape (w x h)"
     )
@@ -121,7 +121,7 @@ def config_video():
 
 def config_video_full():
     parser = argparse.ArgumentParser(prog="CISDL_video")
-    parser.add_argument("--dataset", type=str, default="tmp_youtube")
+    parser.add_argument("--dataset", type=str, default="youtube")
     parser.add_argument(
         "--size", type=str, default="320x320", help="image shape (w x h)"
     )
@@ -182,7 +182,7 @@ def config_video_full():
 
 def config_video_temporal():
     parser = argparse.ArgumentParser(prog="CISDL_video")
-    parser.add_argument("--dataset", type=str, default="tmp_youtube")
+    parser.add_argument("--dataset", type=str, default="youtube")
     parser.add_argument(
         "--size", type=str, default="320x320", help="image shape (w x h)"
     )
