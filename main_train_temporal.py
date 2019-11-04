@@ -104,14 +104,14 @@ if __name__ == "__main__":
 
     data_test = dataset_vid.Dataset_vid(args, is_training=False)
     if args.test:
-        # if not args.eval_bn:
-            # with torch.no_grad():
-            #     for i, ret in enumerate(data_test.load_temporal(t_t_max=5, batch_size=5)):
-            #         Xs, Xt, Ys, Yt, labels = ret
-            #         Xs, Xt = Xs.to(device), Xt.to(device)
-            #         _ = model(Xs, Xt)
-            #         if i > 5:
-            #             break
+        if not args.eval_bn:
+            with torch.no_grad():
+                for i, ret in enumerate(data_test.load_temporal(t_t_max=5, batch_size=5)):
+                    Xs, Xt, Ys, Yt, labels = ret
+                    Xs, Xt = Xs.to(device), Xt.to(device)
+                    _ = model(Xs, Xt)
+                    if i > 5:
+                        break
         test_temporal(
             data_test,
             model,
@@ -119,8 +119,8 @@ if __name__ == "__main__":
             iteration=None,
             device=device,
             logger=None,
-            num=5,
-            plot=True,
+            num=30,
+            plot=args.plot,
         )
         logger.close()
         raise SystemExit

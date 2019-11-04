@@ -21,12 +21,17 @@ from utils import CustomTransform, MultiPagePdf
 import models
 import models_vid
 import utils
+import shutil
+
+import sys
+
+if not sys.warnoptions:
+    import warnings
+    warnings.simplefilter("ignore")
 
 
 def iou_time(t1, t2):
-    iou = len(set(t1).intersection(set(t2))) / (
-        max(len(set(t1).union(set(t2))), 1e-8)
-    )
+    iou = len(set(t1).intersection(set(t2))) / (max(len(set(t1).union(set(t2))), 1e-8))
     return iou
 
 
@@ -60,7 +65,7 @@ if __name__ == "__main__":
 
     print(f"Model Name: {model_name}")
 
-    transform = utils.CustomTransform(size=args.size)
+    tsfm = utils.CustomTransform(size=args.size)
 
     # model for manipulation detection
     model_forge = models.Base_DetSegModel()
@@ -94,9 +99,7 @@ if __name__ == "__main__":
     # for batch normalization
     if not args.eval_bn:
         with torch.no_grad():
-            for i, ret in enumerate(
-                dataset.load_temporal(t_t_max=5, batch_size=5)
-            ):
+            for i, ret in enumerate(dataset.load_temporal(t_t_max=5, batch_size=5)):
                 Xs, Xt, Ys, Yt, labels = ret
                 Xs, Xt = Xs.to(device), Xt.to(device)
                 _ = model(Xs, Xt)
@@ -110,9 +113,7 @@ if __name__ == "__main__":
 
     counter = 0
     for ret in tqdm(
-        dataset.load_videos_all(
-            is_training=False, shuffle=False, to_tensor=True
-        )
+        dataset.load_videos_all(is_training=False, shuffle=False, to_tensor=True)
     ):
         X, Y_forge, forge_time, Y_orig, gt_time, name = ret
 
@@ -151,7 +152,7 @@ if __name__ == "__main__":
         D_pred = np.zeros((N, N, 2, *args.size))
         _ind = np.where(pred_det > args.thres)[0]
         if len(_ind) == 0:
-            pred_det = (pred_det - pred_det.min()) / (pred_det.max()-pred_det.min())
+            pred_det = (pred_det - pred_det.min()) / (pred_det.max() - pred_det.min())
             _ind = np.where(pred_det > args.thres)[0]
         pred_forge_time = np.arange(_ind.min(), _ind.max() + 1)
         N_forge = len(pred_forge_time)
@@ -198,8 +199,44 @@ if __name__ == "__main__":
         Y_pred_forge[pred_forge_time] = pred_t
         Y_pred_source[pred_source_time] = pred_s
 
-        metric.update((Y_orig, Y_forge), (Y_pred_source, Y_pred_forge), batch_mode=False)
+        metric.update(
+            (Y_orig, Y_forge), (Y_pred_source, Y_pred_forge), batch_mode=False
+        )
         counter += 1
+        print("")
+
+        if args.plot:
+            folder = Path("tmp_temporal_output") / args.dataset / name
+            if folder.exists():
+                shutil.rmtree(str(folder))
+            folder.mkdir(exist_ok=True, parents=True)
+            for i_cnt in range(X.shape[0]):
+                im = tsfm.inverse(X[i_cnt])
+                # im_with_gt = utils.add_overlay(im, Y_orig[i_cnt], Y_forge[i_cnt])
+                # im_with_pred = utils.add_overlay(
+                #     im, Y_pred_source[i_cnt], Y_pred_forge[i_cnt]
+                # )
+
+                skimage.io.imsave(
+                    str(folder / f"{i_cnt}.jpg"), skimage.img_as_ubyte(im)
+                )
+                skimage.io.imsave(
+                    str(folder / f"{i_cnt}_gt.jpg"),
+                    skimage.img_as_ubyte(
+                        utils.src_forge(Y_orig[i_cnt], Y_forge[i_cnt])
+                    ),
+                )
+                skimage.io.imsave(
+                    str(folder / f"{i_cnt}_pred.jpg"),
+                    skimage.img_as_ubyte(
+                        utils.src_forge(Y_pred_source[i_cnt], Y_pred_forge[i_cnt])
+                    ),
+                )
+
+                # plt.imsave(str(folder / f"{i_cnt}_gt_src.jpg"),Y_orig[i_cnt], cmap='jet')
+                # plt.imsave(str(folder / f"{i_cnt}_gt_forge.jpg"),Y_forge[i_cnt], cmap='jet')
+                # plt.imsave(str(folder / f"{i_cnt}_pred_src.jpg"),Y_pred_source[i_cnt], cmap='jet')
+                # plt.imsave(str(folder / f"{i_cnt}_pred_forge.jpg"),Y_pred_forge[i_cnt], cmap='jet')
 
         # TODO:  Keep an eye here
         if counter > 20:

@@ -197,6 +197,26 @@ def test_temporal(
         print("CORRECTLY DETECTED!!" if out_ else "WRONG DETECTION!!")
         # metric_im.update(labels, _pred, log=True)
 
+        if plot:
+            plot_dir = Path("tmp_plot")/ "temporal" / args.dataset
+            plot_dir.mkdir(exist_ok=True, parents=True)
+
+            for ii in range(Xt[0].shape[0]):
+                im1, im2 = torch_to_im(Xt[0][ii]), torch_to_im(Xs[0][ii])
+                gt1, gt2 = torch_to_im(Yt[0][ii]), torch_to_im(Ys[0][ii])
+                pred1, pred2 = torch_to_im(predt[0][ii]), torch_to_im(preds[0][ii])
+
+                fig, axes = plt.subplots(nrows=3, ncols=2)
+                axes[0, 0].imshow(im1)
+                axes[0, 1].imshow(im2)
+                axes[1, 0].imshow(gt1, cmap="jet")
+                axes[1, 1].imshow(gt2, cmap="jet")
+                axes[2, 0].imshow(pred1, cmap="jet")
+                axes[2, 1].imshow(pred2, cmap="jet")
+
+                fig.savefig(str(plot_dir / f"{i}_{ii}.jpg"))
+                plt.close("all")
+
         if num is not None and i >= num:
             break
 
@@ -251,7 +271,6 @@ def test_det(
 ):
 
     model.eval()
-
     metric_im = utils.Metric_image()
     metric = utils.MMetric()
 

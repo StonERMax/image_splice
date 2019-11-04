@@ -211,6 +211,12 @@ def custom_transform_images(images=None, masks=None, size=320, tsfm=None, other_
 
     return X, Y
 
+def src_forge(src, forge, c1=2, c2=0):
+    im = np.zeros((*src.shape[:2], 3))
+    im[..., c1] = src
+    im[..., c2] = forge
+    return im
+
 
 def add_overlay(im, m1, m2=None, alpha=0.5, c1=[0, 1, 0], c2=[1, 0, 0]):
     r, c = im.shape[:2]

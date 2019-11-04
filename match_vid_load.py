@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     counter = 0
     dataset = Dataset_vid(args=args, is_training=False)
-    root = Path("tmp_video_match_mani") / args.dataset / args.model
+    root = Path("tmp_video_match") / args.dataset / args.model
 
     for ret in tqdm(
         dataset.load_videos_all(
@@ -257,7 +257,7 @@ if __name__ == "__main__":
         # )
 
         counter += 1
-        if counter > 20:
+        if counter > 10:
             break
 
     print("FINAL Score:")

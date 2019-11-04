@@ -551,7 +551,8 @@ class Dataset_vid(torch.utils.data.Dataset):
                             ))
                         )
                     except ValueError:
-                        continue
+                        x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = [], [], [], [], []
+                        break
                     gt_neg = np.arange(t1_n_gt, t1_n_gt + t_max)
 
                     Xfn = X[forge_neg]
