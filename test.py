@@ -89,7 +89,7 @@ def test(
     if iteration is not None:
         print(f"{iteration}")
 
-    for i, ret in enumerate(data.load()):
+    for i, ret in enumerate(data):
         Xs, Xt, Ys, Yt, labels = ret
         if not isinstance(labels, torch.Tensor):
             labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(
@@ -122,8 +122,8 @@ def test(
 
         metric.update([fnp(Ys), fnp(Yt)], [fnp(preds), fnp(predt)])
 
-        if logger:
-            logger.add_scalar("test_loss/total", loss, iteration)
+        # if logger:
+        #     logger.add_scalar("test_loss/total", loss, iteration)
         if plot:
             plot_dir = Path("tmp_plot") / args.dataset
             plot_dir.mkdir(exist_ok=True, parents=True)
