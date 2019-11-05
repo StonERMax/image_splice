@@ -105,7 +105,7 @@ if __name__ == "__main__":
 
     data_cisdl = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=True, no_back=True)
     dataset_usc = dataset_cmfd.USCISI_CMD_Dataset(
-        args=args, is_training=True, sample_len=len(data_cisdl) // 2
+        args=args, is_training=True, sample_len=len(data_cisdl)
     )
 
     dataset_train = torch.utils.data.ConcatDataset((data_cisdl, dataset_usc))
