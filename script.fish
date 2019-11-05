@@ -18,6 +18,7 @@ end
 echo "dataset : " $DATASET
 echo "cuda devices: " $CUDA_VISIBLE_DEVICES
 
+####
 python main.py --max-epoch 2 --suffix _tmp | tee ./log_out/run_$DATASET.txt
 
 # output model name: base_[dataset].pkl
@@ -31,8 +32,11 @@ python main_train_temporal.py --dataset $DATASET --ckpt ./ckpt/base_$DATASET.pkl
 python main_train_temporal.py --dataset $DATASET  \
     --ckpt ./ckpt/temporal_base_$DATASET.pkl  --batch-size 2 --max-epoch 30 --lr 1e-5 | tee -a ./log_out/run_$DATASET.txt
 
+##
+python main_mani_det.py --max-epoch 2 --suffix _tmp | tee -a ./log_out/run_$DATASET.txt
+
 # save on detseg_base_[dataset].pkl
-python main_template_match.py --dataset $DATASET --max-epoch 50 --ckpt ./ckpt/detseg_base_coco.pkl | tee -a ./log_out/run_$DATASET.txt
+python main_template_match.py --dataset $DATASET --max-epoch 50 --ckpt ./ckpt/detseg_base_coco_tmp.pkl | tee -a ./log_out/run_$DATASET.txt
 python main_template_match.py --dataset $DATASET --max-epoch 50 --tune --lr 1e-4 \
     --ckpt ./ckpt/detseg_base_$DATASET.pkl | tee -a ./log_out/run_$DATASET.txt
 
