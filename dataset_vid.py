@@ -232,11 +232,23 @@ class Dataset_vid(torch.utils.data.Dataset):
     def load(self, shuffle=True, batch_size=None):
         if batch_size is None:
             batch_size = self.args.batch_size
-        loader = torch.utils.data.DataLoader(
-            self, batch_size=batch_size, num_workers=4, shuffle=True
-        )
-        return loader
-
+        # loader = torch.utils.data.DataLoader(
+        #     self, batch_size=batch_size, num_workers=4, shuffle=True
+        # )
+        ind = np.arange(len(self))
+        if shuffle:
+            np.random.shuffle(ind)
+        for i in range(0, len(ind)-batch_size, batch_size):
+            Xs, Xt, Ys, Yt, labels = [], [], [], [], []
+            for j in range(i, i+batch_size):
+                im_s, im_t, mask_s, mask_t, label = self[ind[j]]
+                Xs.append(im_s)
+                Xt.append(im_t)
+                Ys.append(mask_s)
+                Yt.append(mask_t)
+                labels.append(label)
+            yield torch.stack(Xs, 0), torch.stack(Xt, 0), torch.stack(Ys, 0), torch.stack(Yt, 0), np.array(labels)
+        
     def load_mani(self, batch_size=None, shuffle=True):
         if self.is_training:
             idx = self.train_index
@@ -539,7 +551,8 @@ class Dataset_vid(torch.utils.data.Dataset):
                             ))
                         )
                     except ValueError:
-                        continue
+                        x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = [], [], [], [], []
+                        break
                     gt_neg = np.arange(t1_n_gt, t1_n_gt + t_max)
 
                     Xfn = X[forge_neg]
@@ -592,17 +605,17 @@ class Dataset_vid(torch.utils.data.Dataset):
             # mask_tem[Y_orig[ind_forge] > 0.5] = 0.5
             mask_tem[Y_forge[ind_forge] > 0.5] = 1
 
-            im_f = skimage.transform.resize(
-                im_forge, self.args.size, order=1, anti_aliasing=False
+            im_f = cv2.resize(
+                im_forge, self.args.size, interpolation=1
             )
-            im_o = skimage.transform.resize(
-                im_orig, self.args.size, order=1, anti_aliasing=False
+            im_o = cv2.resize(
+                im_orig, self.args.size, interpolation=1
             )
-            mask_ref = skimage.transform.resize(
-                mask_ref, self.args.size, order=0, anti_aliasing=False
+            mask_ref = cv2.resize(
+                mask_ref, self.args.size, interpolation=0
             )
-            mask_tem = skimage.transform.resize(
-                mask_tem, self.args.size, order=0, anti_aliasing=False
+            mask_tem = cv2.resize(
+                mask_tem, self.args.size, interpolation=0
             )
 
             Xref[k] = im_o  # * (1 - (mask_ref == 0.5)

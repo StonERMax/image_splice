@@ -216,17 +216,24 @@ class DOAModel(nn.Module):
         self.hw = hw
         self.topk = topk
 
-        self.encoder = Extractor_VGG19()
+        self.encoder_p = Extractor_VGG19()
+        self.encoder_q = Extractor_VGG19()
 
         self.corrLayer = Corr(topk=topk)
 
         in_cat = 896
 
-        self.val_conv = nn.Sequential(
+        self.val_conv_p = nn.Sequential(
             nn.Conv2d(topk, 16, 3, padding=1),
             nn.BatchNorm2d(16),
             nn.ReLU(),
             nn.Conv2d(16, 16, 3, padding=1),
+            nn.Conv2d(16, 1, 1),
+            nn.Sigmoid(),
+        )
+
+        self.val_conv_q = nn.Sequential(
+            nn.Conv2d(topk, 16, 3, padding=1),
             nn.BatchNorm2d(16),
             nn.ReLU(),
             nn.Conv2d(16, 16, 3, padding=1),
@@ -239,11 +246,11 @@ class DOAModel(nn.Module):
         )
 
         self.aspp_forge = models.segmentation.deeplabv3.ASPP(
-            in_channels=in_cat, atrous_rates=[6, 12, 24]
+            in_channels=in_cat, atrous_rates=[12, 24, 36]
         )
 
         self.head_mask_p = nn.Sequential(
-            nn.Conv2d(3 * 256, 2 * 256, 1),
+            nn.Conv2d(2 * 256, 2 * 256, 1),
             nn.BatchNorm2d(2 * 256),
             nn.ReLU(),
             nn.Conv2d(2 * 256, 256, 3, padding=1),
@@ -256,7 +263,7 @@ class DOAModel(nn.Module):
         )
 
         self.head_mask_q = nn.Sequential(
-            nn.Conv2d(3 * 256, 2 * 256, 1),
+            nn.Conv2d(2 * 256, 2 * 256, 1),
             nn.BatchNorm2d(2 * 256),
             nn.ReLU(),
             nn.Conv2d(2 * 256, 256, 3, padding=1),
@@ -268,20 +275,22 @@ class DOAModel(nn.Module):
             nn.Conv2d(256, out_channel, 1),
         )
 
-        self.conv_as = nn.Sequential(
-            nn.Conv2d(2 * 256, 256, 1), nn.BatchNorm2d(256), nn.ReLU()
-        )
+        self.gcn_p = GCN(in_feat=256, out_feat=256)
+        self.gcn_q = GCN(in_feat=256, out_feat=256)
 
-        self.gcn = GCN(in_feat=256, out_feat=256)
-        self.t_gcn = TGCN(in_feat=2 * 256, out_feat=256)
+        self.t_gcn_p = TGCN(in_feat=2 * 256, out_feat=256)
+        self.t_gcn_q = TGCN(in_feat=2 * 256, out_feat=256)
 
-        self.temporal_detection = TemporalDetectionBranch(3*256)
+        # detection branch
+        self.head_mask_p.apply(weights_init_normal)
+        self.head_mask_q.apply(weights_init_normal)
+
+        self.val_conv_p.apply(weights_init_normal)
+        self.val_conv_q.apply(weights_init_normal)
 
         self.head_mask_p.apply(weights_init_normal)
         self.head_mask_q.apply(weights_init_normal)
 
-        self.val_conv.apply(weights_init_normal)
-        self.conv_as.apply(weights_init_normal)
 
     def forward(self, xq, xp):
         input1, input2 = xq, xp
@@ -290,31 +299,24 @@ class DOAModel(nn.Module):
         xpr = xp.reshape(-1, c, h, w)
         xqr = xq.reshape(-1, c, h, w)
 
-        xp_feat = self.encoder(xpr, out_size=self.hw)
-        xq_feat = self.encoder(xqr, out_size=self.hw)
+        xp_feat = self.encoder_p(xpr, out_size=self.hw)
+        xq_feat = self.encoder_q(xqr, out_size=self.hw)
 
         valp, valq, indp, indq = self.corrLayer(xp_feat, xq_feat)
 
         # attention weight
-        val_conv_p = self.val_conv(valp)
-        val_conv_q = self.val_conv(valq)
+        val_conv_p = self.val_conv_p(valp)
+        val_conv_q = self.val_conv_q(valq)
 
         #### Mask part : M  ####
-        xp_as1 = self.aspp_mask(xp_feat) * val_conv_p
-        xq_as1 = self.aspp_mask(xq_feat) * val_conv_q
-
-        xp_as2 = self.aspp_forge(xp_feat) * val_conv_p
-        xq_as2 = self.aspp_forge(xq_feat) * val_conv_q
-
-        xp_as = self.conv_as(torch.cat((xp_as1, xp_as2), dim=-3))
-        xq_as = self.conv_as(torch.cat((xq_as1, xq_as2), dim=-3))
+        xp_as = self.aspp_forge(xp_feat) * val_conv_p
+        xq_as = self.aspp_mask(xq_feat) * val_conv_q
 
         # Corrensponding mask and forge
-        xp_as_nl = self.gcn(xq_as, indp)
-        xq_as_nl = self.gcn(xp_as, indq)
+        xp_as_nl = self.gcn_p(xq_as, indp)
+        xq_as_nl = self.gcn_q(xp_as, indq)
 
         # Final Mask
-        # b*t, c, h, w
         x_cat_p = torch.cat((xp_as, xp_as_nl), dim=-3)
         x_cat_q = torch.cat((xq_as, xq_as_nl), dim=-3)
 
@@ -322,17 +324,17 @@ class DOAModel(nn.Module):
         x_tgcn_p = self.t_gcn(x_cat_p.reshape(b, t, *x_cat_p.shape[1:]))
         x_tgcn_q = self.t_gcn(x_cat_q.reshape(b, t, *x_cat_q.shape[1:]))
 
-        x_final_p = torch.cat((x_cat_p, x_tgcn_p), dim=-3)
-        x_final_q = torch.cat((x_cat_q, x_tgcn_q), dim=-3)
+        x_final_p = (x_cat_p + x_tgcn_p) / 2
+        x_final_q = (x_cat_q + x_tgcn_q) / 2
 
         outp = self.head_mask_p(x_final_p)
         outq = self.head_mask_q(x_final_q)
 
-        # final detection
-        out_det = self.temporal_detection(
-           x_final_p.view(b, t, *x_final_p.shape[1:]),
-           x_final_q.view(b, t, *x_final_q.shape[1:])
-        )  # (b, )
+        # # final detection
+        # out_det = self.temporal_detection(
+        #    x_final_p.view(b, t, *x_final_p.shape[1:]),
+        #    x_final_q.view(b, t, *x_final_q.shape[1:])
+        # )  # (b, )
 
         outp = F.interpolate(outp, size=(h, w), mode="bilinear", align_corners=True)
         outq = F.interpolate(outq, size=(h, w), mode="bilinear", align_corners=True)
@@ -340,7 +342,7 @@ class DOAModel(nn.Module):
         outp = outp.reshape(b, t, *outp.shape[1:])
         outq = outq.reshape(b, t, *outq.shape[1:])
 
-        return outq, outp, out_det
+        return outq, outp  #, out_det
 
     def set_bn_to_eval(self):
         def fn(m):

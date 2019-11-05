@@ -172,17 +172,24 @@ class DOAModel(nn.Module):
         self.hw = hw
         self.topk = topk
 
-        self.encoder = Extractor_VGG19()
+        self.encoder_p = Extractor_VGG19()
+        self.encoder_q = Extractor_VGG19()
 
         self.corrLayer = Corr(topk=topk)
 
         in_cat = 896
 
-        self.val_conv = nn.Sequential(
+        self.val_conv_p = nn.Sequential(
             nn.Conv2d(topk, 16, 3, padding=1),
             nn.BatchNorm2d(16),
             nn.ReLU(),
             nn.Conv2d(16, 16, 3, padding=1),
+            nn.Conv2d(16, 1, 1),
+            nn.Sigmoid(),
+        )
+
+        self.val_conv_q = nn.Sequential(
+            nn.Conv2d(topk, 16, 3, padding=1),
             nn.BatchNorm2d(16),
             nn.ReLU(),
             nn.Conv2d(16, 16, 3, padding=1),
@@ -195,7 +202,7 @@ class DOAModel(nn.Module):
         )
 
         self.aspp_forge = models.segmentation.deeplabv3.ASPP(
-            in_channels=in_cat, atrous_rates=[6, 12, 24]
+            in_channels=in_cat, atrous_rates=[12, 24, 36]
         )
 
         self.head_mask_p = nn.Sequential(
@@ -224,48 +231,38 @@ class DOAModel(nn.Module):
             nn.Conv2d(256, out_channel, 1),
         )
 
-        self.conv_as = nn.Sequential(
-            nn.Conv2d(2 * 256, 256, 1),
-            nn.BatchNorm2d(256),
-            nn.ReLU()
-        )
         # self.gcn_mask = GCN()
         # self.gcn_forge = GCN()
-        self.gcn = GCN(in_feat=256, out_feat=256)
+        self.gcn_p = GCN(in_feat=256, out_feat=256)
+        self.gcn_q = GCN(in_feat=256, out_feat=256)
 
         # detection branch
         # self.detection = DetectionBranch(4 * 256)
         self.head_mask_p.apply(weights_init_normal)
         self.head_mask_q.apply(weights_init_normal)
 
-        self.val_conv.apply(weights_init_normal)
-        self.conv_as.apply(weights_init_normal)
+        self.val_conv_p.apply(weights_init_normal)
+        self.val_conv_q.apply(weights_init_normal)
 
     def forward(self, xq, xp):
         input1, input2 = xq, xp
         b, c, h, w = xp.shape
-        xp_feat = self.encoder(xp, out_size=self.hw)
-        xq_feat = self.encoder(xq, out_size=self.hw)
+        xp_feat = self.encoder_p(xp, out_size=self.hw)
+        xq_feat = self.encoder_q(xq, out_size=self.hw)
 
         valp, valq, indp, indq = self.corrLayer(xp_feat, xq_feat)
 
         # attention weight
-        val_conv_p = self.val_conv(valp)
-        val_conv_q = self.val_conv(valq)
+        val_conv_p = self.val_conv_p(valp)
+        val_conv_q = self.val_conv_q(valq)
 
         #### Mask part : M  ####
-        xp_as1 = self.aspp_mask(xp_feat) * val_conv_p
-        xq_as1 = self.aspp_mask(xq_feat) * val_conv_q
-
-        xp_as2 = self.aspp_forge(xp_feat) * val_conv_p
-        xq_as2 = self.aspp_forge(xq_feat) * val_conv_q
-
-        xp_as = self.conv_as(torch.cat((xp_as1, xp_as2), dim=-3))
-        xq_as = self.conv_as(torch.cat((xq_as1, xq_as2), dim=-3))
+        xp_as = self.aspp_forge(xp_feat) * val_conv_p
+        xq_as = self.aspp_mask(xq_feat) * val_conv_q
 
         # Corrensponding mask and forge
-        xp_as_nl = self.gcn(xq_as, indp)
-        xq_as_nl = self.gcn(xp_as, indq)
+        xp_as_nl = self.gcn_p(xq_as, indp)
+        xq_as_nl = self.gcn_q(xp_as, indq)
 
         # Final Mask
         x_cat_p = torch.cat((xp_as, xp_as_nl), dim=-3)
@@ -287,15 +284,6 @@ class DOAModel(nn.Module):
         )
 
         return outq, outp, None
-
-    def non_local(self, x, ind):
-        b, c, h2, w2 = x.shape
-        _, _, h1, w1 = ind.shape
-
-        x = x.reshape(b, c, -1)
-        ind = ind.reshape(b, h2 * w2, h1 * w1)
-        out = torch.bmm(x, ind).reshape(b, c, h1, w1)
-        return out
 
     def set_bn_to_eval(self):
         def fn(m):
@@ -346,6 +334,7 @@ def weights_init_normal(m):
             torch.nn.init.constant_(m.bias.data, 0.0)
     except AttributeError:
         return
+
 
 class Extractor_VGG19(nn.Module):
     def __init__(self):
@@ -598,7 +587,3 @@ class DetSegModel(nn.Module):
 
     def freeze_bn(self):
         self.apply(set_bn_eval)
-
-
-        
-        
