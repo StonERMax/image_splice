@@ -25,57 +25,6 @@ from collections import defaultdict
 
 
 class USCISI_CMD_Dataset(torch.utils.data.Dataset):
-    """ Simple API for reading the USCISI CMD dataset
-
-    This API simply loads and parses CMD samples from LMDB
-
-    # Example:
-    ```python 
-        # get the LMDB file path 
-        lmdb_dir = os.path.dirname( os.path.realpath(__file__) )
-
-        # create dataset instance
-        dataset = USCISI_CMD_API( lmdb_dir=lmdb_dir, 
-                                  sample_file=os.path.join( lmdb_dir, 'samples.keys'),
-                                  differentiate_target=True )
-
-        # retrieve the first 24 samples in the dataset
-        samples = dataset( range(24) )
-        # visualize these samples
-        dataset.visualize_samples( samples )
-
-        # retrieve 24 random samples in the dataset
-        samples = dataset( [None]*24 )
-        # visualize these samples
-        dataset.visualize_samples( samples )
-
-        # get the exact 50th sample in the dataset
-        sample = dataset[50]
-        # visualize these samples
-        dataset.visualize_samples( [sample] )
-
-    ```
-    # Arguments:
-        lmdb_dir = file path to the dataset LMDB
-        sample_file = file path ot the sample list, e.g. samples.keys
-        differentiate_target = bool, whether or not generate 3-class target map
-
-    # Note:
-        1. samples, i.e. the output of "get_samples" or "__call__", is a list of samples
-        however, the dimension of each sample may or may not the same
-        2. CMD samples are generated upon
-           - MIT SUN2012 dataset [https://groups.csail.mit.edu/vision/SUN/]
-           - MS COCO dataset [http://cocodataset.org/#termsofuse]
-        3. detailed synthesis process can be found in paper
-
-    # Citation:
-        Yue Wu et.al. "BusterNet: Detecting Image Copy-Move ForgeryWith Source/Target Localization".  
-        In: European Conference on Computer Vision (ECCV). Springer. 2018.
-
-    # Contact:
-        Dr. Yue Wu
-        yue_wu@isi.edu
-    """
 
     def __init__(self, args=None, is_training=True, to_tensor=True, sample_len=None):
 
@@ -95,7 +44,6 @@ class USCISI_CMD_Dataset(torch.utils.data.Dataset):
 
         self.sample_keys = self._load_sample_keys(sample_file)
 
-        self.differentiate_target = True  
         print(
             "INFO: successfully load USC-ISI CMD LMDB with {} keys".format(self.nb_samples))
 
