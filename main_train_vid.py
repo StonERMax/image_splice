@@ -88,8 +88,8 @@ if __name__ == "__main__":
             iteration=None,
             device=device,
             logger=None,
-            num=10,
-            plot=True,
+            num=30,
+            plot=args.plot,
         )
         logger.close()
         raise SystemExit

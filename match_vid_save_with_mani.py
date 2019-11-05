@@ -169,5 +169,5 @@ if __name__ == "__main__":
         counter += 1
 
         # TODO:  Keep an eye here
-        if counter > 20:
+        if counter > 10:
             break
