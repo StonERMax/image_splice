@@ -111,7 +111,7 @@ if __name__ == "__main__":
     dataset_train = torch.utils.data.ConcatDataset((data_cisdl, dataset_usc))
 
     data_train = torch.utils.data.DataLoader(
-        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=0
+        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=4
     )
 
     list_loss = []
