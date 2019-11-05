@@ -9,7 +9,7 @@ import utils_data
 
 
 class Dataset_COCO_CISDL(torch.utils.data.Dataset):
-    def __init__(self, args, mode=None, is_training=True, test_fore_only=True, no_back=False):
+    def __init__(self, args, mode=None, is_training=True, test_fore_only=True, no_back=True):
         """ mode should be ['easy', 'medi', 'diff']
             default: None (all leels)
         """

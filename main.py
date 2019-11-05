@@ -13,6 +13,7 @@ from train import train
 
 from test import test
 import dataset
+import dataset_cmfd
 
 
 if __name__ == "__main__":
@@ -65,22 +66,22 @@ if __name__ == "__main__":
     # optimizer
     optimizer = torch.optim.Adam(model_params, lr=args.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        factor=0.1,
-        patience=10,
-        verbose=True,
-        threshold=0.1,
-        min_lr=1e-7,
+        optimizer, factor=0.1, patience=10, verbose=True, threshold=0.1, min_lr=1e-7
     )
 
     # load dataset
-    data_test = dataset.Dataset_COCO_CISDL(
-        args, mode=args.mode, is_training=False
+    data_test_cisdl = dataset.Dataset_COCO_CISDL(args, mode=args.mode, is_training=False)
+    dataset_usc_test = dataset_cmfd.USCISI_CMD_Dataset(
+        args=args, is_training=False, sample_len=len(data_test_cisdl) // 2
+    )
+    dataset_test = torch.utils.data.ConcatDataset((data_test_cisdl, dataset_usc_test))
+    data_test = torch.utils.data.DataLoader(
+        dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
 
     if args.test:
         with torch.no_grad():
-            for i, ret in enumerate(data_test.load()):
+            for i, ret in enumerate(data_test):
                 Xs, Xt, Ys, Yt, labels = ret
                 Xs, Xt = (Xs.to(device), Xt.to(device))
                 _ = model(Xs, Xt)
@@ -102,16 +103,23 @@ if __name__ == "__main__":
         # TODO: There is a discrepency between test loss and train loss,
         # even when same dataset is used. Check out why!
 
-    data_train = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=True)
+    data_cisdl = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=True, no_back=True)
+    dataset_usc = dataset_cmfd.USCISI_CMD_Dataset(
+        args=args, is_training=True, sample_len=len(data_cisdl) // 2
+    )
+
+    dataset_train = torch.utils.data.ConcatDataset((data_cisdl, dataset_usc))
+
+    data_train = torch.utils.data.DataLoader(
+        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=0
+    )
 
     list_loss = []
 
     for ep in tqdm(range(init_ep, args.max_epoch)):
         # train
-        for ret in data_train.load():
-            loss = train(
-                ret, model, optimizer, args, iteration, device, logger=logger
-            )
+        for ret in data_train:
+            loss = train(ret, model, optimizer, args, iteration, device, logger=logger)
             list_loss.append(loss)
             iteration += 1
 

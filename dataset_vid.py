@@ -565,8 +565,6 @@ class Dataset_vid(torch.utils.data.Dataset):
                         x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = [], [], [], [], []
                         break
 
-
-
     def _load(self, ret, to_tensor=True, batch=None, is_training=True):
         X, Y_forge, forge_time, Y_orig, gt_time, name = ret
         if forge_time is None:
