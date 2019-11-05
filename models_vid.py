@@ -278,8 +278,10 @@ class DOAModel(nn.Module):
         self.gcn_p = GCN(in_feat=256, out_feat=256)
         self.gcn_q = GCN(in_feat=256, out_feat=256)
 
-        self.t_gcn_p = TGCN(in_feat=2 * 256, out_feat=256)
-        self.t_gcn_q = TGCN(in_feat=2 * 256, out_feat=256)
+        self.t_gcn_p = TGCN(in_feat=2 * 256, out_feat=2 * 256)
+        self.t_gcn_q = TGCN(in_feat=2 * 256, out_feat=2 * 256)
+
+        self.temporal_detection = TemporalDetectionBranch(2*256)
 
         # detection branch
         self.head_mask_p.apply(weights_init_normal)
@@ -290,7 +292,6 @@ class DOAModel(nn.Module):
 
         self.head_mask_p.apply(weights_init_normal)
         self.head_mask_q.apply(weights_init_normal)
-
 
     def forward(self, xq, xp):
         input1, input2 = xq, xp
@@ -321,8 +322,8 @@ class DOAModel(nn.Module):
         x_cat_q = torch.cat((xq_as, xq_as_nl), dim=-3)
 
         # b*t, c, h, w --> b*t, c', h, w
-        x_tgcn_p = self.t_gcn(x_cat_p.reshape(b, t, *x_cat_p.shape[1:]))
-        x_tgcn_q = self.t_gcn(x_cat_q.reshape(b, t, *x_cat_q.shape[1:]))
+        x_tgcn_p = self.t_gcn_p(x_cat_p.reshape(b, t, *x_cat_p.shape[1:]))
+        x_tgcn_q = self.t_gcn_q(x_cat_q.reshape(b, t, *x_cat_q.shape[1:]))
 
         x_final_p = (x_cat_p + x_tgcn_p) / 2
         x_final_q = (x_cat_q + x_tgcn_q) / 2
@@ -330,11 +331,11 @@ class DOAModel(nn.Module):
         outp = self.head_mask_p(x_final_p)
         outq = self.head_mask_q(x_final_q)
 
-        # # final detection
-        # out_det = self.temporal_detection(
-        #    x_final_p.view(b, t, *x_final_p.shape[1:]),
-        #    x_final_q.view(b, t, *x_final_q.shape[1:])
-        # )  # (b, )
+        # final detection
+        out_det = self.temporal_detection(
+           x_final_p.view(b, t, *x_final_p.shape[1:]),
+           x_final_q.view(b, t, *x_final_q.shape[1:])
+        )  # (b, )
 
         outp = F.interpolate(outp, size=(h, w), mode="bilinear", align_corners=True)
         outq = F.interpolate(outq, size=(h, w), mode="bilinear", align_corners=True)
@@ -342,7 +343,7 @@ class DOAModel(nn.Module):
         outp = outp.reshape(b, t, *outp.shape[1:])
         outq = outq.reshape(b, t, *outq.shape[1:])
 
-        return outq, outp  #, out_det
+        return outq, outp, out_det
 
     def set_bn_to_eval(self):
         def fn(m):

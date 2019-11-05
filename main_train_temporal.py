@@ -23,9 +23,14 @@ def load_model(model, state):
 
     for k in state:
         k = str(k)
-        if not k.startswith("head_mask"):
-            mod_state[k] = state[k]
+        if (
+            not k.startswith("head_mask")
+            and not k.startswith("t_gcn")
+            and not k.startswith("temporal_detection")
+        ):
+            # mod_state[k] = state[k]
             name_req_grad.append(k)
+    mod_state = state
     model.load_state_dict(mod_state, strict=False)
 
     for name, param in model.named_parameters():
@@ -81,12 +86,7 @@ if __name__ == "__main__":
     # optimizer
     optimizer = torch.optim.Adam(model_params, lr=args.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        factor=0.1,
-        patience=10,
-        verbose=True,
-        threshold=0.1,
-        min_lr=1e-7,
+        optimizer, factor=0.1, patience=10, verbose=True, threshold=0.1, min_lr=1e-7
     )
 
     # load dataset
@@ -142,7 +142,7 @@ if __name__ == "__main__":
                 )
 
                 print(f"weight saved in {model_name}.pkl")
-                
+
                 test_temporal(
                     data_test,
                     model,
