@@ -251,7 +251,7 @@ def test_det(data, model, args, iteration, device, logger=None, num=None, plot=F
         print(f"{i}:")
 
         loss = F.binary_cross_entropy_with_logits(
-            pred_det.squeeze(), torch.from_numpy(labels).to(device).squeeze()
+            pred_det.squeeze(), labels.to(device).squeeze().float()
         )
 
         list_loss.append(loss.data.cpu().numpy())
@@ -259,7 +259,7 @@ def test_det(data, model, args, iteration, device, logger=None, num=None, plot=F
         pred_det = to_np(torch.sigmoid(pred_det))
         pred_seg = to_np(torch.sigmoid(pred_seg))
 
-        metric_im.update(labels.flatten(), pred_det.flatten(), thres=args.thres)
+        metric_im.update(to_np(labels).flatten(), pred_det.flatten(), thres=args.thres)
         metric.update(Y, pred_seg)
 
         if num is not None and i >= num:

@@ -493,43 +493,13 @@ class Base_DetSegModel(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.in1 = nn.Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.in2 = nn.Conv2d(3, 64, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
-        self.in3 = nn.Conv2d(3, 64, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3))
-
-        # self.in_reduce = nn.Conv2d(3 * 64, 64, kernel_size=(1, 1), stride=(1, 1))
-
-        self.conv_det = nn.Sequential(
-            nn.Conv2d(3 * 64, 64, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  #
-            nn.Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(128, 128, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  #
-            nn.Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  #
-        )
+        cnn_temp = torchvision.models.vgg16(pretrained=True).features
+        self.conv_det = cnn_temp
 
         self.lin_det = nn.Sequential(
-            nn.Linear(256, 128),
-            nn.BatchNorm1d(128),
+            nn.Linear(512, 32),
             nn.ReLU(inplace=True),
-            nn.Linear(128, 32),
-            nn.BatchNorm1d(32),
-            nn.ReLU(inplace=True),
+            nn.Dropout(0.3),
             nn.Linear(32, 1),
         )
 
@@ -537,11 +507,7 @@ class Base_DetSegModel(nn.Module):
 
     def forward(self, x):
         b = x.shape[0]
-        x1 = self.in1(x)
-        x2 = self.in2(x)
-        x3 = self.in3(x)
-        x_cat = torch.cat((x1, x2, x3), dim=-3)
-        out_seg = self.conv_det(x_cat)
+        out_seg = self.conv_det(x)  # 10x10
 
         x_seg = self.pool(out_seg)
         out_det = x_seg.view(b, -1)
@@ -562,7 +528,7 @@ class DetSegModel(nn.Module):
 
         self.base = Base_DetSegModel()
         self.aspp = models.segmentation.deeplabv3.ASPP(
-            in_channels=256, atrous_rates=[12, 24, 36]
+            in_channels=512, atrous_rates=[12, 24, 36]
         )
 
         self.head = nn.Sequential(

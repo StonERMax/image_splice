@@ -20,6 +20,19 @@ import dataset
 import dataset_cmfd
 
 
+def tune_layer_params(model, layer_ex=[]):
+    parameters = []
+    for name, param in model.named_parameters():
+        flag = True
+        for each_l in layer_ex:
+            if name.startswith(each_l):
+                flag = False
+                break
+        if flag:
+            parameters.append(param)
+    return parameters
+
+
 if __name__ == "__main__":
     # device
     if torch.cuda.is_available():
@@ -56,7 +69,10 @@ if __name__ == "__main__":
         checkpoint = torch.load(args.ckpt)
         model.load_state_dict(checkpoint["model_state"], strict=False)
 
-    model_params = model.parameters()
+    if args.tune:
+        model_params = tune_layer_params(model, layer_ex=["base.conv_det"])
+    else:
+        model_params = model.parameters()
 
     # if torch.cuda.device_count() > 1:
     #     model = nn.DataParallel(model)
@@ -67,7 +83,6 @@ if __name__ == "__main__":
         optimizer, factor=0.1, patience=10, verbose=True, threshold=0.1, min_lr=1e-7
     )
 
-    # load dataset
     # load dataset
     data_test_cisdl = dataset.Dataset_COCO_CISDL(
         args, mode=args.mode, is_training=False, test_fore_only=False

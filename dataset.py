@@ -148,4 +148,4 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
                 labels.append(lab)
             im = torch.stack(im, 0)
             segm = torch.stack(segm, 0)
-            yield im, segm, np.array(labels)
+            yield im, segm, np.array(labels, dtype=np.float32)
