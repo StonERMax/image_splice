@@ -87,8 +87,8 @@ if __name__ == "__main__":
             iteration=None,
             device=device,
             logger=None,
-            num=50,
-            plot=True,
+            num=20,
+            plot=args.plot,
         )
         logger.close()
         raise SystemExit
@@ -106,19 +106,9 @@ if __name__ == "__main__":
             list_loss.append(loss)
             iteration += 1
 
-            if iteration % 100 == 0:
+            if iteration % 50 == 0:
                 scheduler.step(np.mean(list_loss))
                 list_loss = []
-
-                test(
-                    data_test,
-                    model,
-                    args,
-                    iteration=None,
-                    device=device,
-                    logger=None,
-                    num=5,
-                )
 
                 state = (
                     model.module.state_dict()
@@ -132,5 +122,15 @@ if __name__ == "__main__":
                 )
 
                 print(f"weight saved in {model_name}.pkl")
+
+                test(
+                    data_test.load(),
+                    model,
+                    args,
+                    iteration=None,
+                    device=device,
+                    logger=None,
+                    num=5,
+                )
 
     logger.close()
