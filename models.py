@@ -587,3 +587,55 @@ class DetSegModel(nn.Module):
 
     def freeze_bn(self):
         self.apply(set_bn_eval)
+
+class PatchMatch(nn.Module):
+    def __init__(self, pool_stride=8):
+        super().__init__()
+        "The pooling of images needs to be researched."
+        # self.img_pool = nn.AvgPool2d(pool_stride, stride=pool_stride)
+
+        self.input_dim = 3
+
+        "Feature extraction blocks."
+        self.conv = nn.Sequential(
+            nn.Conv2d(self.input_dim, 16, 3, 1, 1),
+            nn.BatchNorm2d(16),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(16, 32, 3, 1, 1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(32, 64, 3, 1, 1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 128, 3, 1, 1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
+        )
+
+        "Detection branch."
+        self.classifier_det = nn.Sequential(
+            nn.Linear(128 * 10 * 10, 1024),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.5),
+            nn.Linear(1024, 1),
+        )
+
+        self.apply(weights_init_normal)
+
+    def forward(self, x1, x2):
+        x1 = self.conv(x1)
+        x2 = self.conv(x2)
+
+        x1 = F.adaptive_avg_pool2d(x1, (10, 10))
+        x2 = F.adaptive_avg_pool2d(x2, (10, 10))
+
+        x1 = x1.view(x1.size(0), -1)
+        x2 = x2.view(x2.size(0), -1)
+
+        x12_abs = torch.abs(x1 - x2)
+
+        x_det = self.classifier_det(x12_abs)
+
+        return x_det

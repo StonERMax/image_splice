@@ -9,7 +9,7 @@ import utils_data
 
 
 class Dataset_COCO_CISDL(torch.utils.data.Dataset):
-    def __init__(self, args, mode=None, is_training=True, test_fore_only=True, no_back=True):
+    def __init__(self, args, mode=None, is_training=True, fore_only=False, no_back=True):
         """ mode should be ['easy', 'medi', 'diff']
             default: None (all leels)
         """
@@ -25,6 +25,9 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
         if is_training:
             for each in labelfiles_path.iterdir():
                 if each.suffix == ".csv":
+                    if fore_only:
+                        if "_fore_" not in each.name:
+                            continue
                     if no_back:
                         if "_back_" in each.name:
                             continue
@@ -37,7 +40,7 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
         else:  # testing
             for each in labelfiles_path.iterdir():
                 if each.suffix == ".csv":
-                    if test_fore_only:
+                    if fore_only:
                         if "_fore_" not in each.name:
                             continue
                     if no_back:
@@ -62,7 +65,7 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.pair_list)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx, to_tensor=True):
         piece = self.pair_list[idx]
         # flip_p = np.random.uniform(0, 1)
         img_temp = skimage.io.imread(piece[0])
@@ -89,11 +92,12 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
         else:
             gt1 = np.zeros(im1.shape[:2], dtype=np.float32)
             gt2 = np.zeros(im1.shape[:2], dtype=np.float32)
+    
+        if to_tensor:
+            im1, gt1 = self.transform(im1, gt1)
+            im2, gt2 = self.transform(im2, gt2)
 
-        imt1, gtt1 = self.transform(im1, gt1)
-        imt2, gtt2 = self.transform(im2, gt2)
-
-        return imt1, imt2, gtt1, gtt2, label_tmp
+        return im1, im2, gt1, gt2, label_tmp
 
     def load(self, batch_size=None, shuffle=True):
         bs = self.args.batch_size if batch_size is None else batch_size
@@ -149,3 +153,40 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
             im = torch.stack(im, 0)
             segm = torch.stack(segm, 0)
             yield im, segm, np.array(labels)
+
+    def load_template(self, batch_size=None, shuffle=True):
+        bs = self.args.batch_size if batch_size is None else batch_size
+        bs = bs // 2
+        chunk = [
+            np.arange(pos, pos + bs) for pos in range(0, len(self) - bs, bs)
+        ]
+        seq = np.arange(len(self))
+        if shuffle:
+            np.random.shuffle(seq)
+
+        for _inds in chunk:
+            inds = seq[_inds]
+            Im1 = []
+            Im2 = []
+            labels = []
+
+            for i in inds:
+                im1, im2, gt1, gt2, lab = self.__getitem__(i)
+                im1_o, im2_o, gt1_o, gt2_o, lab_o = self.__getitem__(np.random.choice(seq))
+                
+                # pos
+                im_1 = im1 * gt1
+                im_2 = im2 * gt2
+
+                # neg
+                im_2_n = im1_o * gt1_o
+
+                Im1.append(im_1)
+                Im2.append(im_2)
+                Im1.append(im_1)
+                Im2.append(im_2_n)
+                labels.append(1.)
+                labels.append(0.)
+            Im1 = torch.stack(Im1, 0)
+            Im2 = torch.stack(Im2, 0)
+            yield Im1, Im2, np.array(labels)

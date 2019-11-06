@@ -225,10 +225,35 @@ def test_det_vid(
 
         if num is not None and i >= num:
             break
-
     out = metric_im.final()
-
     return out
+
+
+@torch.no_grad()
+def test_patchmatch(
+    data, model, args, iteration, device, logger=None, num=None, plot=False
+):
+    model.eval()
+    metric_im = utils.Metric_image()
+
+    for i, ret in enumerate(data.load_template()):
+        X1, X2, labels = ret
+        X1 = X1.to(device)
+        X2 = X2.to(device)
+        pred_det = model(X1, X2)
+
+        print(f"{i}", end=": ")
+        pred_det = to_np(torch.sigmoid(pred_det))
+
+        metric_im.update(
+            labels.flatten(), pred_det.flatten(), thres=args.thres, log=True
+        )
+
+        if num is not None and i >= num:
+            break
+    out = metric_im.final()
+    return out
+
 
 
 @torch.no_grad()
