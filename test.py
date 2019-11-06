@@ -21,12 +21,8 @@ def add_torch_overlay(im, mask_s, mask_f=None, inv=True, clone=True):
     if clone:
         im = im.clone()
     if inv:
-        mean = torch.tensor([0.485, 0.456, 0.406], device=im.device).view(
-            1, 3, 1, 1
-        )
-        std = torch.tensor([0.229, 0.224, 0.225], device=im.device).view(
-            1, 3, 1, 1
-        )
+        mean = torch.tensor([0.485, 0.456, 0.406], device=im.device).view(1, 3, 1, 1)
+        std = torch.tensor([0.229, 0.224, 0.225], device=im.device).view(1, 3, 1, 1)
         im = im * std + mean
     for i in range(im.shape[0]):
         if mask_f is None:
@@ -51,13 +47,9 @@ def to_np(x):
 def rev_inv(im, to_numpy=True):
     mean = torch.tensor([0.485, 0.456, 0.406], device=im.device).view(3, 1, 1)
     if im.max() > 10:
-        std = torch.tensor(
-            [1.0 / 255, 1.0 / 255, 1.0 / 255], device=im.device
-        ).view(3, 1, 1)
+        std = torch.tensor([1.0 / 255, 1.0 / 255, 1.0 / 255], device=im.device).view(3, 1, 1)
     else:
-        std = torch.tensor([0.229, 0.224, 0.225], device=im.device).view(
-            3, 1, 1
-        )
+        std = torch.tensor([0.229, 0.224, 0.225], device=im.device).view(3, 1, 1)
     im = im * std + mean
     if to_numpy:
         return to_np(im)
@@ -76,9 +68,7 @@ def torch_to_im(x):
 
 
 @torch.no_grad()
-def test(
-    data, model, args, iteration, device, logger=None, num=None, plot=False
-):
+def test(data, model, args, iteration, device, logger=None, num=None, plot=False):
 
     model.eval()
 
@@ -92,16 +82,9 @@ def test(
     for i, ret in enumerate(data):
         Xs, Xt, Ys, Yt, labels = ret
         if not isinstance(labels, torch.Tensor):
-            labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(
-                device
-            )
+            labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(device)
         labels = labels.float().to(device)
-        Xs, Xt, Ys, Yt = (
-            Xs.to(device),
-            Xt.to(device),
-            Ys.to(device),
-            Yt.to(device),
-        )
+        Xs, Xt, Ys, Yt = (Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device))
 
         preds, predt, pred_det = model(Xs, Xt)
 
@@ -156,9 +139,7 @@ def test(
 
 
 @torch.no_grad()
-def test_temporal(
-    data, model, args, iteration, device, logger=None, num=None, plot=False
-):
+def test_temporal(data, model, args, iteration, device, logger=None, num=None, plot=False):
 
     model.eval()
 
@@ -184,9 +165,9 @@ def test_temporal(
         # detection whether video clips are copy move
         # loss_det = F.binary_cross_entropy_with_logits(pred_det, labels)
         pred_det = torch.sigmoid(pred_det)
-        pos_mean = torch.sum(labels * pred_det) / (torch.sum(labels)+1e-8)
-        neg_mean = torch.sum((1-labels) * pred_det) / (torch.sum(1-labels)+1e-8)
-        loss_det = torch.max(neg_mean - pos_mean + args.beta, torch.tensor(0.).to(device))
+        pos_mean = torch.sum(labels * pred_det) / (torch.sum(labels) + 1e-8)
+        neg_mean = torch.sum((1 - labels) * pred_det) / (torch.sum(1 - labels) + 1e-8)
+        loss_det = torch.max(neg_mean - pos_mean + args.beta, torch.tensor(0.0).to(device))
         loss = loss_s + loss_t + args.gamma * loss_det
         list_loss.append(loss.data.cpu().numpy())
 
@@ -217,9 +198,7 @@ def test_temporal(
 
 
 @torch.no_grad()
-def test_det_vid(
-    data, model, args, iteration, device, logger=None, num=None, plot=False
-):
+def test_det_vid(data, model, args, iteration, device, logger=None, num=None, plot=False):
 
     model.eval()
 
@@ -238,9 +217,7 @@ def test_det_vid(
         pred_det = fnp(torch.sigmoid(pred_det))
 
         print(name, end=" : ")
-        metric_im.update(
-            labels.flatten(), pred_det.flatten(), thres=args.thres, log=True
-        )
+        metric_im.update(labels.flatten(), pred_det.flatten(), thres=args.thres, log=True)
 
         if num is not None and i >= num:
             break
@@ -251,50 +228,52 @@ def test_det_vid(
 
 
 @torch.no_grad()
-def test_det(
-    data, model, args, iteration, device, logger=None, num=None, plot=False
-):
+def test_det(data, model, args, iteration, device, logger=None, num=None, plot=False):
 
     model.eval()
 
     metric_im = utils.Metric_image()
     metric = utils.MMetric()
 
+    list_loss = []
     if iteration is not None:
         print(f"{iteration}")
 
     for i, ret in enumerate(data):
-        _, X, _, Y, labels = ret
+        if len(ret) > 3:
+            _, X, _, Y, labels = ret
+        else:
+            X, Y, labels = ret
         Y = Y.data.numpy()
         X = X.to(device)
         pred_det, pred_seg = model(X)
 
         print(f"{i}:")
 
-        def fnp(x):
-            return x.data.cpu().numpy()
-
-        pred_det = fnp(torch.sigmoid(pred_det))
-        pred_seg = fnp(torch.sigmoid(pred_seg))
-
-        metric_im.update(
-            labels.flatten(), pred_det.flatten(), thres=args.thres
+        loss = F.binary_cross_entropy_with_logits(
+            pred_det.squeeze(), torch.from_numpy(labels).to(device).squeeze()
         )
+
+        list_loss.append(loss.data.cpu().numpy())
+
+        pred_det = to_np(torch.sigmoid(pred_det))
+        pred_seg = to_np(torch.sigmoid(pred_seg))
+
+        metric_im.update(labels.flatten(), pred_det.flatten(), thres=args.thres)
         metric.update(Y, pred_seg)
 
         if num is not None and i >= num:
             break
 
-    out = metric_im.final()
+    metric_im.final()
     metric.final()
+    print(f"test loss {np.mean(list_loss): .4f}")
 
-    return out
+    return np.mean(list_loss)
 
 
 @torch.no_grad()
-def test_dmac(
-    data, model, args, iteration, device, logger=None, num=None, plot=False
-):
+def test_dmac(data, model, args, iteration, device, logger=None, num=None, plot=False):
 
     model.eval()
 
@@ -308,16 +287,9 @@ def test_dmac(
     for i, ret in enumerate(data.load()):
         Xs, Xt, Ys, Yt, labels = ret
         if not isinstance(labels, torch.Tensor):
-            labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(
-                device
-            )
+            labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(device)
         labels = labels.float().to(device)
-        Xs, Xt, Ys, Yt = (
-            Xs.to(device),
-            Xt.to(device),
-            Ys.to(device),
-            Yt.to(device),
-        )
+        Xs, Xt, Ys, Yt = (Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device))
         preds, predt, _ = model(Xs, Xt)
 
         def fnp(x):

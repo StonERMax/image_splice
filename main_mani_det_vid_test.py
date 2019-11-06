@@ -47,10 +47,6 @@ if __name__ == "__main__":
     # model name
     model_name = "detseg_" + args.model + "_" + args.dataset + args.suffix
 
-    if args.model in ("dmac", "dmvn"):
-        from test import test_dmac as test
-        from train import train_dmac as train
-
     print(f"Model Name: {model_name}")
 
     # logger
@@ -61,7 +57,7 @@ if __name__ == "__main__":
     # model
 
     model = models.Base_DetSegModel()
-    
+
     model.to(device)
 
     iteration = args.resume
@@ -69,7 +65,7 @@ if __name__ == "__main__":
 
     if args.ckpt is not None:
         checkpoint = torch.load(args.ckpt)
-        load_state_base(model, checkpoint['model_state'])
+        load_state_base(model, checkpoint["model_state"])
 
     # model = model.base
     # if torch.cuda.device_count() > 1:
@@ -97,4 +93,3 @@ if __name__ == "__main__":
     )
     logger.close()
     raise SystemExit
-

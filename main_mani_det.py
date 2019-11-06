@@ -120,9 +120,7 @@ if __name__ == "__main__":
         # train
         for ret in data_train_loader:
             ret = [ret[1], ret[3], ret[4]]
-            loss = train_det(
-                ret, model, optimizer, args, iteration, device, logger=logger
-            )
+            loss = train_det(ret, model, optimizer, args, iteration, device, logger=logger)
             list_loss.append(loss)
             iteration += 1
 

@@ -32,10 +32,6 @@ if __name__ == "__main__":
     # model name
     model_name = "detseg_" + args.model + "_" + args.dataset + args.suffix
 
-    if args.model in ("dmac", "dmvn"):
-        from test import test_dmac as test
-        from train import train_dmac as train
-
     print(f"Model Name: {model_name}")
 
     # logger
@@ -65,7 +61,7 @@ if __name__ == "__main__":
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         factor=0.1,
-        patience=10,
+        patience=5,
         verbose=True,
         threshold=0.1,
         min_lr=1e-7,
@@ -75,15 +71,15 @@ if __name__ == "__main__":
     data_test = dataset_vid.Dataset_vid(args, is_training=False)
 
     if args.test:
-        # with torch.no_grad():
-        #     for i, ret in enumerate(data_test.load_mani()):
-        #         X, *_ = ret
-        #         X = X.to(device)
-        #         _ = model(X)
-        #         if i > 30:
-        #             break
+        with torch.no_grad():
+            for i, ret in enumerate(data_test.load_mani()):
+                X, *_ = ret
+                X = X.to(device)
+                _ = model(X)
+                if i > 30:
+                    break
         test_det(
-            data_test,
+            data_test.load_mani(),
             model,
             args,
             iteration=None,
@@ -97,23 +93,18 @@ if __name__ == "__main__":
 
     data_train = dataset_vid.Dataset_vid(args, is_training=True)
 
-    list_loss = []
-
     for ep in tqdm(range(init_ep, args.max_epoch)):
         # train
         for ret in data_train.load_mani():
-            loss = train_det(
+            train_det(
                 ret, model, optimizer, args, iteration, device, logger=logger
             )
-            list_loss.append(loss)
             iteration += 1
 
-            if iteration % 100 == 0:
-                scheduler.step(np.mean(list_loss))
-                list_loss = []
+            if iteration % 20 == 0:
 
-                test_det(
-                    data_test,
+                loss = test_det(
+                    data_test.load_mani(),
                     model,
                     args,
                     iteration=None,
@@ -121,6 +112,7 @@ if __name__ == "__main__":
                     logger=None,
                     num=5,
                 )
+                scheduler.step(loss)
 
                 state = (
                     model.module.state_dict()
