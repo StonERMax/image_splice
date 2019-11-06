@@ -17,6 +17,7 @@ from train import train_det
 
 from test import test_det
 import dataset
+import dataset_cmfd
 
 
 if __name__ == "__main__":
@@ -35,10 +36,6 @@ if __name__ == "__main__":
 
     # model name
     model_name = "detseg_" + args.model + "_" + args.dataset + args.suffix
-
-    if args.model in ("dmac", "dmvn"):
-        from test import test_dmac as test
-        from train import train_dmac as train
 
     print(f"Model Name: {model_name}")
 
@@ -67,30 +64,33 @@ if __name__ == "__main__":
     # optimizer
     optimizer = torch.optim.Adam(model_params, lr=args.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        factor=0.1,
-        patience=10,
-        verbose=True,
-        threshold=0.1,
-        min_lr=1e-7,
+        optimizer, factor=0.1, patience=10, verbose=True, threshold=0.1, min_lr=1e-7
     )
 
     # load dataset
-    data_test = dataset.Dataset_COCO_CISDL(
-        args, mode=args.mode, is_training=False,
-        test_fore_only=False, no_back=True
+    # load dataset
+    data_test_cisdl = dataset.Dataset_COCO_CISDL(
+        args, mode=args.mode, is_training=False, test_fore_only=False
+    )
+    # dataset_usc_test = dataset_cmfd.USCISI_CMD_Dataset(
+    #     args=args, is_training=False, sample_len=len(data_test_cisdl) // 2
+    # )
+    # dataset_test = torch.utils.data.ConcatDataset((data_test_cisdl, dataset_usc_test))
+    dataset_test = data_test_cisdl
+    data_test_loader = torch.utils.data.DataLoader(
+        dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
 
     if args.test:
         with torch.no_grad():
-            for i, ret in enumerate(data_test.load_mani()):
-                X, *_ = ret
+            for i, ret in enumerate(data_test_loader):
+                _, X, *_ = ret
                 X = X.to(device)
                 _ = model(X)
                 if i > 5:
                     break
         test_det(
-            data_test,
+            data_test_loader,
             model,
             args,
             iteration=None,
@@ -102,25 +102,36 @@ if __name__ == "__main__":
         logger.close()
         raise SystemExit
 
-    data_train = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=True, no_back=True)
+    data_cisdl = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=True, no_back=True)
+    # dataset_usc = dataset_cmfd.USCISI_CMD_Dataset(
+    #     args=args, is_training=True, sample_len=len(data_cisdl)
+    # )
+
+    # dataset_train = torch.utils.data.ConcatDataset((data_cisdl, dataset_usc))
+    dataset_train = data_cisdl
+
+    data_train_loader = torch.utils.data.DataLoader(
+        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=4
+    )
 
     list_loss = []
 
     for ep in tqdm(range(init_ep, args.max_epoch)):
         # train
-        for ret in data_train.load_mani():
+        for ret in data_train_loader:
+            ret = [ret[1], ret[3], ret[4]]
             loss = train_det(
                 ret, model, optimizer, args, iteration, device, logger=logger
             )
             list_loss.append(loss)
             iteration += 1
 
-            if iteration % 300 == 0:
+            if iteration % 50 == 0:
                 scheduler.step(np.mean(list_loss))
                 list_loss = []
 
                 test_det(
-                    data_test,
+                    data_test_loader,
                     model,
                     args,
                     iteration=None,

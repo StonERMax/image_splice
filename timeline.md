@@ -20,3 +20,13 @@ precision: 0.9564, recall: 0.8881, f-score: 0.9210
 
 ##### Just run 'scipt.sh' to execute everythong
 ---
+
+source
+---
+precision : 0.6449, recall : 0.4642, f1 : 0.5145, iou : 0.4275 mcc : 0.5259
+
+forge
+---
+precision : 0.6857, recall : 0.4888, f1 : 0.5413, iou : 0.4504 mcc : 0.5562
+
+test loss : 0.0885

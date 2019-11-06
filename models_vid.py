@@ -152,7 +152,7 @@ class TemporalDetectionBranch(nn.Module):
             nn.ReLU(),
             nn.ReplicationPad1d(1),
             nn.Conv1d(64, 32, 3),
-            nn.ReLU()
+            nn.ReLU(),
         )
         self.final_conv = nn.Conv1d(32, 1, 1)
         self.pad = nn.ReplicationPad1d(1)
@@ -166,10 +166,18 @@ class TemporalDetectionBranch(nn.Module):
 
         # (b*t, c, h, w) --> (b*t, 128, 1, 1)
         x_cat_p = torch.cat(
-            (F.adaptive_avg_pool2d(xp_conv, (1, 1)), F.adaptive_max_pool2d(xp_conv, (1, 1))), dim=-3
+            (
+                F.adaptive_avg_pool2d(xp_conv, (1, 1)),
+                F.adaptive_max_pool2d(xp_conv, (1, 1)),
+            ),
+            dim=-3,
         )
         x_cat_q = torch.cat(
-            (F.adaptive_avg_pool2d(xq_conv, (1, 1)), F.adaptive_max_pool2d(xq_conv, (1, 1))), dim=-3
+            (
+                F.adaptive_avg_pool2d(xq_conv, (1, 1)),
+                F.adaptive_max_pool2d(xq_conv, (1, 1)),
+            ),
+            dim=-3,
         )
 
         x_cat = torch.abs(x_cat_p - x_cat_q)
@@ -281,7 +289,9 @@ class DOAModel(nn.Module):
         self.t_gcn_p = TGCN(in_feat=2 * 256, out_feat=2 * 256)
         self.t_gcn_q = TGCN(in_feat=2 * 256, out_feat=2 * 256)
 
-        self.temporal_detection = TemporalDetectionBranch(2*256)
+        self.temporal_detection = TemporalDetectionBranch(2 * 256)
+
+        self.alpha = nn.Parameter(torch.tensor(0.), requires_grad=True)
 
         # detection branch
         self.head_mask_p.apply(weights_init_normal)
@@ -325,16 +335,16 @@ class DOAModel(nn.Module):
         x_tgcn_p = self.t_gcn_p(x_cat_p.reshape(b, t, *x_cat_p.shape[1:]))
         x_tgcn_q = self.t_gcn_q(x_cat_q.reshape(b, t, *x_cat_q.shape[1:]))
 
-        x_final_p = (x_cat_p + x_tgcn_p) / 2
-        x_final_q = (x_cat_q + x_tgcn_q) / 2
+        x_final_p = x_cat_p + self.alpha * x_tgcn_p
+        x_final_q = x_cat_q + self.alpha * x_tgcn_q
 
         outp = self.head_mask_p(x_final_p)
         outq = self.head_mask_q(x_final_q)
 
         # final detection
         out_det = self.temporal_detection(
-           x_final_p.view(b, t, *x_final_p.shape[1:]),
-           x_final_q.view(b, t, *x_final_q.shape[1:])
+            x_final_p.view(b, t, *x_final_p.shape[1:]),
+            x_final_q.view(b, t, *x_final_q.shape[1:]),
         )  # (b, )
 
         outp = F.interpolate(outp, size=(h, w), mode="bilinear", align_corners=True)

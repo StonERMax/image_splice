@@ -497,7 +497,7 @@ class Base_DetSegModel(nn.Module):
         self.in2 = nn.Conv2d(3, 64, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
         self.in3 = nn.Conv2d(3, 64, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3))
 
-        self.in_reduce = nn.Conv2d(3 * 64, 64, kernel_size=(1, 1), stride=(1, 1))
+        # self.in_reduce = nn.Conv2d(3 * 64, 64, kernel_size=(1, 1), stride=(1, 1))
 
         self.conv_det = nn.Sequential(
             nn.Conv2d(3 * 64, 64, kernel_size=(1, 1), stride=(1, 1)),
@@ -506,7 +506,7 @@ class Base_DetSegModel(nn.Module):
             nn.Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1)),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  # 
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  #
             nn.Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1)),
             nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
@@ -579,7 +579,8 @@ class DetSegModel(nn.Module):
     def forward(self, x):
         b, c, h, w = x.shape
         out_det, base_seg = self.base(x)
-        seg = self.head(base_seg)
+        seg = self.aspp(base_seg)
+        seg = self.head(seg)
         seg = F.interpolate(
             seg, size=(h, w), mode="bilinear", align_corners=True
         )

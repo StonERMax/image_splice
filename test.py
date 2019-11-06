@@ -163,39 +163,57 @@ def test_temporal(
     model.eval()
 
     metric = utils.Metric()
-    metric_im = utils.Metric_image()
+    im_pred = []
+
+    list_loss = []
 
     if iteration is not None:
         print(f"{iteration}")
 
     for i, ret in enumerate(data.load_temporal(evaluate=True)):
         Xs, Xt, Ys, Yt, labels = ret
-        labels = labels.data.numpy()
 
-        Xs, Xt = (Xs.to(device), Xt.to(device))
+        labels = labels.to(device)
+        Xs, Xt, Ys, Yt = Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device)
 
         preds, predt, pred_det = model(Xs, Xt)
         print(f"{i}:")
 
+        loss_t = BCE_loss(predt[labels > 0.5], Yt[labels > 0.5], with_logits=True)
+        loss_s = BCE_loss(preds[labels > 0.5], Ys[labels > 0.5], with_logits=True)
+        # detection whether video clips are copy move
+        # loss_det = F.binary_cross_entropy_with_logits(pred_det, labels)
+        pred_det = torch.sigmoid(pred_det)
+        pos_mean = torch.sum(labels * pred_det) / (torch.sum(labels)+1e-8)
+        neg_mean = torch.sum((1-labels) * pred_det) / (torch.sum(1-labels)+1e-8)
+        loss_det = torch.max(neg_mean - pos_mean + args.beta, torch.tensor(0.).to(device))
+        loss = loss_s + loss_t + args.gamma * loss_det
+        list_loss.append(loss.data.cpu().numpy())
+
         predt = torch.sigmoid(predt)
         preds = torch.sigmoid(preds)
-        pred_det = torch.sigmoid(pred_det)
+        # pred_det = torch.sigmoid(pred_det)
 
+        labels = to_np(labels)
         metric.update(
             [to_np(Ys)[labels == 1], to_np(Yt)[labels == 1]],
             [to_np(preds)[labels == 1], to_np(predt)[labels == 1]],
         )
 
-        metric_im.update(labels, to_np(pred_det), log=True)
+        out_ = to_np(pred_det).argmax() == labels.argmax()
+        im_pred.append(out_)
+        print("CORRECTLY DETECTED!!" if out_ else "WRONG DETECTION!!")
 
         if num is not None and i >= num:
             break
 
-    out = metric.final()
-    print("")
-    metric_im.final()
+    metric.final()
+    print(f"\nDetection accuracy: {np.sum(im_pred)/len(im_pred)*100: .2f}%\n")
 
-    return out
+    total_loss = np.mean(list_loss)
+    print(f" Test Loss: {total_loss:.4f}")
+
+    return total_loss
 
 
 @torch.no_grad()
@@ -245,8 +263,8 @@ def test_det(
     if iteration is not None:
         print(f"{iteration}")
 
-    for i, ret in enumerate(data.load_mani()):
-        X, Y, labels = ret
+    for i, ret in enumerate(data):
+        _, X, _, Y, labels = ret
         Y = Y.data.numpy()
         X = X.to(device)
         pred_det, pred_seg = model(X)

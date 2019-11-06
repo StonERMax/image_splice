@@ -73,10 +73,10 @@ if __name__ == "__main__":
         if args.tune:
             load_model(model, checkpoint["model_state"])
         else:
-            model.load_state_dict(checkpoint["model_state"])
+            model.load_state_dict(checkpoint["model_state"], strict=False)
 
-    # model_params = filter(lambda x: x.requires_grad, model.parameters())
-    model_params = model.parameters()
+    model_params = filter(lambda x: x.requires_grad, model.parameters())
+    # model_params = model.parameters()
 
     model.to(device)
 
@@ -86,20 +86,20 @@ if __name__ == "__main__":
     # optimizer
     optimizer = torch.optim.Adam(model_params, lr=args.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, factor=0.1, patience=10, verbose=True, threshold=0.1, min_lr=1e-7
+        optimizer, factor=0.1, patience=5, verbose=True, threshold=0.1, min_lr=1e-8
     )
 
     # load dataset
-
     data_test = dataset_vid.Dataset_vid(args, is_training=False)
+
     if args.test:
-        # with torch.no_grad():
-        #     for i, ret in enumerate(data_test.load_temporal(t_t_max=5, batch_size=5)):
-        #         Xs, Xt, Ys, Yt, labels = ret
-        #         Xs, Xt = Xs.to(device), Xt.to(device)
-        #         _ = model(Xs, Xt)
-        #         if i > 5:
-        #             break
+        with torch.no_grad():
+            for i, ret in enumerate(data_test.load_temporal(t_t_max=5, batch_size=5)):
+                Xs, Xt, Ys, Yt, labels = ret
+                Xs, Xt = Xs.to(device), Xt.to(device)
+                _ = model(Xs, Xt)
+                if i > 5:
+                    break
         test_temporal(
             data_test,
             model,
@@ -115,21 +115,15 @@ if __name__ == "__main__":
 
     data_train = dataset_vid.Dataset_vid(args, is_training=True)
 
-    list_loss = []
-
     for ep in tqdm(range(init_ep, args.max_epoch)):
         # train
         for ret in data_train.load_temporal():
-            loss = train_temporal(
+            train_temporal(
                 ret, model, optimizer, args, iteration, device, logger=logger
             )
-            list_loss.append(loss)
             iteration += 1
 
-            if iteration % 100 == 0:
-                scheduler.step(np.mean(list_loss))
-                list_loss = []
-
+            if iteration % 20 == 0:
                 state = (
                     model.module.state_dict()
                     if isinstance(model, nn.DataParallel)
@@ -143,7 +137,7 @@ if __name__ == "__main__":
 
                 print(f"weight saved in {model_name}.pkl")
 
-                test_temporal(
+                loss = test_temporal(
                     data_test,
                     model,
                     args,
@@ -152,5 +146,6 @@ if __name__ == "__main__":
                     logger=None,
                     num=5,
                 )
+                scheduler.step(loss)
 
     logger.close()

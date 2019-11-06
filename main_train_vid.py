@@ -6,9 +6,7 @@ from tensorboardX import SummaryWriter
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 
-"""
-train test on video CMFD dataset
-"""
+
 import config
 import models
 from train import train
