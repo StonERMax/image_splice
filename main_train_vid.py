@@ -61,12 +61,7 @@ if __name__ == "__main__":
     # optimizer
     optimizer = torch.optim.Adam(model_params, lr=args.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        factor=0.1,
-        patience=10,
-        verbose=True,
-        threshold=0.1,
-        min_lr=1e-7,
+        optimizer, factor=0.1, patience=5, verbose=True, threshold=0.1, min_lr=1e-7
     )
 
     # load dataset
@@ -100,25 +95,21 @@ if __name__ == "__main__":
     for ep in tqdm(range(init_ep, args.max_epoch)):
         # train
         for ret in data_train.load():
-            loss = train(
-                ret, model, optimizer, args, iteration, device, logger=logger
-            )
-            list_loss.append(loss)
+            train(ret, model, optimizer, args, iteration, device, logger=logger)
+
             iteration += 1
 
-            if iteration % 100 == 0:
-                scheduler.step(np.mean(list_loss))
-                list_loss = []
-
-                test(
-                    data_test,
+            if iteration % 10 == 0:
+                loss = test(
+                    data_test.load(),
                     model,
                     args,
                     iteration=None,
                     device=device,
                     logger=None,
-                    num=5,
+                    num=10,
                 )
+                scheduler.step(loss)
 
                 state = (
                     model.module.state_dict()
