@@ -22,7 +22,7 @@ echo "cuda devices: " $CUDA_VISIBLE_DEVICES
 
 # output model name: base_[dataset].pkl
 python main_train_vid.py --dataset $DATASET --ckpt ./ckpt/base_coco_exp_comb.pkl \
-    --max-epoch 50 | tee -a ./log_out/run_exp_$DATASET.txt
+    --max-epoch 50 | tee  ./log_out/run_exp_$DATASET.txt
 
 # save on temporal_base_[dataset].pkl
 # python main_train_temporal.py --dataset $DATASET --ckpt ./ckpt/base_$DATASET.pkl \
