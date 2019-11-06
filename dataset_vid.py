@@ -238,17 +238,19 @@ class Dataset_vid(torch.utils.data.Dataset):
         ind = np.arange(len(self))
         if shuffle:
             np.random.shuffle(ind)
-        for i in range(0, len(ind)-batch_size, batch_size):
+        for i in range(0, len(ind) - batch_size, batch_size):
             Xs, Xt, Ys, Yt, labels = [], [], [], [], []
-            for j in range(i, i+batch_size):
+            for j in range(i, i + batch_size):
                 im_s, im_t, mask_s, mask_t, label = self[ind[j]]
                 Xs.append(im_s)
                 Xt.append(im_t)
                 Ys.append(mask_s)
                 Yt.append(mask_t)
                 labels.append(label)
-            yield torch.stack(Xs, 0), torch.stack(Xt, 0), torch.stack(Ys, 0), torch.stack(Yt, 0), np.array(labels)
-        
+            yield torch.stack(Xs, 0), torch.stack(Xt, 0), torch.stack(
+                Ys, 0
+            ), torch.stack(Yt, 0), np.array(labels)
+
     def load_mani(self, batch_size=None, shuffle=True):
         if self.is_training:
             idx = self.train_index
@@ -430,8 +432,14 @@ class Dataset_vid(torch.utils.data.Dataset):
             batch_size = self.args.batch_size
 
         global x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch
-        x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = [], [], [], [], []
-    
+        x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = (
+            [],
+            [],
+            [],
+            [],
+            [],
+        )
+
         loader = self.load_videos_all(
             is_training=self.is_training, to_tensor=True
         )
@@ -477,8 +485,8 @@ class Dataset_vid(torch.utils.data.Dataset):
                 # positive match
                 t1 = np.random.choice(len(forge_indices) - t_max)
                 t2 = t1 + t_max
-                forge_pos = forge_indices[t1 : t2]
-                gt_pos = gt_indices[t1 : t2]
+                forge_pos = forge_indices[t1:t2]
+                gt_pos = gt_indices[t1:t2]
             elif len(forge_indices) == t_max:
                 forge_pos = forge_indices
                 gt_pos = gt_indices
@@ -490,10 +498,16 @@ class Dataset_vid(torch.utils.data.Dataset):
             Yf = Y_forge[forge_pos]
             Ys = Y_orig[gt_pos]
 
-            rr = add_to_dat(Xs, Xf, Ys, Yf, 1.)
+            rr = add_to_dat(Xs, Xf, Ys, Yf, 1.0)
             if rr is not None:
                 yield rr
-                x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = [], [], [], [], []
+                x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = (
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                )
 
             if not evaluate:
                 # get negetive match
@@ -507,14 +521,18 @@ class Dataset_vid(torch.utils.data.Dataset):
                 else:
                     # not enough forge frames as `t_max`
                     continue
-                forge_neg = forge_indices[t1 : t2]
+                forge_neg = forge_indices[t1:t2]
 
                 try:
                     t1_n_gt = np.random.choice(
-                        np.concatenate((
-                            np.arange(0, gt_indices[t1]),
-                            np.arange(gt_indices[t1]+1, X.shape[0]-t_max+1)
-                        ))
+                        np.concatenate(
+                            (
+                                np.arange(0, gt_indices[t1]),
+                                np.arange(
+                                    gt_indices[t1] + 1, X.shape[0] - t_max + 1
+                                ),
+                            )
+                        )
                     )
                 except ValueError:
                     continue
@@ -524,10 +542,16 @@ class Dataset_vid(torch.utils.data.Dataset):
                 Xsn = X[gt_neg]
                 Yfn = Y_forge[forge_neg]
                 Ysn = Y_orig[gt_neg]
-                rr = add_to_dat(Xsn, Xfn, Ysn, Yfn, 0.)
+                rr = add_to_dat(Xsn, Xfn, Ysn, Yfn, 0.0)
                 if rr is not None:
                     yield rr
-                    x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = [], [], [], [], []
+                    x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = (
+                        [],
+                        [],
+                        [],
+                        [],
+                        [],
+                    )
             else:
                 while True:
                     # get negetive match
@@ -541,17 +565,28 @@ class Dataset_vid(torch.utils.data.Dataset):
                     else:
                         # not enough forge frames as `t_max`
                         continue
-                    forge_neg = forge_indices[t1 : t2]
+                    forge_neg = forge_indices[t1:t2]
 
                     try:
                         t1_n_gt = np.random.choice(
-                            np.concatenate((
-                                np.arange(0, gt_indices[t1]),
-                                np.arange(gt_indices[t1]+1, X.shape[0]-t_max+1)
-                            ))
+                            np.concatenate(
+                                (
+                                    np.arange(0, gt_indices[t1]),
+                                    np.arange(
+                                        gt_indices[t1] + 1,
+                                        X.shape[0] - t_max + 1,
+                                    ),
+                                )
+                            )
                         )
                     except ValueError:
-                        x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = [], [], [], [], []
+                        x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = (
+                            [],
+                            [],
+                            [],
+                            [],
+                            [],
+                        )
                         break
                     gt_neg = np.arange(t1_n_gt, t1_n_gt + t_max)
 
@@ -559,10 +594,16 @@ class Dataset_vid(torch.utils.data.Dataset):
                     Xsn = X[gt_neg]
                     Yfn = Y_forge[forge_neg]
                     Ysn = Y_orig[gt_neg]
-                    rr = add_to_dat(Xsn, Xfn, Ysn, Yfn, 0.)
+                    rr = add_to_dat(Xsn, Xfn, Ysn, Yfn, 0.0)
                     if rr is not None:
                         yield rr
-                        x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = [], [], [], [], []
+                        x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = (
+                            [],
+                            [],
+                            [],
+                            [],
+                            [],
+                        )
                         break
 
     def _load(self, ret, to_tensor=True, batch=None, is_training=True):
@@ -603,18 +644,10 @@ class Dataset_vid(torch.utils.data.Dataset):
             # mask_tem[Y_orig[ind_forge] > 0.5] = 0.5
             mask_tem[Y_forge[ind_forge] > 0.5] = 1
 
-            im_f = cv2.resize(
-                im_forge, self.args.size, interpolation=1
-            )
-            im_o = cv2.resize(
-                im_orig, self.args.size, interpolation=1
-            )
-            mask_ref = cv2.resize(
-                mask_ref, self.args.size, interpolation=0
-            )
-            mask_tem = cv2.resize(
-                mask_tem, self.args.size, interpolation=0
-            )
+            im_f = cv2.resize(im_forge, self.args.size, interpolation=1)
+            im_o = cv2.resize(im_orig, self.args.size, interpolation=1)
+            mask_ref = cv2.resize(mask_ref, self.args.size, interpolation=0)
+            mask_tem = cv2.resize(mask_tem, self.args.size, interpolation=0)
 
             Xref[k] = im_o  # * (1 - (mask_ref == 0.5)
             #   [..., None]).astype(im_o.dtype)
