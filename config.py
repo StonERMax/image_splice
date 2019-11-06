@@ -91,6 +91,9 @@ def config_video():
     )
     parser.add_argument("--out-channel", type=int, default=1)
     parser.add_argument("--gamma", type=float, default=0.1)
+
+    parser.add_argument("--beta", type=float, default=0.1)
+    parser.add_argument("--t-max", type=int, default=3)
     parser.add_argument("--gamma2", type=float, default=1)
     parser.add_argument(
         "--bw", action="store_true", help="whether to add boundary loss"
@@ -156,6 +159,7 @@ def config_video_full():
     parser.add_argument(
         "--plot", action="store_true", help="whether to plot during test"
     )
+    parser.add_argument("--t-max", type=int, default=3)
     parser.add_argument(
         "--wo-det",
         action="store_false",
@@ -221,7 +225,7 @@ def config_video_temporal():
     # split
     parser.add_argument("--split", type=float, default=0.5)
     parser.add_argument("--tune", action="store_true")
-
+    parser.add_argument("--t-max", type=int, default=3)
 
     args = parser.parse_args()
     args.size = tuple(int(i) for i in args.size.split("x"))

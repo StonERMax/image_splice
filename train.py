@@ -136,6 +136,45 @@ def train_patchmatch(D, model, optimizer, args, iteration, device, logger=None):
 
     return loss_val
 
+def train_patchmatch_vid(D, model, optimizer, args, iteration, device, logger=None):
+    module = model.module if isinstance(model, nn.DataParallel) else model
+    module.train()
+    # if iteration > 0:
+    #     module.freeze_bn()
+
+    X1, X2, labels = D
+    if not isinstance(labels, torch.Tensor):
+        labels = torch.from_numpy(np.array(labels, dtype=np.float32))
+    labels = labels.float().to(device)
+    X1 = X1.to(device)
+    X2 = X2.to(device)
+
+    b, t, c, h, w = X1.shape
+
+    pred_det = model(X1.reshape(-1, c, h, w), X2.reshape(-1, c, h, w))
+    pred_det = torch.sigmoid(pred_det).squeeze(-1)
+    pred_det = pred_det.reshape(b, t).mean(-1)
+
+    pos_pred = torch.mean(pred_det[labels > 0.5])
+    neg_pred = torch.mean(pred_det[labels <= 0.5])
+
+    loss = torch.sum(torch.max(
+        neg_pred - pos_pred + args.beta, torch.tensor(0.).to(device)
+    ))
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    loss_val = loss.data.cpu().numpy()
+
+    print(f"{iteration}: loss: {loss_val:.4f}")
+
+    if logger is not None:
+        logger.add_scalar("train_loss/total", loss, iteration)
+
+    return loss_val
+
 
 def train_temporal(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model

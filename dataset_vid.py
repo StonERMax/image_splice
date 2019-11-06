@@ -658,6 +658,7 @@ class Dataset_vid(torch.utils.data.Dataset):
     def load_data_template_match_pair(
         self, to_tensor=True, is_training=True, batch=None
     ):
+
         def mixer(in1, in2, lib):
             if lib == np:
                 fn_cat = np.concatenate
@@ -737,3 +738,154 @@ class Dataset_vid(torch.utils.data.Dataset):
             #     dat3 = Xref1, Xtem_d, Yref_d, Ytem_d, name
 
             #     yield mixer(dat1, dat3, lib)
+    
+    def load_template(self, t_t_max=None, batch_size=None, evaluate=False):
+        if self.is_training:
+            t_max = self.args.t_max
+        else:
+            t_max = None
+
+        if batch_size is None:
+            batch_size = self.args.batch_size
+
+        global x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch
+        x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = [], [], [], [], []
+    
+        loader = self.load_videos_all(
+            is_training=self.is_training, to_tensor=True
+        )
+
+        def add_to_dat(Xs, Xf, Ys, Yf, label):
+            global x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch
+            x_batch_s.append(Xs * Ys)
+            x_batch_f.append(Xf * Yf)
+            y_batch_s.append(Ys)
+            y_batch_f.append(Yf)
+            label_batch.append(label)
+
+            if len(x_batch_s) == batch_size:
+                x_batch_s = torch.stack(x_batch_s, dim=0)
+                x_batch_f = torch.stack(x_batch_f, dim=0)
+                y_batch_s = torch.stack(y_batch_s, dim=0)
+                y_batch_f = torch.stack(y_batch_f, dim=0)
+                label_batch = torch.tensor(label_batch).float()
+                return x_batch_s, x_batch_f, label_batch
+            else:
+                return None
+
+        while True:
+            try:
+                ret = next(loader)
+            except StopIteration:
+                return
+            X, Y_forge, forge_time, Y_orig, gt_time, name = ret
+
+            forge_indices = np.arange(forge_time[0], forge_time[1] + 1)
+            gt_indices = np.arange(gt_time[0], gt_time[1] + 1)
+
+            # get positive match
+            if not self.is_training:
+                if t_t_max is None:
+                    t_max = min(len(forge_indices), 20)
+                else:
+                    t_max = t_t_max
+            # if t_max < 5:
+            #     continue
+
+            if len(forge_indices) > t_max:
+                # positive match
+                t1 = np.random.choice(len(forge_indices) - t_max)
+                t2 = t1 + t_max
+                forge_pos = forge_indices[t1 : t2]
+                gt_pos = gt_indices[t1 : t2]
+            elif len(forge_indices) == t_max:
+                forge_pos = forge_indices
+                gt_pos = gt_indices
+            else:
+                # not enough forge frames as `t_max`
+                _inds = np.random.choice(len(forge_indices), t_max)
+                forge_pos = forge_indices[_inds]
+                gt_pos = gt_indices[_inds]
+
+            Xf = X[forge_pos]
+            Xs = X[gt_pos]
+            Yf = Y_forge[forge_pos]
+            Ys = Y_orig[gt_pos]
+
+            rr = add_to_dat(Xs, Xf, Ys, Yf, 1.)
+            if rr is not None:
+                yield rr
+                x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = [], [], [], [], []
+
+            if self.is_training or evaluate:
+                # get negetive match
+                if len(forge_indices) > t_max:
+                    # positive match
+                    t1 = np.random.choice(len(forge_indices) - t_max)
+                    t2 = t1 + t_max
+                elif len(forge_indices) == t_max:
+                    t1 = 0
+                    t2 = len(forge_indices)
+                else:
+                    # not enough forge frames as `t_max`
+                    continue
+                forge_neg = forge_indices[t1 : t2]
+
+                try:
+                    t1_n_gt = np.random.choice(
+                        np.concatenate((
+                            np.arange(0, gt_indices[t1]),
+                            np.arange(gt_indices[t1]+1, X.shape[0]-t_max+1)
+                        ))
+                    )
+                except ValueError:
+                    continue
+                gt_neg = np.arange(t1_n_gt, t1_n_gt + t_max)
+
+                Xfn = X[forge_neg]
+                Xsn = X[gt_neg]
+                Yfn = Y_forge[forge_neg]
+                Ysn = Y_orig[gt_neg]
+                rr = add_to_dat(Xsn, Xfn, Ysn, Yfn, 0.)
+                if rr is not None:
+                    yield rr
+                    x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = [], [], [], [], []
+            else:
+                while True:
+                    # get negetive match
+                    if len(forge_indices) > t_max:
+                        # positive match
+                        t1 = np.random.choice(len(forge_indices) - t_max)
+                        t2 = t1 + t_max
+                    elif len(forge_indices) == t_max:
+                        t1 = 0
+                        t2 = len(forge_indices)
+                    else:
+                        # not enough forge frames as `t_max`
+                        continue
+                    forge_neg = forge_indices[t1 : t2]
+
+                    try:
+                        t1_n_gt = np.random.choice(
+                            np.concatenate((
+                                np.arange(0, gt_indices[t1]),
+                                np.arange(gt_indices[t1]+1, X.shape[0]-t_max+1)
+                            ))
+                        )
+                    except ValueError:
+                        x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = [], [], [], [], []
+                        break
+                    gt_neg = np.arange(t1_n_gt, t1_n_gt + t_max)
+
+                    Xfn = X[forge_neg]
+                    Xsn = X[gt_neg]
+                    Yfn = Y_forge[forge_neg]
+                    Ysn = Y_orig[gt_neg]
+                    rr = add_to_dat(Xsn, Xfn, Ysn, Yfn, 0.)
+                    if rr is not None:
+                        yield rr
+                        x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = [], [], [], [], []
+                        break
+                
+
+                

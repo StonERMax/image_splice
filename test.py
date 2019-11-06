@@ -255,6 +255,44 @@ def test_patchmatch(
     return out
 
 
+@torch.no_grad()
+def test_patchmatch_vid(
+    data, model, args, iteration, device, logger=None, num=None, plot=False
+):
+    model.eval()
+    
+    list_loss = []
+    list_pred = []
+
+    for i, ret in enumerate(data.load_template()):
+        X1, X2, labels = ret
+        X1 = X1.to(device)
+        X2 = X2.to(device)
+        labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(device)
+
+        b, t, c, h, w = X1.shape
+        pred_det = model(X1.reshape(-1, c, h, w), X2.reshape(-1, c, h, w))
+        _pred_det = torch.sigmoid(pred_det).squeeze(-1)
+        pred_det = _pred_det.reshape(b, t).mean(-1)
+        pos_pred = torch.mean(pred_det[labels > 0.5])
+        neg_pred = torch.mean(pred_det[labels <= 0.5])
+        _loss = torch.sum(torch.max(
+            neg_pred - pos_pred + args.beta, torch.tensor(0.).to(device)
+        ))
+        list_loss.append(to_np(_loss))
+
+        _val = to_np(pred_det).argmax() == to_np(labels).argmax()
+        print(f"{i}: ", _val)
+        list_pred.append(_val)
+
+        if num is not None and i >= num:
+            break
+
+    print(f"Accuracy : {np.sum(list_pred) / len(list_pred) * 100 : .2f}")
+
+    total_loss = np.mean(list_loss)
+    print(f"Test loss: {total_loss: .4f}")
+    return total_loss
 
 @torch.no_grad()
 def test_det(
