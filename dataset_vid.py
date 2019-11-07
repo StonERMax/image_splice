@@ -770,3 +770,9 @@ class Dataset_vid(torch.utils.data.Dataset):
             #     dat3 = Xref1, Xtem_d, Yref_d, Ytem_d, name
 
             #     yield mixer(dat1, dat3, lib)
+
+
+class Dataset_grip(torch.utils.data.Dataset):
+    def __init__(self, args):
+        self.args = args
+        self.frame_root = Path(self.root) / "grip_video_data" / "frames"
