@@ -71,10 +71,12 @@ if __name__ == "__main__":
 
     # load dataset
     data_test_cisdl = dataset.Dataset_COCO_CISDL(args, mode=args.mode, is_training=False)
-    dataset_usc_test = dataset_cmfd.USCISI_CMD_Dataset(
-        args=args, is_training=False, sample_len=len(data_test_cisdl) // 2
-    )
-    dataset_test = torch.utils.data.ConcatDataset((data_test_cisdl, dataset_usc_test))
+    # dataset_usc_test = dataset_cmfd.USCISI_CMD_Dataset(
+    #     args=args, is_training=False, sample_len=len(data_test_cisdl) // 2
+    # )
+    # dataset_test = torch.utils.data.ConcatDataset((data_test_cisdl, dataset_usc_test))
+    dataset_test = data_test_cisdl
+
     data_test = torch.utils.data.DataLoader(
         dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
@@ -94,7 +96,7 @@ if __name__ == "__main__":
             iteration=None,
             device=device,
             logger=None,
-            num=10,
+            num=100,
             plot=args.plot,
         )
         logger.close()
