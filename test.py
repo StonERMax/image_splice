@@ -46,10 +46,10 @@ def to_np(x):
 
 def rev_inv(im, to_numpy=True):
     mean = torch.tensor([0.485, 0.456, 0.406], device=im.device).view(3, 1, 1)
-    if im.max() > 10:
-        std = torch.tensor([1.0 / 255, 1.0 / 255, 1.0 / 255], device=im.device).view(3, 1, 1)
-    else:
-        std = torch.tensor([0.229, 0.224, 0.225], device=im.device).view(3, 1, 1)
+    # if im.max() > 10:
+    #     std = torch.tensor([1.0 / 255, 1.0 / 255, 1.0 / 255], device=im.device).view(3, 1, 1)
+    # else:
+    std = torch.tensor([0.229, 0.224, 0.225], device=im.device).view(3, 1, 1)
     im = im * std + mean
     if to_numpy:
         return to_np(im)
@@ -332,3 +332,50 @@ def test_dmac(data, model, args, iteration, device, logger=None, num=None, plot=
     print(f"\ntest loss : {test_loss:.4f}\n")
 
     return out, test_loss
+
+
+@torch.no_grad()
+def test_casia(data, model, args, iteration, device, logger=None, num=None, plot=False):
+
+    model.eval()
+    # metric_im = utils.Metric_image()
+    metric = utils.MMetric(name="forge")
+    if iteration is not None:
+        print(f"{iteration}")
+
+    for i, ret in enumerate(data):
+        Xs, Xt, Y, labels = ret
+        preds, predt, _ = model(Xs.to(device), Xt.to(device))
+
+        print(f"{i}:")
+        predt = torch.sigmoid(predt)
+        preds = torch.sigmoid(preds)
+
+        metric.update(to_np(Y), to_np(predt))
+
+        if plot:
+            plot_dir = Path("tmp_plot") / args.dataset
+            plot_dir.mkdir(exist_ok=True, parents=True)
+            preds = preds.squeeze()
+            predt = predt.squeeze()
+
+            for ii in range(Xt.shape[0]):
+                im1, im2 = torch_to_im(Xs[ii]), torch_to_im(Xt[ii])
+                gt2 = to_np(Y[ii].squeeze())
+                pred1, pred2 = to_np(preds[ii]), to_np(predt[ii])
+
+                fig, axes = plt.subplots(nrows=3, ncols=2)
+                axes[0, 0].imshow(im1)
+                axes[0, 1].imshow(im2)
+                # axes[1, 0].imshow(gt1, cmap="jet")
+                axes[1, 1].imshow(gt2, cmap="jet")
+                axes[2, 0].imshow(pred1, cmap="jet")
+                axes[2, 1].imshow(pred2, cmap="jet")
+
+                fig.savefig(str(plot_dir / f"{i}_{ii}.jpg"))
+                plt.close("all")
+
+        if num is not None and i >= num:
+            break
+    # metric_im.final()
+    metric.final()
