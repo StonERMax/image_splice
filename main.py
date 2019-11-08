@@ -70,7 +70,9 @@ if __name__ == "__main__":
     )
 
     # load dataset
-    data_test_cisdl = dataset.Dataset_COCO_CISDL(args, mode=args.mode, is_training=False)
+    data_test_cisdl = dataset.Dataset_COCO_CISDL(
+        args, mode=args.mode, is_training=False, no_back=False, test_fore_only=False
+    )
     # dataset_usc_test = dataset_cmfd.USCISI_CMD_Dataset(
     #     args=args, is_training=False, sample_len=len(data_test_cisdl) // 2
     # )
@@ -96,21 +98,22 @@ if __name__ == "__main__":
             iteration=None,
             device=device,
             logger=None,
-            num=100,
+            num=20,
             plot=args.plot,
         )
         logger.close()
         raise SystemExit
 
-        # TODO: There is a discrepency between test loss and train loss,
-        # even when same dataset is used. Check out why!
+    #     # TODO: There is a discrepency between test loss and train loss,
+    #     # even when same dataset is used. Check out why!
 
     data_cisdl = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=True, no_back=False)
-    dataset_usc = dataset_cmfd.USCISI_CMD_Dataset(
-        args=args, is_training=True, sample_len=len(data_cisdl) // 3
-    )
+    # dataset_usc = dataset_cmfd.USCISI_CMD_Dataset(
+    #     args=args, is_training=True, sample_len=len(data_cisdl) // 3
+    # )
 
-    dataset_train = torch.utils.data.ConcatDataset((data_cisdl, dataset_usc))
+    # dataset_train = torch.utils.data.ConcatDataset((data_cisdl, dataset_usc))
+    dataset_train = data_cisdl
 
     data_train = torch.utils.data.DataLoader(
         dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=4
@@ -129,15 +132,15 @@ if __name__ == "__main__":
                 scheduler.step(np.mean(list_loss))
                 list_loss = []
 
-                test(
-                    data_test,
-                    model,
-                    args,
-                    iteration=None,
-                    device=device,
-                    logger=None,
-                    num=5,
-                )
+                # test(
+                #     data_test,
+                #     model,
+                #     args,
+                #     iteration=None,
+                #     device=device,
+                #     logger=None,
+                #     num=5,
+                # )
 
                 state = (
                     model.module.state_dict()

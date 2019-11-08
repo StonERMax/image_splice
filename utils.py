@@ -16,6 +16,7 @@ from scipy.ndimage import measurements
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import collections
+from sklearn.metrics import roc_auc_score, roc_curve, auc
 
 
 def get_MCC(hist):
@@ -381,14 +382,15 @@ class Metric:
 
 
 class Metric_image(object):
-    def __init__(self):
+    def __init__(self, with_auc=False, thres=0.5):
         self.gt = []
         self.pred = []
+        self.with_auc = with_auc
+        self.thres = thres
 
     def update(self, _gt, _pred, thres=0.5, log=False):
-        _gt = _gt > thres
-        _pred = _pred > thres
-
+        # _gt = _gt > thres
+        # _pred = _pred > thres
         if isinstance(_gt, collections.abc.Iterable):
             self.gt.extend(list(_gt))
             self.pred.extend(list(_pred))
@@ -397,16 +399,23 @@ class Metric_image(object):
             self.pred.append(_pred)
         if log:
             pr, re, f, _ = precision_recall_fscore_support(
-                _gt, _pred, average="binary"
+                np.array(_gt) > self.thres, np.array(_pred) > self.thres, average="binary"
             )
             print(f"precision: {pr:.4f}, recall: {re:.4f}, f-score: {f :.4f} ")
 
     def final(self):
+        self.gt = np.array(self.gt)
+        self.pred = np.array(self.pred)
         pr, re, f, _ = precision_recall_fscore_support(
-            self.gt, self.pred, average="binary"
+            self.gt > self.thres, self.pred > self.thres, average="binary"
         )
-
         print("Image level score")
+
+        if self.with_auc:
+            fpr, tpr, thr = roc_curve(self.gt, self.pred)
+            auc_score = auc(fpr, tpr)
+            print(f"AUC score: {auc_score: .4f}")
+
         print(f"precision: {pr:.4f}, recall: {re:.4f}, f-score: {f :.4f} ")
 
 

@@ -44,7 +44,7 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
             for each in labelfiles_path.iterdir():
                 if each.suffix == ".csv":
                     if test_fore_only:
-                        if "_fore_" not in each.name:
+                        if "_neg_" in each.name:
                             continue
                     if no_back:
                         if "_back_" in each.name:
@@ -62,6 +62,9 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
             self.transform = utils.CustomTransform_vgg(size=args.size)
         else:
             self.transform = utils.CustomTransform(size=args.size)
+        print(f"data size : {len(self)}")
+
+        self.is_training = is_training
 
     def __len__(self):
         return len(self.pair_list)
@@ -71,11 +74,15 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
         # flip_p = np.random.uniform(0, 1)
         img_temp = skimage.io.imread(piece[0])
         im1 = skimage.img_as_float32(img_temp)
-        # im1 = utils_data.flip(img_temp, flip_p)
+
+        if self.is_training:
+            flip_p = np.random.rand() > 0.8
+        else:
+            flip_p = 0
 
         img_temp = skimage.io.imread(piece[1])
         im2 = skimage.img_as_float32(img_temp)
-        # im2 = utils_data.flip(img_temp, flip_p)
+        im2 = utils_data.flip(img_temp, flip_p)
 
         label_tmp = int(piece[2])
         if label_tmp == 1:
@@ -83,13 +90,12 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
             if len(gt_temp.shape) > 2:
                 gt_temp = gt_temp[..., 0]
             gt1 = skimage.img_as_float32(gt_temp)
-            # gt1 = utils_data.flip(gt_temp, flip_p)
 
             gt_temp = skimage.io.imread(piece[4])
             if len(gt_temp.shape) > 2:
                 gt_temp = gt_temp[..., 0]
             gt2 = skimage.img_as_float32(gt_temp)
-            # gt2 = utils_data.flip(gt_temp, flip_p)
+            gt2 = utils_data.flip(gt_temp, flip_p)
         else:
             gt1 = np.zeros(im1.shape[:2], dtype=np.float32)
             gt2 = np.zeros(im1.shape[:2], dtype=np.float32)
@@ -261,7 +267,10 @@ class Dataset_casia_v1(torch.utils.data.Dataset):
     def __init__(self, args=None, both=None):
         self.args = args
         self.transform = None
-        self.transform = utils.CustomTransform(size=args.size)
+        if args.model in ("dmac", "dmvn"):
+            self.transform = utils.CustomTransform_vgg(size=args.size)
+        else:
+            self.transform = utils.CustomTransform(size=args.size)
 
         self.root = Path(os.environ["HOME"]) / "dataset" / "CMFD" / "CASIA_v1"
 
@@ -361,3 +370,69 @@ class Dataset_casia_v1(torch.utils.data.Dataset):
         ims, y = self.transform(ims, y)
         imt, _ = self.transform(imt)
         return ims, imt, y, label
+
+
+class Dataset_casia_det(torch.utils.data.Dataset):
+    def __init__(self, args=None, both=None):
+        self.args = args
+        self.transform = None
+
+        if args.model in ("dmac", "dmvn"):
+            self.transform = utils.CustomTransform_vgg(size=args.size)
+        else:
+            self.transform = utils.CustomTransform(size=args.size)
+
+        self.root = Path(os.environ["HOME"]) / "dataset" / "CMFD" / "CASIA"
+
+        self.au_imroot = self.root / "CASIA2.0" / "Au"
+        self.tp_imroot = self.root / "CASIA2.0" / "Tp"
+
+        au_files = sorted((self.au_imroot).glob("Au_*"))
+        self.au_base_name = {x.stem: x.suffix for x in au_files}
+
+        tp_files = sorted((self.tp_imroot).glob("Tp_D_*"))
+        self.tp_base_name = {x.stem: x.suffix for x in tp_files}
+
+        csv_file = self.root / "data_paired_CASIA_ids.csv"
+
+        self.df = pd.read_csv(str(csv_file), sep=",")
+
+        self.filter_data()
+
+    def filter_data(self):
+        au_index = (
+            (self.df['Label'] == 0) &
+            (self.df['ProbeID'].map(lambda x: x in self.au_base_name)) &
+            (self.df['DonorID'].map(lambda x: x in self.au_base_name))
+        )
+
+        tp_index = (
+            (self.df['Label'] == 1) &
+            (self.df['ProbeID'].map(lambda x: x in self.tp_base_name)) &
+            (self.df['DonorID'].map(lambda x: x in self.au_base_name))
+        )
+
+        index = au_index | tp_index
+        self.df = self.df[index]
+        print(f"Data size: {self.df.shape[0]} ")
+
+    def __len__(self):
+        return self.df.shape[0]
+
+    def __getitem__(self, index, im_only=False):
+        row = self.df.iloc[index]
+        label = row["Label"]
+
+        if label == 0:
+            imfile = self.au_imroot / (row["ProbeID"] + self.au_base_name[row["ProbeID"]])
+            srcfile = self.au_imroot / (row["DonorID"] + self.au_base_name[row["DonorID"]])
+        else:
+            imfile = self.tp_imroot / (row["ProbeID"] + self.tp_base_name[row["ProbeID"]])
+            srcfile = self.au_imroot / (row["DonorID"] + self.au_base_name[row["DonorID"]])
+
+        imt = skimage.img_as_float32(skimage.io.imread(str(imfile))[:, :, :3])
+        ims = skimage.img_as_float32(skimage.io.imread(str(srcfile))[:, :, :3])
+
+        ims, _ = self.transform(ims)
+        imt, _ = self.transform(imt)
+        return ims, imt, label

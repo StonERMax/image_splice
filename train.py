@@ -44,7 +44,7 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
     loss = loss_p + loss_q + args.gamma * loss_det
 
     if args.bw:
-        gauss = kornia.filters.GaussianBlur2d((7, 7), (5, 5))
+        gauss = kornia.filters.GaussianBlur2d((5, 5), (3, 3))
         Ys_edge = (kornia.sobel(gauss(Ys)) > 0.01).float()
         Yt_edge = (kornia.sobel(gauss(Yt)) > 0.01).float()
 
