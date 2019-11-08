@@ -20,6 +20,9 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()
 
+    if iteration > 50000:
+        module.freeze_bn()
+
     Xs, Xt, Ys, Yt, labels = D
     if not isinstance(labels, torch.Tensor):
         labels = torch.from_numpy(np.array(labels, dtype=np.float32))

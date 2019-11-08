@@ -105,9 +105,9 @@ if __name__ == "__main__":
         # TODO: There is a discrepency between test loss and train loss,
         # even when same dataset is used. Check out why!
 
-    data_cisdl = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=True, no_back=True)
+    data_cisdl = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=True, no_back=False)
     dataset_usc = dataset_cmfd.USCISI_CMD_Dataset(
-        args=args, is_training=True, sample_len=len(data_cisdl)
+        args=args, is_training=True, sample_len=len(data_cisdl) // 3
     )
 
     dataset_train = torch.utils.data.ConcatDataset((data_cisdl, dataset_usc))

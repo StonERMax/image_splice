@@ -21,21 +21,21 @@ DIFF = 1;
 MEDI = 2;
 EASY = 3;
 
-new_size = 512;
-save_resized_ori_img = 1;
+new_size = 320;
+save_resized_ori_img = 0;
 
 % the shift limit
 shift_up = 512;
 shift_down = -512;
 
-rotate_up = 30;
-rotate_down = -30;
+rotate_up = 60;
+rotate_down = -60;
 
 lumin_up = 32;
 lumin_down = -32;
 
 scale_up = 4;
-scale_down = 1.1;
+scale_down = 0.7;
 
 transf_up = 2;
 
@@ -44,7 +44,7 @@ max_count = 2000;
 %%%%%%%%%%%%%%%%%
 % The save path of generated image pairs
 %%%%%%%%%%%%%%%%%
-save_root = '~/dataset/CMFD/DMAC-COCO';
+save_root = '~/dataset/CMFD/DMAC-COCO-flip';
 
 save_dir = sprintf('%s/%s/', save_root, dataType);
 save_dir_sub = sprintf('%s%s/', save_dir, transtype);
@@ -246,8 +246,16 @@ for idx = 1:m_i
         while prop_flag_p ~= prop_flag || prop_rate_p ~= prop_rate
             R = randi([rotate_down, rotate_up], 1, 1);
 
+            
             seg_paste = imrotate(seg_paste_, R(1), 'bilinear', 'crop');
             mask_paste = imrotate(mask_paste_, R(1), 'bilinear', 'crop');
+
+            %% flip randomly
+            if rand > 0.7
+                seg_paste = flip(seg_paste, 2);
+                mask_paste = flip(mask_paste, 2);
+            end
+
             prop_rate_p = sum(sum(mask_paste)) / (new_size * new_size);
 
             if prop_rate_p >= prop_low && prop_rate_p < prop_diff

@@ -22,7 +22,7 @@ if __name__ == "__main__":
     else:
         device = torch.device("cpu")
 
-    args = config.config()
+    args = config.config_casia()
 
     # seed
     np.random.seed(args.seed)
