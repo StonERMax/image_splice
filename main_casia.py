@@ -34,14 +34,20 @@ if __name__ == "__main__":
 
     print(f"Model Name: {model_name}")
 
-    data_test = dataset.Dataset_casia(args)
+    if args.dataset == "casia_v1":
+        data_test = dataset.Dataset_casia_v1(args)
+    else:
+        data_test = dataset.Dataset_casia(args)
 
     # logger
     if not os.path.exists("./logs"):
         os.mkdir("./logs")
     logger = SummaryWriter("./logs/" + model_name)
 
-    model = models.DOAModel(out_channel=args.out_channel)
+    if args.model in ("dmac", "dmvn"):
+        model = models.get_dmac(args.model, pretrain=True)
+    else:
+        model = models.DOAModel(out_channel=args.out_channel)
     model.to(device)
 
     iteration = args.resume
@@ -69,7 +75,7 @@ if __name__ == "__main__":
         iteration=None,
         device=device,
         logger=None,
-        num=100,
+        num=args.num,
         plot=args.plot,
     )
     logger.close()

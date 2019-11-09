@@ -162,7 +162,10 @@ class Dataset_casia(torch.utils.data.Dataset):
     def __init__(self, args=None, both=None):
         self.args = args
         self.transform = None
-        self.transform = utils.CustomTransform(size=args.size)
+        if args.model in ("dmac", "dmvn"):
+            self.transform = utils.CustomTransform_vgg(size=args.size)
+        else:
+            self.transform = utils.CustomTransform(size=args.size)
 
         self.root = Path(os.environ["HOME"]) / "dataset" / "CMFD" / "CASIA"
 

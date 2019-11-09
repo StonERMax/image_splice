@@ -49,6 +49,8 @@ def config():
         "--plot", action="store_true", help="whether to plot during test"
     )
 
+    parser.add_argument("--num", type=int, default=10)
+
     parser.add_argument("--mode", type=str, default=None)
     parser.add_argument("--beta", type=float, default=0.1)
     parser.add_argument("--tune", action="store_true")
@@ -97,6 +99,8 @@ def config_video():
     parser.add_argument(
         "--bw", action="store_true", help="whether to add boundary loss"
     )
+    parser.add_argument("--num", type=int, default=10)
+
     parser.add_argument(
         "--plot", action="store_true", help="whether to plot during test"
     )
@@ -135,6 +139,8 @@ def config_video_full():
     parser.add_argument(
         "--suffix", type=str, default="", help="model name suffix"
     )
+    parser.add_argument("--num", type=int, default=10)
+
     parser.add_argument(
         "--ckpt", type=str, default=None, help="pretrained model path"
     )
@@ -193,6 +199,8 @@ def config_video_temporal():
     parser.add_argument(
         "--resume", type=int, default=1, help="resume from epoch"
     )
+    parser.add_argument("--num", type=int, default=10)
+
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument(
         "--suffix", type=str, default="", help="model name suffix"
@@ -242,6 +250,8 @@ def config_grip():
     parser.add_argument(
         "--size", type=str, default="320x320", help="image shape (h x w)"
     )
+    parser.add_argument("--num", type=int, default=10)
+
     parser.add_argument("--model", type=str, default="base", help="model name")
     # network config
     parser.add_argument("--lr", type=float, default=1e-4)
@@ -301,6 +311,8 @@ def config_casia():
     parser.add_argument(
         "--size", type=str, default="320x320", help="image shape (h x w)"
     )
+    parser.add_argument("--num", type=int, default=10)
+
     parser.add_argument("--model", type=str, default="base", help="model name")
     # network config
     parser.add_argument("--lr", type=float, default=1e-4)

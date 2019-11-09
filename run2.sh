@@ -1,18 +1,20 @@
-conda activate torch
-
-# env CUDA_VISIBLE_DEVICES=1 python  main.py --model dmac --batch-size 15 --max-epoch 20 --test >> ./log_out/coco/dmac_all.txt
-# env CUDA_VISIBLE_DEVICES=1 python  main.py --model dmac --batch-size 15 --max-epoch 20 --test --mode easy >> ./log_out/coco/dmac_easy.txt
-# env CUDA_VISIBLE_DEVICES=1  python main.py --model dmac --batch-size 15 --max-epoch 20 --test --mode medi >> ./log_out/coco/dmac_medi.txt
-# env CUDA_VISIBLE_DEVICES=1  python main.py --model dmac --batch-size 15 --max-epoch 20 --test --mode diff >> ./log_out/coco/dmac_diff.txt
-
-# env CUDA_VISIBLE_DEVICES=1  python main.py --model dmvn --batch-size 15 --max-epoch 20 --test >> ./log_out/coco/dmvn_all.txt
-# env CUDA_VISIBLE_DEVICES=1  python main.py --model dmvn --batch-size 15 --max-epoch 20 --test --mode easy >> ./log_out/coco/dmvn_easy.txt
-# env CUDA_VISIBLE_DEVICES=1  python main.py --model dmvn --batch-size 15 --max-epoch 20 --test --mode medi >> ./log_out/coco/dmvn_medi.txt
-# env CUDA_VISIBLE_DEVICES=1   python main.py --model dmvn --batch-size 15 --max-epoch 20 --test --mode diff >> ./log_out/coco/dmvn_diff.txt
-
-env CUDA_VISIBLE_DEVICES=1 python  main.py --model base --batch-size 15 --max-epoch 20 --test --ckpt ./ckpt/gcn2_coco.pkl >> ./log_out/coco/ours_all.txt
-env CUDA_VISIBLE_DEVICES=1 python  main.py --model base --batch-size 15 --max-epoch 20 --test --mode easy --ckpt ./ckpt/gcn2_coco.pkl >> ./log_out/coco/ours_easy.txt
-env CUDA_VISIBLE_DEVICES=1  python main.py --model base --batch-size 15 --max-epoch 20 --test --mode medi --ckpt ./ckpt/gcn2_coco.pkl >> ./log_out/coco/ours_medi.txt
-env CUDA_VISIBLE_DEVICES=1  python main.py --model base --batch-size 15 --max-epoch 20 --test --mode diff --ckpt ./ckpt/gcn2_coco.pkl >> ./log_out/coco/ours_diff.txt
+set -x CUDA_VISIBLE_DEVICES 2
 
 
+#### CASIA 2 localization
+# our model
+# python main_casia.py --dataset casia --ckpt ./ckpt/base_coco_exp_new_with_flip.pkl --num 50 --plot | tee -a log_out/base_casia.txt
+# # # dmac
+# python main_casia.py --dataset casia --model dmac --num 50 --plot | tee -a log_out/dmac_casia.txt
+# # # dmvn
+# python main_casia.py --dataset casia --model dmvn --num 50 --plot | tee -a log_out/dmvn_casia.txt
+
+
+
+#### CASIA 2 detection
+# our model
+python main_casia_detection.py --ckpt ./ckpt/base_coco_exp_new_with_flip.pkl --num 500 | tee -a log_out/base_casia.txt
+# # dmac
+# python main_casia_detection.py --model dmac --num 500 | tee -a log_out/dmac_casia.txt
+# # dmvn
+# python main_casia_detection.py --model dmvn --num 500 | tee -a log_out/dmvn_casia.txt

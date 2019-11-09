@@ -11,6 +11,7 @@ import skimage
 import os
 from tqdm import tqdm
 import shutil
+
 # metric
 from sklearn import metrics
 import utils
@@ -77,7 +78,7 @@ def test(data, model, args, iteration, device, logger=None, num=None, plot=False
     loss_list = []
 
     if plot:
-        plot_dir = Path("tmp_plot") / args.dataset
+        plot_dir = Path("tmp_plot") / args.dataset / args.model
         if plot_dir.exists():
             shutil.rmtree(plot_dir)
         plot_dir.mkdir(exist_ok=True, parents=True)
@@ -125,8 +126,8 @@ def test(data, model, args, iteration, device, logger=None, num=None, plot=False
                 axes[0, 1].imshow(im2)
                 axes[1, 0].imshow(gt1, cmap="jet")
                 axes[1, 1].imshow(gt2, cmap="jet")
-                axes[2, 0].imshow(pred1, cmap="jet")
-                axes[2, 1].imshow(pred2, cmap="jet")
+                axes[2, 0].imshow(pred1.squeeze(), cmap="jet")
+                axes[2, 1].imshow(pred2.squeeze(), cmap="jet")
 
                 fig.savefig(str(plot_dir / f"{i}_{ii}.jpg"))
                 plt.close("all")
@@ -280,10 +281,17 @@ def test_dmac(data, model, args, iteration, device, logger=None, num=None, plot=
     # metric_im = utils.Metric_image()
     loss_list = []
 
+    if plot:
+        plot_dir = Path("tmp_plot") / args.dataset / args.model
+        if plot_dir.exists():
+            shutil.rmtree(plot_dir)
+        plot_dir.mkdir(exist_ok=True, parents=True)
+
+
     if iteration is not None:
         print(f"{iteration}")
 
-    for i, ret in enumerate(data.load()):
+    for i, ret in enumerate(data):
         Xs, Xt, Ys, Yt, labels = ret
         if not isinstance(labels, torch.Tensor):
             labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(device)
@@ -302,10 +310,10 @@ def test_dmac(data, model, args, iteration, device, logger=None, num=None, plot=
             preds = torch.sigmoid(preds)
 
         metric.update([fnp(Ys), fnp(Yt)], [fnp(preds), fnp(predt)])
-        if plot:
-            plot_dir = Path("tmp_plot_dmac") / args.dataset
-            plot_dir.mkdir(exist_ok=True, parents=True)
 
+        # if logger:
+        #     logger.add_scalar("test_loss/total", loss, iteration)
+        if plot:
             for ii in range(Xt.shape[0]):
                 im1, im2 = torch_to_im(Xt[ii]), torch_to_im(Xs[ii])
                 gt1, gt2 = torch_to_im(Yt[ii]), torch_to_im(Ys[ii])
@@ -316,8 +324,8 @@ def test_dmac(data, model, args, iteration, device, logger=None, num=None, plot=
                 axes[0, 1].imshow(im2)
                 axes[1, 0].imshow(gt1, cmap="jet")
                 axes[1, 1].imshow(gt2, cmap="jet")
-                axes[2, 0].imshow(pred1, cmap="jet")
-                axes[2, 1].imshow(pred2, cmap="jet")
+                axes[2, 0].imshow(pred1.squeeze(), cmap="jet")
+                axes[2, 1].imshow(pred2.squeeze(), cmap="jet")
 
                 fig.savefig(str(plot_dir / f"{i}_{ii}.jpg"))
                 plt.close("all")
@@ -325,12 +333,11 @@ def test_dmac(data, model, args, iteration, device, logger=None, num=None, plot=
         if num is not None and i >= num:
             break
 
-    out = metric.final()
+    metric.final()
 
     test_loss = np.mean(loss_list)
     print(f"\ntest loss : {test_loss:.4f}\n")
-
-    return out, test_loss
+    return test_loss
 
 
 @torch.no_grad()
@@ -341,20 +348,27 @@ def test_casia(data, model, args, iteration, device, logger=None, num=None, plot
     metric = utils.MMetric(name="forge")
     if iteration is not None:
         print(f"{iteration}")
+    if plot:
+        plot_dir = Path("tmp_plot") / args.dataset / args.model
+        if plot_dir.exists():
+            shutil.rmtree(plot_dir)
+        plot_dir.mkdir(exist_ok=True, parents=True)
 
     for i, ret in enumerate(data):
         Xs, Xt, Y, labels = ret
         preds, predt, _ = model(Xs.to(device), Xt.to(device))
-
         print(f"{i}:")
-        predt = torch.sigmoid(predt)
-        preds = torch.sigmoid(preds)
+
+        if args.model == "dmac":
+            predt = torch.softmax(predt, dim=1)[:, [1]]
+            preds = torch.softmax(preds, dim=1)[:, [1]]
+        else:
+            predt = torch.sigmoid(predt)
+            preds = torch.sigmoid(preds)
 
         metric.update(to_np(Y), to_np(predt))
 
         if plot:
-            plot_dir = Path("tmp_plot") / args.dataset
-            plot_dir.mkdir(exist_ok=True, parents=True)
             preds = preds.squeeze()
             predt = predt.squeeze()
 
@@ -368,8 +382,8 @@ def test_casia(data, model, args, iteration, device, logger=None, num=None, plot
                 axes[0, 1].imshow(im2)
                 # axes[1, 0].imshow(gt1, cmap="jet")
                 axes[1, 1].imshow(gt2, cmap="jet")
-                axes[2, 0].imshow(pred1, cmap="jet")
-                axes[2, 1].imshow(pred2, cmap="jet")
+                axes[2, 0].imshow(pred1.squeeze(), cmap="jet")
+                axes[2, 1].imshow(pred2.squeeze(), cmap="jet")
 
                 fig.savefig(str(plot_dir / f"{i}_{ii}.jpg"))
                 plt.close("all")
@@ -440,8 +454,8 @@ def test_casia_det(data, model, args, iteration, device, logger=None, num=None, 
                 # pred2[pred2 < args.thres] = 0
                 axes[0, 0].imshow(im1)
                 axes[0, 1].imshow(im2)
-                axes[1, 0].imshow(pred1, cmap="jet")
-                axes[1, 1].imshow(pred2, cmap="jet")
+                axes[1, 0].imshow(pred1.squeeze(), cmap="jet")
+                axes[1, 1].imshow(pred2.squeeze(), cmap="jet")
                 fig.savefig(
                     str(
                         plot_dir
@@ -500,8 +514,8 @@ def test_dmac_casia(data, model, args, iteration, device, logger=None, num=None,
                 axes[0, 1].imshow(im2)
                 axes[1, 0].imshow(gt1, cmap="jet")
                 axes[1, 1].imshow(gt2, cmap="jet")
-                axes[2, 0].imshow(pred1, cmap="jet")
-                axes[2, 1].imshow(pred2, cmap="jet")
+                axes[2, 0].imshow(pred1.squeeze(), cmap="jet")
+                axes[2, 1].imshow(pred2.squeeze(), cmap="jet")
 
                 fig.savefig(str(plot_dir / f"{i}_{ii}.jpg"))
                 plt.close("all")
