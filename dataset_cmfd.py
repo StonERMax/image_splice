@@ -47,7 +47,10 @@ class USCISI_CMD_Dataset(torch.utils.data.Dataset):
         print(
             "INFO: successfully load USC-ISI CMD LMDB with {} keys".format(self.nb_samples))
 
-        self.transform = utils.CustomTransform(size=args.size)
+        if args.model in ("dmac", "dmvn"):
+            self.transform = utils.CustomTransform_vgg(size=args.size)
+        else:
+            self.transform = utils.CustomTransform(size=args.size)
         self.to_tensor = to_tensor
 
     @property

@@ -279,14 +279,13 @@ def test_dmac(data, model, args, iteration, device, logger=None, num=None, plot=
 
     metric = utils.Metric(thres=args.thres)
     # metric_im = utils.Metric_image()
-    loss_list = []
+    # loss_list = []
 
     if plot:
         plot_dir = Path("tmp_plot") / args.dataset / args.model
         if plot_dir.exists():
             shutil.rmtree(plot_dir)
         plot_dir.mkdir(exist_ok=True, parents=True)
-
 
     if iteration is not None:
         print(f"{iteration}")
@@ -335,9 +334,9 @@ def test_dmac(data, model, args, iteration, device, logger=None, num=None, plot=
 
     metric.final()
 
-    test_loss = np.mean(loss_list)
-    print(f"\ntest loss : {test_loss:.4f}\n")
-    return test_loss
+    # test_loss = np.mean(loss_list)
+    # print(f"\ntest loss : {test_loss:.4f}\n")
+    # return test_loss
 
 
 @torch.no_grad()
