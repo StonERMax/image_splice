@@ -73,7 +73,7 @@ def test(data, model, args, iteration, device, logger=None, num=None, plot=False
 
     model.eval()
 
-    metric = utils.Metric()
+    metric = utils.Metric(thres=args.thres)
     # metric_im = utils.Metric_image()
     loss_list = []
 
@@ -277,7 +277,7 @@ def test_dmac(data, model, args, iteration, device, logger=None, num=None, plot=
 
     model.eval()
 
-    metric = utils.Metric()
+    metric = utils.Metric(thres=args.thres)
     # metric_im = utils.Metric_image()
     loss_list = []
 
@@ -345,7 +345,7 @@ def test_casia(data, model, args, iteration, device, logger=None, num=None, plot
 
     model.eval()
     # metric_im = utils.Metric_image()
-    metric = utils.MMetric(name="forge")
+    metric = utils.MMetric(name="forge", thres=args.thres)
     if iteration is not None:
         print(f"{iteration}")
     if plot:
@@ -402,7 +402,7 @@ def test_casia_det(data, model, args, iteration, device, logger=None, num=None, 
         print(f"{iteration}")
 
     if plot:
-        plot_dir = Path("tmp_plot") / (args.dataset + "_" + args.model + "_det")
+        plot_dir = Path("tmp_plot") / args.dataset / (args.model + "_det")
         if plot_dir.exists():
             shutil.rmtree(plot_dir)
         plot_dir.mkdir(exist_ok=True, parents=True)
@@ -450,8 +450,6 @@ def test_casia_det(data, model, args, iteration, device, logger=None, num=None, 
                 pred1, pred2 = to_np(preds[ii]), to_np(predt[ii])
 
                 fig, axes = plt.subplots(nrows=2, ncols=2)
-                # pred1[pred1 < args.thres] = 0
-                # pred2[pred2 < args.thres] = 0
                 axes[0, 0].imshow(im1)
                 axes[0, 1].imshow(im2)
                 axes[1, 0].imshow(pred1.squeeze(), cmap="jet")

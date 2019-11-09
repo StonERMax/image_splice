@@ -76,10 +76,9 @@ class Dataset_COCO_CISDL(torch.utils.data.Dataset):
         im1 = skimage.img_as_float32(img_temp)
 
         if self.is_training:
-            flip_p = np.random.rand() > 0.
+            flip_p = np.random.rand() > 0.8
         else:
             flip_p = 0
-        flip_p = 1
 
         img_temp = skimage.io.imread(piece[1])
         im2 = skimage.img_as_float32(img_temp)
