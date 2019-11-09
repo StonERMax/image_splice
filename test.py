@@ -118,7 +118,7 @@ def test(data, model, args, iteration, device, logger=None, num=None, plot=False
             for ii in range(Xt.shape[0]):
                 im1, im2 = torch_to_im(Xt[ii]), torch_to_im(Xs[ii])
                 gt1, gt2 = torch_to_im(Yt[ii]), torch_to_im(Ys[ii])
-                pred1, pred2 = torch_to_im(predt[ii]), torch_to_im(preds[ii])
+                pred1, pred2 = to_np(predt[ii]), to_np(preds[ii])
 
                 fig, axes = plt.subplots(nrows=3, ncols=2)
                 axes[0, 0].imshow(im1)
@@ -143,14 +143,10 @@ def test(data, model, args, iteration, device, logger=None, num=None, plot=False
 
 @torch.no_grad()
 def test_temporal(data, model, args, iteration, device, logger=None, num=None, plot=False):
-
     model.eval()
-
     metric = utils.Metric()
     im_pred = []
-
     list_loss = []
-
     if iteration is not None:
         print(f"{iteration}")
 
@@ -313,7 +309,7 @@ def test_dmac(data, model, args, iteration, device, logger=None, num=None, plot=
             for ii in range(Xt.shape[0]):
                 im1, im2 = torch_to_im(Xt[ii]), torch_to_im(Xs[ii])
                 gt1, gt2 = torch_to_im(Yt[ii]), torch_to_im(Ys[ii])
-                pred1, pred2 = torch_to_im(predt[ii]), torch_to_im(preds[ii])
+                pred1, pred2 = to_np(predt[ii]), to_np(preds[ii])
 
                 fig, axes = plt.subplots(nrows=3, ncols=2)
                 axes[0, 0].imshow(im1)
@@ -497,7 +493,7 @@ def test_dmac_casia(data, model, args, iteration, device, logger=None, num=None,
             for ii in range(Xt.shape[0]):
                 im1, im2 = torch_to_im(Xt[ii]), torch_to_im(Xs[ii])
                 gt1, gt2 = torch_to_im(Yt[ii]), torch_to_im(Ys[ii])
-                pred1, pred2 = torch_to_im(predt[ii]), torch_to_im(preds[ii])
+                pred1, pred2 = to_np(predt[ii]), to_np(preds[ii])
 
                 fig, axes = plt.subplots(nrows=3, ncols=2)
                 axes[0, 0].imshow(im1)

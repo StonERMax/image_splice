@@ -30,9 +30,7 @@ class Dataset_vid(torch.utils.data.Dataset):
     """class for dataset of image manipulation
     """
 
-    def __init__(
-        self, args=None, transform=None, videoset=None, is_training=True
-    ):
+    def __init__(self, args=None, transform=None, videoset=None, is_training=True):
         # args contain necessary argument
         self.args = args
         if videoset is None:
@@ -106,9 +104,7 @@ class Dataset_vid(torch.utils.data.Dataset):
                     )
                     if not os.path.exists(mask_file):
                         mask_file = os.path.join(
-                            str(self.mask_root),
-                            name.name,
-                            (_file.stem + ".jpg"),
+                            str(self.mask_root), name.name, (_file.stem + ".jpg")
                         )
                     try:
                         assert os.path.exists(mask_file)
@@ -144,18 +140,14 @@ class Dataset_vid(torch.utils.data.Dataset):
             for i, cur_file in enumerate(filenames):
                 if i < offset:
                     continue
-                fname_target = os.path.join(
-                    self.im_mani_root, *cur_file.parts[-2:]
-                )
+                fname_target = os.path.join(self.im_mani_root, *cur_file.parts[-2:])
                 # if "davis" in self.videoset:
                 #     _fsrc = f"{int(cur_file.stem)-offset:d}.png"
                 # elif "SegTrackv2" in self.videoset:
                 #     _fsrc = f"{int(cur_file.stem)-offset:d}.png"
                 # else:
                 _fsrc = f"{int(cur_file.stem)-offset:d}.png"
-                fname_src = os.path.join(
-                    self.im_mani_root, cur_file.parts[-2], _fsrc
-                )
+                fname_src = os.path.join(self.im_mani_root, cur_file.parts[-2], _fsrc)
 
                 assert os.path.exists(fname_target)
                 assert os.path.exists(fname_src)
@@ -310,9 +302,7 @@ class Dataset_vid(torch.utils.data.Dataset):
                 counter += 1
 
     def load_mani_vid(self, shuffle=True, batch_size=None):
-        loader = self.load_videos_all(
-            is_training=self.is_training, to_tensor=True
-        )
+        loader = self.load_videos_all(is_training=self.is_training, to_tensor=True)
         while True:
             try:
                 ret = next(loader)
@@ -323,9 +313,7 @@ class Dataset_vid(torch.utils.data.Dataset):
             label[forge_time[0] : forge_time[1] + 1] = 1
             yield X, Y_forge, label, name
 
-    def load_videos_all(
-        self, is_training=False, shuffle=False, to_tensor=True
-    ):
+    def load_videos_all(self, is_training=False, shuffle=False, to_tensor=True):
         if is_training:
             idx = self.train_index
         else:
@@ -378,9 +366,7 @@ class Dataset_vid(torch.utils.data.Dataset):
                 fname = os.path.join(self.im_mani_root, *cur_file.parts[-2:])
                 im = skimage.img_as_float32(io.imread(fname))
 
-                X[i] = cv2.resize(
-                    im, self.args.size, interpolation=cv2.INTER_LINEAR
-                )
+                X[i] = cv2.resize(im, self.args.size, interpolation=cv2.INTER_LINEAR)
                 if mask_new is None:
                     mask_new = np.zeros(self.args.size, dtype=np.float32)
                     mask_orig = np.zeros(self.args.size, dtype=np.float32)
@@ -432,17 +418,9 @@ class Dataset_vid(torch.utils.data.Dataset):
             batch_size = self.args.batch_size
 
         global x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch
-        x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = (
-            [],
-            [],
-            [],
-            [],
-            [],
-        )
+        x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch = ([], [], [], [], [])
 
-        loader = self.load_videos_all(
-            is_training=self.is_training, to_tensor=True
-        )
+        loader = self.load_videos_all(is_training=self.is_training, to_tensor=True)
 
         def add_to_dat(Xs, Xf, Ys, Yf, label):
             global x_batch_s, x_batch_f, y_batch_s, y_batch_f, label_batch
@@ -528,9 +506,7 @@ class Dataset_vid(torch.utils.data.Dataset):
                         np.concatenate(
                             (
                                 np.arange(0, gt_indices[t1]),
-                                np.arange(
-                                    gt_indices[t1] + 1, X.shape[0] - t_max + 1
-                                ),
+                                np.arange(gt_indices[t1] + 1, X.shape[0] - t_max + 1),
                             )
                         )
                     )
@@ -573,8 +549,7 @@ class Dataset_vid(torch.utils.data.Dataset):
                                 (
                                     np.arange(0, gt_indices[t1]),
                                     np.arange(
-                                        gt_indices[t1] + 1,
-                                        X.shape[0] - t_max + 1,
+                                        gt_indices[t1] + 1, X.shape[0] - t_max + 1
                                     ),
                                 )
                             )
@@ -652,9 +627,7 @@ class Dataset_vid(torch.utils.data.Dataset):
             Xref[k] = im_o  # * (1 - (mask_ref == 0.5)
             #   [..., None]).astype(im_o.dtype)
             Xtem[k] = im_f  # * ((mask_tem == 1)[..., None]).astype(im_f.dtype)
-            Yref[
-                k
-            ] = mask_ref  # * (1 - (mask_ref == 0.5)).astype(mask_ref.dtype)
+            Yref[k] = mask_ref  # * (1 - (mask_ref == 0.5)).astype(mask_ref.dtype)
             Ytem[k] = mask_tem  # * (mask_tem == 1).astype(mask_tem.dtype)
 
         if to_tensor:
@@ -670,12 +643,8 @@ class Dataset_vid(torch.utils.data.Dataset):
             Yreft = torch.zeros(batch_size, 1, *self.args.size)
             Ytemt = torch.zeros(batch_size, 1, *self.args.size)
             for k in range(batch_size):
-                Xreft[k], Yreft[k] = tfm_o(
-                    Xref[k], Yref[k], other_tfm=other_tfm
-                )
-                Xtemt[k], Ytemt[k] = tfm_f(
-                    Xtem[k], Ytem[k], other_tfm=other_tfm
-                )
+                Xreft[k], Yreft[k] = tfm_o(Xref[k], Yref[k], other_tfm=other_tfm)
+                Xtemt[k], Ytemt[k] = tfm_f(Xtem[k], Ytem[k], other_tfm=other_tfm)
             Xref, Xtem, Yref, Ytem = Xreft, Xtemt, Yreft, Ytemt
 
             Ytem[Ytem > 0.5] = 1
@@ -704,9 +673,7 @@ class Dataset_vid(torch.utils.data.Dataset):
             Ytem = fn_cat((Ytem1, Ytem2), 0)
             name = name1 + "_" + name2
             total = Xref1.shape[0] + Xref2.shape[0]
-            ind_rand = np.random.choice(
-                total, size=Xref1.shape[0], replace=False
-            )
+            ind_rand = np.random.choice(total, size=Xref1.shape[0], replace=False)
             return (
                 Xref[ind_rand],
                 Xtem[ind_rand],
@@ -775,4 +742,77 @@ class Dataset_vid(torch.utils.data.Dataset):
 class Dataset_grip(torch.utils.data.Dataset):
     def __init__(self, args):
         self.args = args
-        self.frame_root = Path(self.root) / "grip_video_data" / "frames"
+        self.frame_root = Path(args.root) / "grip_video_data" / "frames"
+        self.gt_root = Path(args.root) / "grip_video_data" / "gt_frame"
+        if args.model in ("dmac", "dmvn"):
+            self.transform = utils.CustomTransform_vgg(size=args.size)
+        else:
+            self.transform = utils.CustomTransform(size=args.size)
+
+        df = pd.read_csv("./grip_match.csv", sep=",")
+        self.src_forg_pair(df)
+
+    def src_forg_pair(self, df):
+        list_vid_num = []
+        list_vid_name = []
+        list_src_frame = []
+        list_target_frame = []
+        list_src_gt_frame = []
+        list_target_gt_frame = []
+        for index, row in df.iterrows():
+            vid_number = row["vid-number"]
+            frames_folder = self.frame_root / f"VIDEO_FORG_rigid_{vid_number:02d}"
+            gt_folder = self.gt_root / f"GT_rigid_{vid_number:02d}"
+            src_frames = np.arange(row["src-start"], row["src-end"] + 1)
+            forg_frames = np.arange(row["forg-start"], row["forg-end"] + 1)
+
+            for s, f in zip(src_frames, forg_frames):
+                list_vid_num.append(vid_number)
+                list_vid_name.append(frames_folder.name)
+                list_src_frame.append(str(frames_folder / f"{s:05d}.png"))
+                list_target_frame.append(str(frames_folder / f"{f:05d}.png"))
+                list_src_gt_frame.append(str(gt_folder / f"{s:05d}.png"))
+                list_target_gt_frame.append(str(gt_folder / f"{f:05d}.png"))
+
+        self.df_pair = pd.DataFrame(
+            data={
+                "vid-num": list_vid_num,
+                "vid-name": list_vid_name,
+                "src-frame": list_src_frame,
+                "target-frame": list_target_frame,
+                "src-gt": list_src_gt_frame,
+                "target-gt": list_target_gt_frame
+            }
+        )
+
+    def __getitem__(self, index):
+        row = self.df_pair.iloc[index]
+        im_s = skimage.img_as_float32(skimage.io.imread(row['src-frame']))
+        im_f = skimage.img_as_float32(skimage.io.imread(row['target-frame']))
+        gt_s = skimage.img_as_float32(skimage.io.imread(row['src-gt']))
+        gt_f = skimage.img_as_float32(skimage.io.imread(row['target-gt']))
+        im_s, gt_s = self.transform(im_s, gt_s)
+        im_f, gt_f = self.transform(im_f, gt_f)
+        return im_s, im_f, gt_s, gt_f
+
+    def get_video(self, idx):
+        frames_folder = self.frame_root / f"VIDEO_FORG_rigid_{idx:02d}"
+        gt_folder = self.gt_root / f"GT_rigid_{idx:02d}"
+
+        imfiles = sorted(frames_folder.iterdir())
+        gtfiles = sorted(gt_folder.iterdir())
+
+        X = torch.zeros((len(imfiles), 3, *self.args.size), dtype=torch.float32)
+        Y = torch.zeros((len(imfiles), 1, *self.args.size), dtype=torch.float32)
+
+        for i, (imf, gtf) in enumerate(zip(imfiles, gtfiles)):
+            im = skimage.img_as_float32(skimage.io.imread(imf))
+            gt = skimage.img_as_float32(skimage.io.imread(gtf))
+
+            im, gt = self.transform(im, gt)
+            X[i] = im
+            Y[i] = gt
+        return X, Y
+
+    def __len__(self):
+        return self.df_pair.shape[0]

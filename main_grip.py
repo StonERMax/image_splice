@@ -15,12 +15,13 @@ import skimage
 
 # custom module
 import config
-from dataset_vid import Dataset_vid
+import dataset_vid
 from utils import CustomTransform, MultiPagePdf
-
+import shutil
 import models
 import models_vid
 import utils
+from test import torch_to_im, to_np
 
 
 def iou_time(t1, t2):
@@ -49,7 +50,7 @@ if __name__ == "__main__":
     else:
         device = torch.device("cpu")
 
-    args = config.config_video_full()
+    args = config.config_grip()
     # seed
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -78,24 +79,42 @@ if __name__ == "__main__":
     def to_np(x):
         return x.data.cpu().numpy()
 
-    frame_root = Path(args.root) / "grip_video_data" / "frames" / "VIDEO_FORG_rigid_02"
+    data = dataset_vid.Dataset_grip(args)
+    data_loader = torch.utils.data.DataLoader(
+        data, batch_size=args.batch_size, shuffle=True, num_workers=0
+    )
 
-    frame1 = frame_root / f"{33:05d}.png"
-    frame2 = frame_root / f"{116:05d}.png"
+    if args.plot:
+        plot_dir = Path("tmp_plot") / args.dataset
+        if plot_dir.exists():
+            shutil.rmtree(plot_dir)
+        plot_dir.mkdir(exist_ok=True, parents=True)
 
-    im1 = skimage.img_as_float32(skimage.io.imread(frame1))
-    im2 = skimage.img_as_float32(skimage.io.imread(frame2))
+    for i, ret in tqdm(enumerate(data_loader)):
+        Xs, Xt, Ys, Yt = ret
+        Xs, Xt = (Xs.to(device), Xt.to(device))
+        with torch.no_grad():
+            preds, predt, pred_det = model(Xs, Xt)
+        predt = torch.sigmoid(predt.squeeze())
+        preds = torch.sigmoid(preds.squeeze())
 
-    im1, _ = transform(im1)
-    im2, _ = transform(im2)
+        if args.plot:
+            for ii in range(Xt.shape[0]):
+                im1, im2 = torch_to_im(Xt[ii]), torch_to_im(Xs[ii])
+                gt1, gt2 = torch_to_im(Yt[ii]), torch_to_im(Ys[ii])
+                pred1, pred2 = to_np(predt[ii]), to_np(preds[ii])
 
-    im1 = im1.unsqueeze(0)
-    im2 = im2.unsqueeze(0)
+                fig, axes = plt.subplots(nrows=3, ncols=2)
+                axes[0, 0].imshow(im1)
+                axes[0, 1].imshow(im2)
+                axes[1, 0].imshow(gt1, cmap="jet")
+                axes[1, 1].imshow(gt2, cmap="jet")
+                axes[2, 0].imshow(pred1, cmap="jet")
+                axes[2, 1].imshow(pred2, cmap="jet")
 
-    with torch.no_grad():
-        preds, predt, pred_det = model(im1.to(device), im2.to(device))
-
-    predt = to_np(torch.sigmoid(predt.squeeze()))
-    preds = to_np(torch.sigmoid(preds.squeeze()))
-
-    print("")
+                fig.savefig(str(plot_dir / f"{i}_{ii}.jpg"))
+                plt.close("all")
+        
+        # TODO: how many iterations?
+        if i > 30:
+            break
