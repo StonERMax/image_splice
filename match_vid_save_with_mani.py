@@ -66,7 +66,6 @@ if __name__ == "__main__":
         checkpoint = torch.load(args.ckptM)
         load_state_base(model_forge, checkpoint['model_state'])
     model_forge.to(device)
-    
 
     # model
     if args.model in ("dmvn", "dmac"):

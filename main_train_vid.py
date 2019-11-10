@@ -34,13 +34,20 @@ if __name__ == "__main__":
 
     print(f"Model Name: {model_name}")
 
+    if args.model in ("dmac", "dmvn"):
+        from test import test_dmac as test
+        from train import train_dmac as train
+
     # logger
     if not os.path.exists("./logs"):
         os.mkdir("./logs")
     logger = SummaryWriter("./logs/" + model_name)
 
     # model
-    model = models.DOAModel(out_channel=args.out_channel)
+    if args.model in ("dmac", "dmvn"):
+        model = models.get_dmac(args.model, pretrain=True)
+    else:
+        model = models.DOAModel(out_channel=args.out_channel)
 
     iteration = args.resume
     init_ep = 0
@@ -65,13 +72,13 @@ if __name__ == "__main__":
     # load dataset
     data_test = dataset_vid.Dataset_vid(args, is_training=False)
     if args.test:
-        with torch.no_grad():
-            for i, ret in enumerate(data_test.load()):
-                Xs, Xt, Ys, Yt, labels = ret
-                Xs, Xt = (Xs.to(device), Xt.to(device))
-                _ = model(Xs, Xt)
-                if i > 5:
-                    break
+        # with torch.no_grad():
+        #     for i, ret in enumerate(data_test.load()):
+        #         Xs, Xt, Ys, Yt, labels = ret
+        #         Xs, Xt = (Xs.to(device), Xt.to(device))
+        #         _ = model(Xs, Xt)
+        #         if i > 5:
+        #             break
         test(
             data_test.load(),
             model,

@@ -64,17 +64,14 @@ if __name__ == "__main__":
     tsfm = utils.CustomTransform(size=args.size)
 
     # * path to save
-    root = Path("tmp_affinity") / args.dataset / args.model
+    root = Path("tmp_video_match") / args.dataset / args.model
 
     mask_processor = utils.Preprocessor(args)
-
-    # data_path = Path("./tmp_video_match_mani") / args.dataset / args.model
 
     metric = utils.Metric(names=["source", "forge", "all"])
 
     counter = 0
     dataset = Dataset_vid(args=args, is_training=False)
-    root = Path("tmp_video_match_mani") / args.dataset / args.model
 
     for ret in tqdm(
         dataset.load_videos_all(
@@ -222,10 +219,11 @@ if __name__ == "__main__":
         metric.update(
             (GT_src, GT_forge, GT_all),
             (Pred_mask_src, Pred_mask_forge, Pred_mask_all),
+            batch_mode=False
         )
 
         # save all images
-        folder_name = Path("tmp_out_final") / args.dataset / args.model / name
+        folder_name = Path("tmp_video_match") / args.dataset / args.model / name
 
         folder_gt = folder_name / "gt"
         folder_pred = folder_name / "pred"
@@ -257,7 +255,7 @@ if __name__ == "__main__":
         # )
 
         counter += 1
-        if counter > 20:
+        if counter > args.num:
             break
 
     print("FINAL Score:")

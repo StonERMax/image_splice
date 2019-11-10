@@ -26,7 +26,7 @@ def load_model(model, state):
         if (
             not k.startswith("head_mask")
             and not k.startswith("t_gcn")
-            and not k.startswith("temporal_detection")
+            and not k.startswith("alpha")
         ):
             # mod_state[k] = state[k]
             name_req_grad.append(k)
@@ -94,7 +94,7 @@ if __name__ == "__main__":
 
     if args.test:
         with torch.no_grad():
-            for i, ret in enumerate(data_test.load_temporal(t_t_max=5, batch_size=5)):
+            for i, ret in enumerate(data_test.load_temporal_pos(t_t_max=5, batch_size=5)):
                 Xs, Xt, Ys, Yt, labels = ret
                 Xs, Xt = Xs.to(device), Xt.to(device)
                 _ = model(Xs, Xt)

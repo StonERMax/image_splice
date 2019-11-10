@@ -289,9 +289,9 @@ class DOAModel(nn.Module):
         self.t_gcn_p = TGCN(in_feat=2 * 256, out_feat=2 * 256)
         self.t_gcn_q = TGCN(in_feat=2 * 256, out_feat=2 * 256)
 
-        self.temporal_detection = TemporalDetectionBranch(2 * 256)
+        # self.temporal_detection = TemporalDetectionBranch(2 * 256)
 
-        self.alpha = nn.Parameter(torch.tensor(0.), requires_grad=True)
+        self.alpha = nn.Parameter(torch.tensor(0.5), requires_grad=True)
 
         # detection branch
         self.head_mask_p.apply(weights_init_normal)
@@ -341,19 +341,13 @@ class DOAModel(nn.Module):
         outp = self.head_mask_p(x_final_p)
         outq = self.head_mask_q(x_final_q)
 
-        # final detection
-        out_det = self.temporal_detection(
-            x_final_p.view(b, t, *x_final_p.shape[1:]),
-            x_final_q.view(b, t, *x_final_q.shape[1:]),
-        )  # (b, )
-
         outp = F.interpolate(outp, size=(h, w), mode="bilinear", align_corners=True)
         outq = F.interpolate(outq, size=(h, w), mode="bilinear", align_corners=True)
 
         outp = outp.reshape(b, t, *outp.shape[1:])
         outq = outq.reshape(b, t, *outq.shape[1:])
 
-        return outq, outp, out_det
+        return outq, outp
 
     def set_bn_to_eval(self):
         def fn(m):

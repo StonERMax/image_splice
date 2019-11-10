@@ -325,6 +325,14 @@ class DMAC_VGG_Module(nn.Module):
     ):
         return block(dilation_series, padding_series, inputscale, NoLabels)
 
+    def set_bn_to_eval(self):
+        def fn(m):
+            classname = m.__class__.__name__
+            if classname.find("BatchNorm") != -1:
+                m.eval()
+
+        self.apply(fn)
+
 
 def DMAC_VGG(NoLabels=1, gpu_idx=0, dim=(320, 320)):
     """The interface function of DMAC. Users only needs to call this function for training or testing.

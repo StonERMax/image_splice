@@ -78,8 +78,8 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
 def train_det(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()
-    # if iteration > 0:
-    #     module.freeze_bn()
+    if args.freeze_bn:
+        module.set_bn_to_eval()
 
     X, Y, labels = D
     if not isinstance(labels, torch.Tensor):
@@ -113,25 +113,20 @@ def train_det(D, model, optimizer, args, iteration, device, logger=None):
 def train_temporal(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()
+    if args.freeze_bn:
+        module.set_bn_to_eval()
 
     Xs, Xt, Ys, Yt, labels = D
     Xs, Xt, Ys, Yt = Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device)
     labels = labels.to(device)
 
-    preds, predt, pred_det = model(Xs, Xt)
+    preds, predt = model(Xs, Xt)
 
     mask_label = (labels > 0.5).detach().clone()
     loss_t = BCE_loss(predt[mask_label], Yt[mask_label], with_logits=True)
     loss_s = BCE_loss(preds[mask_label], Ys[mask_label], with_logits=True)
 
-    # detection whether video clips are copy move
-    # loss_det = F.binary_cross_entropy_with_logits(pred_det, labels)
-    pred_det = torch.sigmoid(pred_det)
-    pos_mean = torch.sum(labels * pred_det) / (torch.sum(labels)+1e-8)
-    neg_mean = torch.sum((1-labels) * pred_det) / (torch.sum(1-labels)+1e-8)
-    loss_det = torch.max(neg_mean - pos_mean + args.beta, torch.tensor(0.).to(device))
-
-    loss = loss_s + loss_t + args.gamma * loss_det
+    loss = loss_s + loss_t
 
     optimizer.zero_grad()
     loss.backward()
@@ -141,7 +136,7 @@ def train_temporal(D, model, optimizer, args, iteration, device, logger=None):
 
     _str = (
         f"{iteration:5d}: f(probe+donor+det): {tval(loss_s):.4f} + "
-        + f"{tval(loss_t):.4f} + {tval(loss_det):.4f}"
+        + f"{tval(loss_t):.4f}"
     )
 
     print(_str)
@@ -154,6 +149,8 @@ def train_temporal(D, model, optimizer, args, iteration, device, logger=None):
 def train_dmac(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()
+    if args.freeze_bn:
+        module.set_bn_to_eval()
 
     Xs, Xt, Ys, Yt, labels = D
     if not isinstance(labels, torch.Tensor):

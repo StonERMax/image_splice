@@ -231,8 +231,6 @@ class DOAModel(nn.Module):
             nn.Conv2d(256, out_channel, 1),
         )
 
-        # self.gcn_mask = GCN()
-        # self.gcn_forge = GCN()
         self.gcn_p = GCN(in_feat=256, out_feat=256)
         self.gcn_q = GCN(in_feat=256, out_feat=256)
 

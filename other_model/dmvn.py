@@ -339,6 +339,14 @@ class dmvn(nn.Module):
 
         return out2, out1, None  # ,c1,c2
 
+    def set_bn_to_eval(self):
+        def fn(m):
+            classname = m.__class__.__name__
+            if classname.find("BatchNorm") != -1:
+                m.eval()
+
+        self.apply(fn)
+
 
 def DMVN_VGG(NoLabels=2, gpu_idx=0, dim=(320, 320)):
     w = dim[1] // 16

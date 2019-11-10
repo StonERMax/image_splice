@@ -151,24 +151,18 @@ def test_temporal(data, model, args, iteration, device, logger=None, num=None, p
     if iteration is not None:
         print(f"{iteration}")
 
-    for i, ret in enumerate(data.load_temporal(evaluate=True)):
+    for i, ret in enumerate(data.load_temporal_pos(evaluate=True, batch_size=1)):
         Xs, Xt, Ys, Yt, labels = ret
 
         labels = labels.to(device)
         Xs, Xt, Ys, Yt = Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device)
 
-        preds, predt, pred_det = model(Xs, Xt)
+        preds, predt = model(Xs, Xt)
         print(f"{i}:")
 
         loss_t = BCE_loss(predt[labels > 0.5], Yt[labels > 0.5], with_logits=True)
         loss_s = BCE_loss(preds[labels > 0.5], Ys[labels > 0.5], with_logits=True)
-        # detection whether video clips are copy move
-        # loss_det = F.binary_cross_entropy_with_logits(pred_det, labels)
-        pred_det = torch.sigmoid(pred_det)
-        pos_mean = torch.sum(labels * pred_det) / (torch.sum(labels) + 1e-8)
-        neg_mean = torch.sum((1 - labels) * pred_det) / (torch.sum(1 - labels) + 1e-8)
-        loss_det = torch.max(neg_mean - pos_mean + args.beta, torch.tensor(0.0).to(device))
-        loss = loss_s + loss_t + args.gamma * loss_det
+        loss = loss_s + loss_t
         list_loss.append(loss.data.cpu().numpy())
 
         predt = torch.sigmoid(predt)
@@ -179,17 +173,18 @@ def test_temporal(data, model, args, iteration, device, logger=None, num=None, p
         metric.update(
             [to_np(Ys)[labels == 1], to_np(Yt)[labels == 1]],
             [to_np(preds)[labels == 1], to_np(predt)[labels == 1]],
+            batch_mode=False
         )
 
-        out_ = to_np(pred_det).argmax() == labels.argmax()
-        im_pred.append(out_)
-        print("CORRECTLY DETECTED!!" if out_ else "WRONG DETECTION!!")
+        # out_ = to_np(pred_det).argmax() == labels.argmax()
+        # im_pred.append(out_)
+        # print("CORRECTLY DETECTED!!" if out_ else "WRONG DETECTION!!")
 
         if num is not None and i >= num:
             break
 
     metric.final()
-    print(f"\nDetection accuracy: {np.sum(im_pred)/len(im_pred)*100: .2f}%\n")
+    # print(f"\nDetection accuracy: {np.sum(im_pred)/len(im_pred)*100: .2f}%\n")
 
     total_loss = np.mean(list_loss)
     print(f" Test Loss: {total_loss:.4f}")
@@ -279,7 +274,7 @@ def test_dmac(data, model, args, iteration, device, logger=None, num=None, plot=
 
     metric = utils.Metric(thres=args.thres)
     # metric_im = utils.Metric_image()
-    # loss_list = []
+    loss_list = []
 
     if plot:
         plot_dir = Path("tmp_plot") / args.dataset / args.model
@@ -297,18 +292,35 @@ def test_dmac(data, model, args, iteration, device, logger=None, num=None, plot=
         labels = labels.float().to(device)
         Xs, Xt, Ys, Yt = (Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device))
         preds, predt, _ = model(Xs, Xt)
+       
+        if args.model == "dmac":
+            criterion = nn.NLLLoss().cuda(device)
 
-        def fnp(x):
-            return x.data.cpu().numpy()
+            log_op = F.log_softmax(predt, dim=1)
+            log_oq = F.log_softmax(preds, dim=1)
 
+            Yq = Ys.squeeze(1).long()
+            Yp = Yt.squeeze(1).long()
+
+            loss_p = criterion(log_op, Yp)
+            loss_q = criterion(log_oq, Yq)
+
+            loss = loss_p + loss_q
+        elif args.model == "dmvn":
+            loss_p = BCE_loss(predt, Yt, with_logits=True)
+            loss_q = BCE_loss(preds, Ys, with_logits=True)
+            loss = loss_p + loss_q
+        
         if args.model == "dmac":
             predt = torch.softmax(predt, dim=1)[:, [1]]
             preds = torch.softmax(preds, dim=1)[:, [1]]
         else:
             predt = torch.sigmoid(predt)
             preds = torch.sigmoid(preds)
+        
+        loss_list.append(to_np(loss))
 
-        metric.update([fnp(Ys), fnp(Yt)], [fnp(preds), fnp(predt)])
+        metric.update([to_np(Ys), to_np(Yt)], [to_np(preds), to_np(predt)])
 
         # if logger:
         #     logger.add_scalar("test_loss/total", loss, iteration)
@@ -334,9 +346,9 @@ def test_dmac(data, model, args, iteration, device, logger=None, num=None, plot=
 
     metric.final()
 
-    # test_loss = np.mean(loss_list)
-    # print(f"\ntest loss : {test_loss:.4f}\n")
-    # return test_loss
+    test_loss = np.mean(loss_list)
+    print(f"\ntest loss : {test_loss:.4f}\n")
+    return test_loss
 
 
 @torch.no_grad()
