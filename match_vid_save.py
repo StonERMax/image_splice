@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
     dataset = Dataset_vid(args=args, is_training=False)
 
-    root = Path("tmp_video_match_ablation") / args.dataset / args.model
+    root = Path(args.save_path) / args.dataset / args.model
 
     def to_np(x):
         return x.data.cpu().numpy()

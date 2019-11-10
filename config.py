@@ -116,6 +116,7 @@ def config_video():
     parser.add_argument("--split", type=float, default=0.5)
     parser.add_argument("--tune", action="store_true")
     parser.add_argument("--freeze_bn", action="store_false")
+    parser.add_argument("--save-path", type=str, default="tmp_video_match_ablation")
 
     args = parser.parse_args()
     args.size = tuple(int(i) for i in args.size.split("x"))

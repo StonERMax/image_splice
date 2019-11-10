@@ -18,15 +18,23 @@ echo "dataset : " $DATASET
 echo "cuda devices: " $CUDA_VISIBLE_DEVICES
 echo ""
 
+git checkout ablation{$SUFFIX}
+
 python main_for_vid.py --suffix $SUFFIX --max-epoch 1 
+
+git checkout ablation{$SUFFIX}
 
 python main_train_vid.py --dataset $DATASET --suffix $SUFFIX --model $MODEL \
     --ckpt ./ckpt/{$MODEL}_coco{$SUFFIX}.pkl \
     --max-epoch 7 | tee -a  ./log_out/abl_{$SUFFIX}_{$MODEL}_{$DATASET}.txt
 
-python match_vid_save.py --dataset $DATASET --model $MODEL \
+git checkout ablation{$SUFFIX}
+
+set -x SAVE_PATH tmp_video_match_abblation{$SUFFIX}
+
+python match_vid_save.py --dataset $DATASET --model $MODEL --save-path $SAVE_PATH\
     --ckpt ./ckpt/{$MODEL}_{$DATASET}{$SUFFIX}.pkl --num 20 \
     | tee -a  ./log_out/abl_{$SUFFIX}_{$MODEL}_{$DATASET}.txt
 python -W ignore match_vid_load.py --dataset $DATASET --model $MODEL \
-    --ckpt ./ckpt/{$MODEL}_$DATASET.pkl --num 20 \
+    --ckpt ./ckpt/{$MODEL}_$DATASET.pkl --num 20 --save-path $SAVE_PATH \
     | tee -a  ./log_out/abl_{$SUFFIX}_{$MODEL}_{$DATASET}.txt
