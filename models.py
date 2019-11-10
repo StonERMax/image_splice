@@ -494,8 +494,12 @@ class Base_DetSegModel(nn.Module):
         cnn_temp = torchvision.models.vgg16(pretrained=True).features
         self.conv_det = cnn_temp
 
+        self.aspp = models.segmentation.deeplabv3.ASPP(
+            in_channels=512, atrous_rates=[12, 24, 36]
+        )
+
         self.lin_det = nn.Sequential(
-            nn.Linear(512, 32),
+            nn.Linear(256, 32),
             nn.ReLU(inplace=True),
             nn.Dropout(0.3),
             nn.Linear(32, 1),
@@ -505,13 +509,14 @@ class Base_DetSegModel(nn.Module):
 
     def forward(self, x):
         b = x.shape[0]
-        out_seg = self.conv_det(x)  # 10x10
+        x = self.conv_det(x)  # 10x10
 
-        x_seg = self.pool(out_seg)
+        x_aspp = self.aspp(x)
+        x_seg = self.pool(x_aspp)
         out_det = x_seg.view(b, -1)
         out_det = self.lin_det(out_det)
 
-        return out_det, out_seg
+        return out_det, x_aspp
 
 
 def set_bn_eval(m):
@@ -525,9 +530,6 @@ class DetSegModel(nn.Module):
         super().__init__()
 
         self.base = Base_DetSegModel()
-        self.aspp = models.segmentation.deeplabv3.ASPP(
-            in_channels=512, atrous_rates=[12, 24, 36]
-        )
 
         self.head = nn.Sequential(
             nn.Conv2d(256, 256, 3, padding=1),
@@ -543,12 +545,16 @@ class DetSegModel(nn.Module):
     def forward(self, x):
         b, c, h, w = x.shape
         out_det, base_seg = self.base(x)
-        seg = self.aspp(base_seg)
-        seg = self.head(seg)
+        seg = self.head(base_seg)
         seg = F.interpolate(
             seg, size=(h, w), mode="bilinear", align_corners=True
         )
         return out_det, seg
 
-    def freeze_bn(self):
-        self.apply(set_bn_eval)
+    def set_bn_to_eval(self):
+        def fn(m):
+            classname = m.__class__.__name__
+            if classname.find("BatchNorm") != -1:
+                m.eval()
+
+        self.apply(fn)
