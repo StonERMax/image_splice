@@ -5,13 +5,13 @@
 conda activate torch
 
 if test (count $argv) -lt 1
-    set -x CUDA_VISIBLE_DEVICES $argv[1]
-else
     set -x CUDA_VISIBLE_DEVICES 0
+else
+    set -x CUDA_VISIBLE_DEVICES $argv[1]    
 end
 
 set -x DATASET davis_same
-set -x SUFFIX "_wo_a1"
+set -x SUFFIX "_wo_gcn"
 set -x MODEL base_abl
 
 echo "dataset : " $DATASET
