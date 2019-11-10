@@ -16,7 +16,7 @@ set -x MODEL base_abl
 
 echo "dataset : " $DATASET
 echo "cuda devices: " $CUDA_VISIBLE_DEVICES
-echo ""
+echo "suffix: " $SUFFIX 
 
 git checkout ablation{$SUFFIX}
 
