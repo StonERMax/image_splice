@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
     # load dataset
     data_test_cisdl = dataset.Dataset_COCO_CISDL(
-        args, mode=args.mode, is_training=False, test_fore_only=False
+        args, mode=args.mode, is_training=False, test_fore_only=False, no_back=True
     )
     # dataset_usc_test = dataset_cmfd.USCISI_CMD_Dataset(
     #     args=args, is_training=False, sample_len=len(data_test_cisdl) // 2

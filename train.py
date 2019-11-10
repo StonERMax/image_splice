@@ -101,7 +101,7 @@ def train_det(D, model, optimizer, args, iteration, device, logger=None):
     loss_val = loss.data.cpu().numpy()
 
     print(
-        f"{iteration}: loss: {loss_seg.data.cpu().numpy():.4f} + {loss_det.data.cpu().numpy():.4f}"
+        f"{iteration}: loss(seg+det): {loss_seg.data.cpu().numpy():.4f} + {loss_det.data.cpu().numpy():.4f}"
     )
 
     if logger is not None:
