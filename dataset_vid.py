@@ -313,7 +313,7 @@ class Dataset_vid(torch.utils.data.Dataset):
             label[forge_time[0] : forge_time[1] + 1] = 1
             yield X, Y_forge, label, name
 
-    def load_videos_all(self, is_training=False, shuffle=False, to_tensor=True):
+    def load_videos_all(self, is_training=False, shuffle=True, to_tensor=True):
         if is_training:
             idx = self.train_index
         else:

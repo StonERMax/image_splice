@@ -155,7 +155,7 @@ class TemporalDetectionBranch(nn.Module):
             nn.ReLU(),
         )
         self.final_conv = nn.Conv1d(32, 1, 1)
-        self.pad = nn.ReplicationPad1d(1)
+        # self.pad = nn.ReplicationPad1d(1)
 
         self.apply(weights_init_normal)
 

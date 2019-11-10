@@ -54,6 +54,7 @@ def config():
     parser.add_argument("--mode", type=str, default=None)
     parser.add_argument("--beta", type=float, default=0.1)
     parser.add_argument("--tune", action="store_true")
+    parser.add_argument("--freeze_bn", action="store_true")
 
     args = parser.parse_args()
     args.size = tuple(int(i) for i in args.size.split("x"))
@@ -114,6 +115,7 @@ def config_video():
 
     parser.add_argument("--split", type=float, default=0.5)
     parser.add_argument("--tune", action="store_true")
+    parser.add_argument("--freeze_bn", action="store_false")
 
     args = parser.parse_args()
     args.size = tuple(int(i) for i in args.size.split("x"))
@@ -177,6 +179,7 @@ def config_video_full():
     # split
     parser.add_argument("--split", type=float, default=0.5)
     parser.add_argument("--tune", action="store_true")
+    parser.add_argument("--freeze_bn", action="store_true")
 
     args = parser.parse_args()
     args.size = tuple(int(i) for i in args.size.split("x"))
@@ -237,6 +240,7 @@ def config_video_temporal():
     parser.add_argument("--beta", type=float, default=0.1)
     parser.add_argument("--split", type=float, default=0.5)
     parser.add_argument("--tune", action="store_true")
+    parser.add_argument("--freeze_bn", action="store_true")
 
     args = parser.parse_args()
     args.size = tuple(int(i) for i in args.size.split("x"))

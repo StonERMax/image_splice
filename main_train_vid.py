@@ -63,7 +63,6 @@ if __name__ == "__main__":
     )
 
     # load dataset
-
     data_test = dataset_vid.Dataset_vid(args, is_training=False)
     if args.test:
         with torch.no_grad():
@@ -81,7 +80,7 @@ if __name__ == "__main__":
             device=device,
             logger=None,
             num=50,
-            plot=args.plot,
+            plot=args.plot
         )
         logger.close()
         raise SystemExit
@@ -105,7 +104,7 @@ if __name__ == "__main__":
                     iteration=None,
                     device=device,
                     logger=None,
-                    num=10,
+                    num=5
                 )
                 scheduler.step(loss)
 
