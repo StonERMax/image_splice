@@ -2,7 +2,7 @@
 
 # usage: fish run_all.sh [dataset] [cuda-device-ids] [model]
 
-# conda activate torch
+conda activate torch
 
 set -x CUDA_VISIBLE_DEVICES 0
 

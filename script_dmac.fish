@@ -2,7 +2,7 @@
 
 # usage: fish run_all.sh [dataset] [cuda-device-ids] [model]
 
-# conda activate torch
+conda activate torch
 
 set -x CUDA_VISIBLE_DEVICES 0
 
@@ -39,5 +39,7 @@ echo "base model $base_ckpt"
 python main_train_vid_dmac.py --dataset $DATASET --model $MODEL --ckpt $base_ckpt \
     --max-epoch 10 | tee  ./log_out/run_exp_$DATASET.txt
 
-python match_vid_save.py --dataset $DATASET --model $MODEL --ckpt ./ckpt/{$MODEL}_$DATASET.pkl --num 50 | tee -a ./log_out/run_exp_$DATASET.txt
-python match_vid_load.py --dataset $DATASET --model $MODEL --ckpt ./ckpt/{$MODEL}_$DATASET.pkl --num 50 | tee -a ./log_out/run_exp_$DATASET.txt
+python match_vid_save.py --dataset $DATASET --model $MODEL \
+    --ckpt ./ckpt/{$MODEL}_$DATASET.pkl --num 50 | tee -a ./log_out/run_exp_$DATASET.txt
+python match_vid_load.py --dataset $DATASET --model $MODEL \
+    --ckpt ./ckpt/{$MODEL}_$DATASET.pkl --num 50 | tee -a ./log_out/run_exp_$DATASET.txt
