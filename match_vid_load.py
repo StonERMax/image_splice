@@ -64,7 +64,7 @@ if __name__ == "__main__":
     tsfm = utils.CustomTransform(size=args.size)
 
     # * path to save
-    root = Path("tmp_video_match") / args.dataset / args.model
+    root = Path("tmp_video_match_ablation") / args.dataset / args.model
 
     mask_processor = utils.Preprocessor(args)
 
