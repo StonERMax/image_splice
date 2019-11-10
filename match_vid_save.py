@@ -71,13 +71,13 @@ if __name__ == "__main__":
     # mask_processor = utils.Preprocessor(args)
 
     # for batch normalization
-    # with torch.no_grad():
-    #     for i, ret in enumerate(dataset.load()):
-    #         Xs, Xt, Ys, Yt, labels = ret
-    #         Xs, Xt = (Xs.to(device), Xt.to(device))
-    #         _ = model(Xs, Xt)
-    #         if i > 5:
-    #             break
+    with torch.no_grad():
+        for i, ret in enumerate(dataset.load()):
+            Xs, Xt, Ys, Yt, labels = ret
+            Xs, Xt = (Xs.to(device), Xt.to(device))
+            _ = model(Xs, Xt)
+            if i > 5:
+                break
 
     model.eval()
 

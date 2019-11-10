@@ -72,13 +72,13 @@ if __name__ == "__main__":
     # load dataset
     data_test = dataset_vid.Dataset_vid(args, is_training=False)
     if args.test:
-        # with torch.no_grad():
-        #     for i, ret in enumerate(data_test.load()):
-        #         Xs, Xt, Ys, Yt, labels = ret
-        #         Xs, Xt = (Xs.to(device), Xt.to(device))
-        #         _ = model(Xs, Xt)
-        #         if i > 5:
-        #             break
+        with torch.no_grad():
+            for i, ret in enumerate(data_test.load()):
+                Xs, Xt, Ys, Yt, labels = ret
+                Xs, Xt = (Xs.to(device), Xt.to(device))
+                _ = model(Xs, Xt)
+                if i > 5:
+                    break
         test(
             data_test.load(),
             model,
@@ -86,7 +86,7 @@ if __name__ == "__main__":
             iteration=None,
             device=device,
             logger=None,
-            num=50,
+            num=args.num,
             plot=args.plot
         )
         logger.close()

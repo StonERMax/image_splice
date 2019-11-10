@@ -79,8 +79,8 @@ if __name__ == "__main__":
         )
     ):
         X, Y_forge, forge_time, Y_orig, gt_time, name = ret
-        forge_time = np.array(forge_time)
-        gt_time = np.array(gt_time)
+        forge_time = np.arange(forge_time[0], forge_time[1]+1)
+        gt_time = np.arange(gt_time[0], gt_time[1]+1)
 
         fldr = root / name
         path_data = fldr / "data_pred.pt"
@@ -113,11 +113,6 @@ if __name__ == "__main__":
         D_np = np.zeros(tuple(D_pred.shape))
 
         for i in range(N):
-            if i in forge_time:
-                i_ind = np.where(forge_time == i)[0][0]
-                gt_ind = gt_time[i_ind]
-            else:
-                gt_ind = None
             out1 = D_pred[i, :, 0]  # source
             out2 = D_pred[i, :, 1]  # forge
 

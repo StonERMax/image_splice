@@ -36,10 +36,10 @@ end
 echo "base model $base_ckpt"
 
 # output model name: base_[dataset].pkl
-python main_train_vid.py --dataset $DATASET --model $MODEL --ckpt $base_ckpt \
-    --max-epoch 10 | tee -a  ./log_out/run_exp_{$MODEL}_$DATASET.txt
+# python main_train_vid.py --dataset $DATASET --model $MODEL --ckpt $base_ckpt \
+#     --max-epoch 10 | tee -a  ./log_out/run_exp_{$MODEL}_$DATASET.txt
 
 python match_vid_save.py --dataset $DATASET --model $MODEL \
     --ckpt ./ckpt/{$MODEL}_$DATASET.pkl --num 50 | tee -a ./log_out/run_exp_{$MODEL}_$DATASET.txt
-python match_vid_load.py --dataset $DATASET --model $MODEL \
+python -W ignore match_vid_load.py --dataset $DATASET --model $MODEL \
     --ckpt ./ckpt/{$MODEL}_$DATASET.pkl --num 50 | tee -a ./log_out/run_exp_{$MODEL}_$DATASET.txt
