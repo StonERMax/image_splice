@@ -40,7 +40,10 @@ if __name__ == "__main__":
 
     print(f"Model Name: {model_name}")
 
-    transform = utils.CustomTransform(size=args.size)
+    if args.model in ("dmac", "dmvn"):
+        transform = utils.CustomTransform_vgg(size=args.size)
+    else:
+        transform = utils.CustomTransform(size=args.size)
 
     # model
     if args.model in ("dmvn", "dmac"):

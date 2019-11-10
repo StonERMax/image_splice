@@ -816,3 +816,49 @@ class Dataset_grip(torch.utils.data.Dataset):
 
     def __len__(self):
         return self.df_pair.shape[0]
+
+
+class Dataset_world(torch.utils.data.Dataset):
+    def __init__(self, args):
+        self.args = args
+        self.vid_lists = sorted(Path(args.root).iterdir())
+        if args.model in ("dmac", "dmvn"):
+            self.transform = utils.CustomTransform_vgg(size=args.size)
+        else:
+            self.transform = utils.CustomTransform(size=args.size)
+
+    def get_video(self, idx):
+        vid_path = self.vid_lists[idx]
+        list_src = sorted((vid_path / "src_im").iterdir())
+        list_src_mask = sorted((vid_path / "src_mask").iterdir())
+        list_target = sorted((vid_path / "target_im").iterdir())
+        list_target_mask = sorted((vid_path / "target_mask").iterdir())
+
+        Xs = torch.zeros((len(list_src), 3, *self.args.size), dtype=torch.float32)
+        Ys = torch.zeros((len(list_src_mask), 1, *self.args.size), dtype=torch.float32)
+        Xt = torch.zeros((len(list_target), 3, *self.args.size), dtype=torch.float32)
+        Yt = torch.zeros((len(list_target_mask), 1, *self.args.size), dtype=torch.float32)
+
+        for i, (imf, gtf) in enumerate(zip(list_src, list_src_mask)):
+            im = skimage.img_as_float32(skimage.io.imread(imf))
+            gt = skimage.img_as_float32(skimage.io.imread(gtf, as_gray=True))
+            im, gt = self.transform(im, gt)
+            Xs[i] = im
+            Ys[i] = gt
+        for i, (imf, gtf) in enumerate(zip(list_target, list_target_mask)):
+            im = skimage.img_as_float32(skimage.io.imread(imf))
+            gt = skimage.img_as_float32(skimage.io.imread(gtf, as_gray=True))
+            im, gt = self.transform(im, gt)
+            Xt[i] = im
+            Yt[i] = gt
+        return Xs, Xt, Ys, Yt
+
+    def __getitem__(self, idx):
+        return self.get_video(idx)
+
+    def __len__(self):
+        return len(self.vid_lists)
+    
+    def load_videos_all(self, *args, **kwargs):
+        for i in range(len(self)):
+            yield self[i]
