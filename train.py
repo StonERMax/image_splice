@@ -82,13 +82,11 @@ def train_cmfd(D, model, optimizer, args, iteration, device, logger=None):
     if args.freeze_bn:
         module.set_bn_to_eval()
 
-    Xs, Xt, Ys, Yt, labels = D
-    if not isinstance(labels, torch.Tensor):
-        labels = torch.from_numpy(np.array(labels, dtype=np.float32))
-    labels = labels.float().to(device)
-    Xs, Xt, Ys, Yt = Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device)
-
     if args.mode == "both":
+
+        Xs, Xt, Ys, Yt, labels = D
+        Xs, Xt, Ys, Yt = Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device)
+
         preds, predt = model(Xs, Xt)
 
         loss_p = BCE_loss(predt, Yt, with_logits=True)
@@ -108,6 +106,12 @@ def train_cmfd(D, model, optimizer, args, iteration, device, logger=None):
             + f"{tval(loss_q):.4f}"
         )
     else:
+        if len(D) == 2:
+            X, Y = D
+            Xs, Xt, Ys, Yt = X, X, Y, Y
+        else:
+            Xs, Xt, Ys, Yt, labels = D
+        Xs, Xt, Ys, Yt = Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device)
         pred = model(Xs, Xt)
         if args.mode == "sim":
             Y = torch.max(Ys, Yt)

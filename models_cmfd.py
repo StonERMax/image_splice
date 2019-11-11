@@ -269,7 +269,7 @@ class DOAModel_sim(nn.Module):
             in_channels=in_cat, atrous_rates=[12, 24, 36]
         )
 
-        self.head_mask = nn.Sequential(
+        self.head_mask_sim = nn.Sequential(
             nn.Conv2d(4 * 256, 2 * 256, 1),
             nn.BatchNorm2d(2 * 256),
             nn.ReLU(),
@@ -287,7 +287,7 @@ class DOAModel_sim(nn.Module):
 
         # detection branch
         # self.detection = DetectionBranch(4 * 256)
-        self.head_mask.apply(weights_init_normal)
+        self.head_mask_sim.apply(weights_init_normal)
         self.val_conv_p.apply(weights_init_normal)
 
     def forward(self, xq, xp):
@@ -311,7 +311,7 @@ class DOAModel_sim(nn.Module):
 
         # Final Mask
         x_cat_p = torch.cat((xp_as, xp_as_nl, xq_as, xq_as_nl), dim=-3)
-        out = self.head_mask(x_cat_p)
+        out = self.head_mask_sim(x_cat_p)
 
         out = F.interpolate(out, size=(h, w), mode="bilinear", align_corners=True)
 

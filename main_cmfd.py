@@ -94,6 +94,8 @@ if __name__ == "__main__":
         dataset_test = dataset_cmfd.Dataset_tifs(args)
     elif args.dataset == "grip":
         dataset_test = dataset_cmfd.Dataset_grip(args)
+    elif args.dataset == "wwt":
+        dataset_test = dataset_cmfd.Dataset_wwt(args)
 
     data_test = torch.utils.data.DataLoader(
         dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=0
@@ -120,10 +122,6 @@ if __name__ == "__main__":
         logger.close()
         raise SystemExit
 
-    dataset_usc = dataset_cmfd.USCISI_CMD_Dataset(
-        args=args, is_training=True
-    )
-
     # load dataset train
     if args.dataset == "usc":
         dataset_train = dataset_cmfd.USCISI_CMD_Dataset(
@@ -137,9 +135,11 @@ if __name__ == "__main__":
         dataset_train = dataset_cmfd.Dataset_tifs(args)
     elif args.dataset == "grip":
         dataset_train = dataset_cmfd.Dataset_grip(args)
+    elif args.dataset == "wwt":
+        dataset_train = dataset_cmfd.Dataset_wwt(args)
 
     data_train = torch.utils.data.DataLoader(
-        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=4
+        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
     if not os.path.exists("ckpt_cmfd"):
         os.mkdir("ckpt_cmfd")

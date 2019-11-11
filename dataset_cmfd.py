@@ -22,7 +22,7 @@ from sklearn.metrics import precision_recall_fscore_support
 from pycocotools.coco import COCO
 from tqdm import tqdm
 from collections import defaultdict
-
+import random
 
 HOME = os.environ['HOME']
 
@@ -316,12 +316,11 @@ class Dataset_tifs(torch.utils.data.Dataset):
             return x, y
         x_t, y_t = self.transform(x, y)
         return x_t, y_t
+        # output similarity mask
 
 
 class Dataset_grip(torch.utils.data.Dataset):
     def __init__(self, args=None, is_training=None):
-        self.root = args.root
-        self.args = args
         if args is not None:
             self.transform = utils.CustomTransform(size=args.size)
         data = h5py.File(HOME+"/dataset/CMFD/grip/grip.hd5", 'r')
@@ -342,9 +341,52 @@ class Dataset_grip(torch.utils.data.Dataset):
         y = self.Y[index]
         y = y.astype(np.float32)
 
-        if is_training:
-            other_tfm = utils.SimTransform(size=self.args.size)
-        else:
-            other_tfm = None
-        x_t, y_t = self.transform(x, y, other_tfm=other_tfm)
+        # if is_training:
+        #     other_tfm = utils.SimTransform(size=self.args.size)
+        # else:
+        #     other_tfm = None
+        x_t, y_t = self.transform(x, y, other_tfm=None)
         return x_t, y_t
+        # output similarity mask
+
+
+class Dataset_wwt(torch.utils.data.Dataset):
+    def __init__(self, args):
+        root = Path(HOME + "/dataset/CMFD/WildWebDataset/WildWeb")
+        self.transform = utils.CustomTransform(size=args.size)
+        list_files = sorted(root.iterdir())
+        self.dict = {}
+        for each_file in list_files:
+            _list = []
+            _mask = []
+            for path in Path(each_file).iterdir():
+                if path.suffix == ".jpg":
+                    _list.append(path)
+            for each in Path(each_file / "Mask").iterdir():
+                if each.suffix == ".png":
+                    _mask.append(each)
+            self.dict[each_file.name] = {"files": _list, "mask": _mask}
+        self.keys = list(self.dict.keys())
+        print(f"Number of unique images {len(self)}")
+
+    def __len__(self):
+        return len(self.keys)
+
+    def __getitem__(self, index):
+        name = self.keys[index]
+        files, list_mask = self.dict[name]['files'], self.dict[name]['mask']
+        imfile = random.choice(files)
+
+        im = skimage.img_as_float32(skimage.io.imread(str(imfile)))
+        im = skimage.color.gray2rgb(im)
+        x, _ = self.transform(im)
+        im_masks = []
+        for each_mask in list_mask:
+            _msk = skimage.img_as_float32(skimage.io.imread(str(each_mask), as_gray=True))
+            im_masks.append(self.transform(None, _msk)[1])
+        if len(im_masks) == 1:
+            y = im_masks[0]
+        else:
+            y = torch.max(torch.cat(im_masks, 0), 0, keepdim=True)[0]
+        return x, y
+        # output forge mask

@@ -165,12 +165,13 @@ def test_cmfd(data, model, args, iteration, device, logger=None, num=None, plot=
         print(f"{iteration}")
 
     for i, ret in enumerate(data):
-        Xs, Xt, Ys, Yt, labels = ret
-        if not isinstance(labels, torch.Tensor):
-            labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(device)
-        labels = labels.float().to(device)
-        Xs, Xt, Ys, Yt = (Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device))
+        if len(ret) == 5:
+            Xs, Xt, Ys, Yt, labels = ret
+        elif len(ret) == 2:
+            X, Y = ret
+            Xs, Xt, Ys, Yt = X, X, Y, Y
 
+        Xs, Xt, Ys, Yt = (Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device))
         if args.mode == "both":
             preds, predt = model(Xs, Xt)
             predt = torch.sigmoid(predt)
@@ -225,12 +226,11 @@ def test_cmfd(data, model, args, iteration, device, logger=None, num=None, plot=
     return test_loss
 
 
-
 @torch.no_grad()
 def test_temporal(data, model, args, iteration, device, logger=None, num=None, plot=False):
     model.eval()
     metric = utils.Metric()
-    im_pred = []
+    # im_pred = []
     list_loss = []
     if iteration is not None:
         print(f"{iteration}")
@@ -545,7 +545,6 @@ def test_casia_cmfd(data, model, args, iteration, device, logger=None, num=None,
             break
     # metric_im.final()
     metric.final()
-
 
 
 @torch.no_grad()
