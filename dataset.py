@@ -456,10 +456,11 @@ class Dataset_casia_det_cmfd(torch.utils.data.Dataset):
         self.au_imroot = self.root / "CASIA2.0" / "Au"
         self.tp_imroot = self.root / "CASIA2.0" / "Tp"
 
-        self.all_files = sorted((self.au_imroot).glob("Au_*"))
-        self.tp_files = sorted((self.tp_imroot).glob("Tp_S_*"))
+        # self.all_files = sorted((self.au_imroot).glob("Au_*"))
+        # self.tp_files = sorted((self.tp_imroot).glob("Tp_S_*"))
 
-        self.all_files.extend(self.tp_files)
+        # self.all_files.extend(self.tp_files)
+        self.all_files = sorted((self.tp_imroot).glob("Tp_S_*"))
 
     def __len__(self):
         return len(self.all_files)

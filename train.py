@@ -61,7 +61,7 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
 
     _str = (
         f"{iteration:5d}: f(probe+donor+det): {tval(loss_p):.4f} + "
-        + f"{tval(loss_q):.4f} + {tval(loss_det):.4f}"
+        + f"{tval(loss_q):.4f}"
     )
 
     if args.bw:

@@ -204,3 +204,48 @@ class USCISI_CMD_Dataset(torch.utils.data.Dataset):
         else:
             label = 0.0
         return im_s, im_t, mask_s.unsqueeze(0), mask_t.unsqueeze(0), label
+
+
+class COCODataset(torch.utils.data.Dataset):
+    def __init__(self, args=None, is_training=True, sample_len=4000):
+        self.dataDir = Path('~/dataset/coco').expanduser()
+        self.year = '2014'
+        self.train_ann_file = self.dataDir / 'annotations' / \
+            'instances_train{}.json'.format(self.year)
+        self.test_ann_file = self.dataDir / 'annotations' / \
+            'instances_val{}.json'.format(self.year)
+        self.train_im_folder = self.dataDir / 'images' / f'train{self.year}'
+        self.test_im_folder = self.dataDir / 'images' / f'val{self.year}'
+
+        self.args = args
+        self.transform = utils.CustomTransform(size=args.size)
+
+        self.is_training = is_training
+
+        if is_training:
+            annFile = self.train_ann_file
+            self.imDir = self.train_im_folder
+        else:
+            annFile = self.test_ann_file
+            self.imDir = self.test_im_folder
+
+        self.coco = COCO(annFile)
+        imids = self.coco.getImgIds()
+        self.imids = np.random.choice(imids, size=sample_len, replace=False)
+
+    def __len__(self):
+        return len(self.imids)
+
+    def __getitem__(self, idx):
+        index = self.imids[idx]
+        im_info = self.coco.loadImgs([index])[0]
+        img = skimage.img_as_float32(io.imread(
+            str(self.imDir / im_info['file_name'])
+        ))
+        img = skimage.color.gray2rgb(img)
+        img, _ = self.transform(img)
+        mask = torch.zeros((self.args.out_channel,
+                            *self.args.size), dtype=img.dtype)
+        if self.args.out_channel == 3:
+            mask[2, ...] = 1.
+        return img, mask
