@@ -75,6 +75,62 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
     return loss_val
 
 
+def train_cmfd(D, model, optimizer, args, iteration, device, logger=None):
+    module = model.module if isinstance(model, nn.DataParallel) else model
+    module.train()
+
+    if args.freeze_bn:
+        module.set_bn_to_eval()
+
+    Xs, Xt, Ys, Yt, labels = D
+    if not isinstance(labels, torch.Tensor):
+        labels = torch.from_numpy(np.array(labels, dtype=np.float32))
+    labels = labels.float().to(device)
+    Xs, Xt, Ys, Yt = Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device)
+
+    if args.mode == "both":
+        preds, predt = model(Xs, Xt)
+
+        loss_p = BCE_loss(predt, Yt, with_logits=True)
+        loss_q = BCE_loss(preds, Ys, with_logits=True)
+        loss = loss_p + loss_q
+        if args.bw:
+            gauss = kornia.filters.GaussianBlur2d((5, 5), (3, 3))
+            Ys_edge = (kornia.sobel(gauss(Ys)) > 0.01).float()
+            Yt_edge = (kornia.sobel(gauss(Yt)) > 0.01).float()
+
+            loss_edge_s = torch.sum(-Ys_edge * F.logsigmoid(preds)) / torch.sum(Ys_edge)
+            loss_edge_t = torch.sum(-Yt_edge * F.logsigmoid(predt)) / torch.sum(Yt_edge)
+            loss_edge = loss_edge_s + loss_edge_t
+            loss += args.gamma2 * loss_edge
+        _str = (
+            f"{iteration:5d}: f(probe+donor+det): {tval(loss_p):.4f} + "
+            + f"{tval(loss_q):.4f}"
+        )
+    else:
+        pred = model(Xs, Xt)
+        if args.mode == "sim":
+            Y = torch.max(Ys, Yt)
+        else:
+            Y = Yt
+        loss = BCE_loss(pred, Y, with_logits=True)
+        _str = (
+            f"{iteration:5d}: f: {tval(loss):.4f} "
+        )
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    loss_val = loss.data.cpu().numpy()
+
+    print(_str)
+
+    if logger is not None:
+        logger.add_scalar("train_loss/total", loss, iteration)
+
+    return loss_val
+
+
 def train_det(D, model, optimizer, args, iteration, device, logger=None):
     module = model.module if isinstance(model, nn.DataParallel) else model
     module.train()

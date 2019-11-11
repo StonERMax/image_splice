@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 
 # custom module
 import config_cmfd
-import models
+import models_cmfd
 
 from test import test_casia_cmfd
 import dataset_cmfd
@@ -40,10 +40,7 @@ if __name__ == "__main__":
         os.mkdir("./logs")
     logger = SummaryWriter("./logs/" + model_name)
 
-    if args.model in ("dmac", "dmvn"):
-        model = models.get_dmac(args.model, pretrain=True)
-    else:
-        model = models.DOAModel()
+    model = models_cmfd.DOAModel()
 
     model.to(device)
 

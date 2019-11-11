@@ -51,10 +51,11 @@ def config():
 
     parser.add_argument("--num", type=int, default=10)
 
-    parser.add_argument("--mode", type=str, default=None)
     parser.add_argument("--beta", type=float, default=0.1)
     parser.add_argument("--tune", action="store_true")
     parser.add_argument("--freeze_bn", action="store_true")
+
+    parser.add_argument("--mode", type=str, default="both", help="both/mani/sim")
 
     args = parser.parse_args()
     args.size = tuple(int(i) for i in args.size.split("x"))

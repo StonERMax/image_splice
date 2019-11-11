@@ -143,6 +143,90 @@ def test(data, model, args, iteration, device, logger=None, num=None, plot=False
 
 
 @torch.no_grad()
+def test_cmfd(data, model, args, iteration, device, logger=None, num=None, plot=False):
+
+    model.eval()
+
+    if args.mode == "both":
+        names = ["source", "forge"]
+    else:
+        names = ["mask"]
+    metric = utils.Metric(names=names, thres=args.thres)
+    # metric_im = utils.Metric_image()
+    loss_list = []
+
+    if plot:
+        plot_dir = Path("tmp_plot") / args.dataset / args.model
+        if plot_dir.exists():
+            shutil.rmtree(plot_dir)
+        plot_dir.mkdir(exist_ok=True, parents=True)
+
+    if iteration is not None:
+        print(f"{iteration}")
+
+    for i, ret in enumerate(data):
+        Xs, Xt, Ys, Yt, labels = ret
+        if not isinstance(labels, torch.Tensor):
+            labels = torch.from_numpy(np.array(labels, dtype=np.float32)).to(device)
+        labels = labels.float().to(device)
+        Xs, Xt, Ys, Yt = (Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device))
+
+        if args.mode == "both":
+            preds, predt = model(Xs, Xt)
+            predt = torch.sigmoid(predt)
+            preds = torch.sigmoid(preds)
+        else:
+            preds = model(Xs, Xt)
+            preds = torch.sigmoid(preds)
+
+        # loss_p = BCE_loss(predt, Yt, with_logits=True)
+        # loss_q = BCE_loss(preds, Ys, with_logits=True)
+        # loss_det = F.binary_cross_entropy_with_logits(
+        #     pred_det.squeeze(), labels.squeeze()
+        # )
+        # loss = loss_p + loss_q
+
+        # loss_list.append(loss.data.cpu().numpy())
+        print(f"{i}:")
+
+        if args.mode == "both":
+            metric.update([to_np(Ys), to_np(Yt)], [to_np(preds), to_np(predt)])
+        elif args.mode == "mani":
+            metric.update([to_np(Yt)], [to_np(preds)])
+        else:
+            metric.update([to_np(torch.max(Ys, Yt))], [to_np(preds)])
+
+        # if logger:
+        #     logger.add_scalar("test_loss/total", loss, iteration)
+        if plot:
+            for ii in range(Xt.shape[0]):
+                im1, im2 = torch_to_im(Xt[ii]), torch_to_im(Xs[ii])
+                gt1, gt2 = torch_to_im(Yt[ii]), torch_to_im(Ys[ii])
+                pred1, pred2 = to_np(predt[ii]), to_np(preds[ii])
+
+                fig, axes = plt.subplots(nrows=3, ncols=2)
+                axes[0, 0].imshow(im1)
+                axes[0, 1].imshow(im2)
+                axes[1, 0].imshow(gt1, cmap="jet")
+                axes[1, 1].imshow(gt2, cmap="jet")
+                axes[2, 0].imshow(pred1.squeeze(), cmap="jet")
+                axes[2, 1].imshow(pred2.squeeze(), cmap="jet")
+
+                fig.savefig(str(plot_dir / f"{i}_{ii}.jpg"))
+                plt.close("all")
+
+        if num is not None and i >= num:
+            break
+
+    metric.final()
+
+    test_loss = np.mean(loss_list)
+    print(f"\ntest loss : {test_loss:.4f}\n")
+    return test_loss
+
+
+
+@torch.no_grad()
 def test_temporal(data, model, args, iteration, device, logger=None, num=None, plot=False):
     model.eval()
     metric = utils.Metric()

@@ -24,6 +24,9 @@ from tqdm import tqdm
 from collections import defaultdict
 
 
+HOME = os.environ['HOME']
+
+
 class USCISI_CMD_Dataset(torch.utils.data.Dataset):
 
     def __init__(self, args=None, is_training=True, to_tensor=True, sample_len=None):
@@ -285,4 +288,63 @@ class Dataset_CASIA(torch.utils.data.Dataset):
             return self.__getitem__(0)
 
         x_t, y_t = self.transform(x, y, other_tfm=None)
+        return x_t, y_t
+
+
+class Dataset_tifs(torch.utils.data.Dataset):
+    def __init__(self, args=None, is_training=None):
+        if args is not None:
+            self.transform = utils.CustomTransform(size=args.size)
+        data = h5py.File(HOME+"/dataset/CMFD/tifs/tifs.hd5", 'r')
+        self.X = data['X']
+        self.Y = data['Y']
+        self.data = data
+        self.is_training = is_training
+
+    def __len__(self):
+        # if self.is_training is None:
+        return len(self.X)
+
+    def __getitem__(self, index, is_training=True, im_only=False):
+
+        x = self.X[index]
+        x = skimage.img_as_float32(x)
+        # get Y
+        y = self.Y[index]
+        y = y.astype(np.float32)
+        if im_only:
+            return x, y
+        x_t, y_t = self.transform(x, y)
+        return x_t, y_t
+
+
+class Dataset_grip(torch.utils.data.Dataset):
+    def __init__(self, args=None, is_training=None):
+        self.root = args.root
+        self.args = args
+        if args is not None:
+            self.transform = utils.CustomTransform(size=args.size)
+        data = h5py.File(HOME+"/dataset/CMFD/grip/grip.hd5", 'r')
+        self.X = data['X']
+        self.Y = data['Y']
+        self.data = data
+        self.is_training = is_training
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, ind, is_training=True):
+        index = ind
+        x = self.X[index]
+        x = skimage.img_as_float32(x)
+
+        # get Y
+        y = self.Y[index]
+        y = y.astype(np.float32)
+
+        if is_training:
+            other_tfm = utils.SimTransform(size=self.args.size)
+        else:
+            other_tfm = None
+        x_t, y_t = self.transform(x, y, other_tfm=other_tfm)
         return x_t, y_t
