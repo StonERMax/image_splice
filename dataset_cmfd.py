@@ -253,12 +253,12 @@ class COCODataset(torch.utils.data.Dataset):
 
 class Dataset_CASIA(torch.utils.data.Dataset):
     def __init__(self, args=None):
-        self.root = args.root
         self.args = args
         if args is not None:
             self.transform = utils.CustomTransform(size=args.size)
-
-        data = h5py.File(args.data_path, 'r')
+        HOME = os.environ['HOME']
+        data_path = HOME + "/dataset/CMFD/CASIA/CASIA-CMFD-Pos.hd5"
+        data = h5py.File(data_path, 'r')
         self.X = data['X']
         self.Y = data['Y']
         # self.get_split()

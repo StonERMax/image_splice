@@ -406,6 +406,65 @@ def test_casia(data, model, args, iteration, device, logger=None, num=None, plot
 
 
 @torch.no_grad()
+def test_casia_cmfd(data, model, args, iteration, device, logger=None, num=None, plot=False):
+
+    model.eval()
+    # metric_im = utils.Metric_image()
+    metric = utils.Metric(names=["forge", "source", "all"], thres=args.thres)
+    if iteration is not None:
+        print(f"{iteration}")
+    if plot:
+        plot_dir = Path("tmp_plot_cmfd") / args.dataset / args.model
+        if plot_dir.exists():
+            shutil.rmtree(plot_dir)
+        plot_dir.mkdir(exist_ok=True, parents=True)
+
+    for i, ret in enumerate(data):
+        X, Y = ret
+        Xs, Xt = X, X
+        Ys, Yt = Y[:, [1]], Y[:, [0]]
+        preds, predt, _ = model(Xs.to(device), Xt.to(device))
+        print(f"{i}:")
+
+        if args.model == "dmac":
+            predt = torch.softmax(predt, dim=1)[:, [1]]
+            preds = torch.softmax(preds, dim=1)[:, [1]]
+        else:
+            predt = torch.sigmoid(predt)
+            preds = torch.sigmoid(preds)
+
+        ytn, ysn = to_np(Yt), to_np(Ys)
+        predtn, predsn = to_np(predt), to_np(preds)
+        metric.update([ytn, ysn, np.maximum(ytn, ysn)], [predtn, predsn, np.maximum(predsn, predtn)])
+
+        if plot:
+            preds = preds.squeeze()
+            predt = predt.squeeze()
+
+            for ii in range(Xt.shape[0]):
+                im1, im2 = torch_to_im(Xs[ii]), torch_to_im(Xt[ii])
+                gt1, gt2 = to_np(Ys[ii].squeeze()), to_np(Yt[ii].squeeze())
+                pred1, pred2 = to_np(preds[ii]), to_np(predt[ii])
+
+                fig, axes = plt.subplots(nrows=3, ncols=2)
+                axes[0, 0].imshow(im1)
+                axes[0, 1].imshow(im2)
+                axes[1, 0].imshow(gt1, cmap="jet")
+                axes[1, 1].imshow(gt2, cmap="jet")
+                axes[2, 0].imshow(pred1.squeeze(), cmap="jet")
+                axes[2, 1].imshow(pred2.squeeze(), cmap="jet")
+
+                fig.savefig(str(plot_dir / f"{i}_{ii}.jpg"))
+                plt.close("all")
+
+        if num is not None and i >= num:
+            break
+    # metric_im.final()
+    metric.final()
+
+
+
+@torch.no_grad()
 def test_casia_det(data, model, args, iteration, device, logger=None, num=None, plot=False):
     model.eval()
     metric_im = utils.Metric_image(thres=0.77, with_auc=True)

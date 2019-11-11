@@ -47,7 +47,7 @@ if __name__ == "__main__":
     if args.model in ("dmac", "dmvn"):
         model = models.get_dmac(args.model, pretrain=True)
     else:
-        model = models.DOAModel(out_channel=args.out_channel)
+        model = models.DOAModel()
     model.to(device)
 
     iteration = args.resume
@@ -123,7 +123,7 @@ if __name__ == "__main__":
             list_loss.append(loss)
             iteration += 1
 
-            if iteration % 20 == 0:
+            if iteration % 100 == 0:
                 scheduler.step(np.mean(list_loss))
                 list_loss = []
 

@@ -34,7 +34,7 @@ def config():
     parser.add_argument(
         "--data-root", type=str, default=HOME + "/dataset/CMFD/DMAC-COCO/"
     )
-    parser.add_argument("--out-channel", type=int, default=1)
+    parser.add_argument("--out-channel", type=int, default=3)
     parser.add_argument("--gamma", type=float, default=0.1)
     parser.add_argument("--gamma2", type=float, default=0.01)
     parser.add_argument(
