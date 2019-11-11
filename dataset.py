@@ -439,3 +439,39 @@ class Dataset_casia_det(torch.utils.data.Dataset):
         ims, _ = self.transform(ims)
         imt, _ = self.transform(imt)
         return ims, imt, label
+
+
+class Dataset_casia_det_cmfd(torch.utils.data.Dataset):
+    def __init__(self, args=None, both=None):
+        self.args = args
+        self.transform = None
+
+        if args.model in ("dmac", "dmvn"):
+            self.transform = utils.CustomTransform_vgg(size=args.size)
+        else:
+            self.transform = utils.CustomTransform(size=args.size)
+
+        self.root = Path(os.environ["HOME"]) / "dataset" / "CMFD" / "CASIA"
+
+        self.au_imroot = self.root / "CASIA2.0" / "Au"
+        self.tp_imroot = self.root / "CASIA2.0" / "Tp"
+
+        self.all_files = sorted((self.au_imroot).glob("Au_*"))
+        self.tp_files = sorted((self.tp_imroot).glob("Tp_S_*"))
+
+        self.all_files.extend(self.tp_files)
+
+    def __len__(self):
+        return len(self.all_files)
+
+    def __getitem__(self, index, im_only=False):
+
+        imfile = self.all_files[index]
+        im = skimage.img_as_float32(skimage.io.imread(str(imfile))[:, :, :3])
+
+        if Path(imfile).name.startswith("Tp"):
+            label = 1
+        else:
+            label = 0
+        im, _ = self.transform(im)
+        return im, im, label

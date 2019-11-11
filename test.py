@@ -292,7 +292,7 @@ def test_dmac(data, model, args, iteration, device, logger=None, num=None, plot=
         labels = labels.float().to(device)
         Xs, Xt, Ys, Yt = (Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device))
         preds, predt, _ = model(Xs, Xt)
-       
+
         if args.model == "dmac":
             criterion = nn.NLLLoss().cuda(device)
 

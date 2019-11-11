@@ -70,14 +70,15 @@ if __name__ == "__main__":
     )
 
     # load dataset
-    data_test_cisdl = dataset.Dataset_COCO_CISDL(
-        args, mode=args.mode, is_training=False, no_back=True
-    )
+    # data_test_cisdl = dataset.Dataset_COCO_CISDL(
+    #     args, mode=args.mode, is_training=False, no_back=True
+    # )
     dataset_usc_test = dataset_cmfd.USCISI_CMD_Dataset(
-        args=args, is_training=False, sample_len=len(data_test_cisdl) // 2
+        args=args, is_training=False, sample_len=3000
     )
-    dataset_test = torch.utils.data.ConcatDataset((data_test_cisdl, dataset_usc_test))
+    # dataset_test = torch.utils.data.ConcatDataset((data_test_cisdl, dataset_usc_test))
     # dataset_test = data_test_cisdl
+    dataset_test = dataset_usc_test
 
     data_test = torch.utils.data.DataLoader(
         dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=0
