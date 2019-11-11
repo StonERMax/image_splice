@@ -57,6 +57,8 @@ def config():
 
     parser.add_argument("--mode", type=str, default="both", help="both/mani/sim")
 
+    parser.add_argument("--max-iter", type=int, default=None)
+
     args = parser.parse_args()
     args.size = tuple(int(i) for i in args.size.split("x"))
     print(args)

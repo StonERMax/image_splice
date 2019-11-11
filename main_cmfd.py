@@ -70,7 +70,7 @@ if __name__ == "__main__":
         if args.tune:
             set_grad_false(model, ["head_mask"])
 
-    model_params = model.parameters()
+    model_params = filter(lambda x: x.requires_grad, model.parameters())
 
     # if torch.cuda.device_count() > 1:
     #     model = nn.DataParallel(model)
@@ -177,7 +177,8 @@ if __name__ == "__main__":
                     {"epoch": ep, "model_state": state},
                     os.path.join("./ckpt_cmfd", model_name + ".pkl"),
                 )
-
                 print(f"weight saved in {model_name}.pkl")
 
+            if args.max_iter is not None and iteration > args.max_iter:
+                break
     logger.close()

@@ -179,6 +179,7 @@ def test_cmfd(data, model, args, iteration, device, logger=None, num=None, plot=
         else:
             preds = model(Xs, Xt)
             preds = torch.sigmoid(preds)
+            predt = preds
 
         # loss_p = BCE_loss(predt, Yt, with_logits=True)
         # loss_q = BCE_loss(preds, Ys, with_logits=True)
@@ -507,7 +508,7 @@ def test_casia_cmfd(data, model, args, iteration, device, logger=None, num=None,
         X, Y = ret
         Xs, Xt = X, X
         Ys, Yt = Y[:, [1]], Y[:, [0]]
-        preds, predt, _ = model(Xs.to(device), Xt.to(device))
+        preds, predt = model(Xs.to(device), Xt.to(device))
         print(f"{i}:")
 
         if args.model == "dmac":
