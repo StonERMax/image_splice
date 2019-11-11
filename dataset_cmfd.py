@@ -249,3 +249,40 @@ class COCODataset(torch.utils.data.Dataset):
         if self.args.out_channel == 3:
             mask[2, ...] = 1.
         return img, mask
+
+
+class Dataset_CASIA(torch.utils.data.Dataset):
+    def __init__(self, args=None):
+        self.root = args.root
+        self.args = args
+        if args is not None:
+            self.transform = utils.CustomTransform(size=args.size)
+
+        data = h5py.File(args.data_path, 'r')
+        self.X = data['X']
+        self.Y = data['Y']
+        # self.get_split()
+
+    def __len__(self):
+        return self.X.shape[0]
+
+    def __getitem__(self, index):
+        x = self.X[index]
+        x = x + np.array([103.939, 116.779, 123.68]).reshape([1, 1, 3])
+        x = x[..., ::-1]
+        x = x / 255.
+        x = x.clip(min=0, max=1)
+
+        # get Y
+        y = self.Y[index]
+        y = y.astype(np.float32)
+
+        if self.args.out_channel == 1:
+            y = np.maximum(y[..., 0], y[..., 1])
+
+        if len(np.unique(y)) > 2:
+            print(f"{index} unique more")
+            return self.__getitem__(0)
+
+        x_t, y_t = self.transform(x, y, other_tfm=None)
+        return x_t, y_t
