@@ -251,12 +251,12 @@ class DOAModel(nn.Module):
         valp, valq, indp, indq = self.corrLayer(xp_feat, xq_feat)
 
         # attention weight
-        val_conv_p = self.val_conv_p(valp)
-        val_conv_q = self.val_conv_q(valq)
+        # val_conv_p = self.val_conv_p(valp)
+        # val_conv_q = self.val_conv_q(valq)
 
         #### Mask part : M  ####
-        xp_as = self.aspp_forge(xp_feat) * val_conv_p
-        xq_as = self.aspp_mask(xq_feat) * val_conv_q
+        xp_as = self.aspp_forge(xp_feat) #* val_conv_p
+        xq_as = self.aspp_mask(xq_feat) #* val_conv_q
 
         # Corrensponding mask and forge
         xp_as_nl = xp_as  #self.gcn_p(xq_as, indp)

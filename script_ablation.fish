@@ -11,7 +11,7 @@ else
 end
 
 set -x DATASET davis_same
-set -x SUFFIX "_wo_gcn"
+set -x SUFFIX "_wo_a1_gcn"
 set -x MODEL base_abl
 
 echo "dataset : " $DATASET
