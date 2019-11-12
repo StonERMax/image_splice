@@ -156,7 +156,7 @@ def test_cmfd(data, model, args, iteration, device, logger=None, num=None, plot=
     loss_list = []
 
     if plot:
-        plot_dir = Path("tmp_plot") / args.dataset / args.model
+        plot_dir = Path("tmp_plot_cmfd") / args.dataset / args.model
         if plot_dir.exists():
             shutil.rmtree(plot_dir)
         plot_dir.mkdir(exist_ok=True, parents=True)
@@ -169,7 +169,7 @@ def test_cmfd(data, model, args, iteration, device, logger=None, num=None, plot=
             Xs, Xt, Ys, Yt, labels = ret
         elif len(ret) == 2:
             X, Y = ret
-            Xs, Xt, Ys, Yt = X, X, Y, Y
+            Xs, Xt, Ys, Yt = X, X, Y[:, [1]], Y[:, [0]]
 
         Xs, Xt, Ys, Yt = (Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device))
         if args.mode == "both":
@@ -495,7 +495,7 @@ def test_casia_cmfd(data, model, args, iteration, device, logger=None, num=None,
 
     model.eval()
     # metric_im = utils.Metric_image()
-    metric = utils.Metric(names=["forge", "source", "all"], thres=args.thres)
+    metric = utils.Metric(names=["all"], thres=args.thres)
     if iteration is not None:
         print(f"{iteration}")
     if plot:
@@ -508,19 +508,20 @@ def test_casia_cmfd(data, model, args, iteration, device, logger=None, num=None,
         X, Y = ret
         Xs, Xt = X, X
         Ys, Yt = Y[:, [1]], Y[:, [0]]
-        preds, predt = model(Xs.to(device), Xt.to(device))
-        print(f"{i}:")
 
-        if args.model == "dmac":
-            predt = torch.softmax(predt, dim=1)[:, [1]]
-            preds = torch.softmax(preds, dim=1)[:, [1]]
-        else:
+        if args.mode == "both":
+            preds, predt = model(Xs.to(device), Xt.to(device))
             predt = torch.sigmoid(predt)
             preds = torch.sigmoid(preds)
+        else:
+            preds = model(Xs.to(device), Xt.to(device))
+            preds = torch.sigmoid(preds)
+            predt = preds
 
+        print(f"{i}:")
         ytn, ysn = to_np(Yt), to_np(Ys)
         predtn, predsn = to_np(predt), to_np(preds)
-        metric.update([ytn, ysn, np.maximum(ytn, ysn)], [predtn, predsn, np.maximum(predsn, predtn)])
+        metric.update([np.maximum(ytn, ysn)], [np.maximum(predsn, predtn)])
 
         if plot:
             preds = preds.squeeze()

@@ -40,7 +40,13 @@ if __name__ == "__main__":
         os.mkdir("./logs")
     logger = SummaryWriter("./logs/" + model_name)
 
-    model = models_cmfd.DOAModel()
+    # model
+    if args.mode == "both":
+        model = models_cmfd.DOAModel()
+    elif args.mode == "mani":
+        model = models_cmfd.DOAModel_man()
+    else:
+        model = models_cmfd.DOAModel_sim()
 
     model.to(device)
 

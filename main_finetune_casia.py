@@ -1,3 +1,6 @@
+"""
+Fine tune on other dataset, and test on casia
+"""
 import os
 import numpy as np
 import torch
@@ -42,6 +45,8 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
 
+    args.suffix = "_tune_casia"
+    args.dataset = "casia"
     # model name
     model_name = args.model + "_" + args.dataset + "_" + args.mode + args.suffix
 
@@ -81,38 +86,23 @@ if __name__ == "__main__":
         optimizer, factor=0.1, patience=10, verbose=True, threshold=0.1, min_lr=1e-7
     )
 
-    # load dataset test
-    if args.dataset == "usc": 
-        dataset_test = dataset_cmfd.USCISI_CMD_Dataset(
-            args=args, is_training=False
-        )
-    elif args.dataset == "casia":
-        dataset_test = dataset_cmfd.Dataset_CASIA(args)
-    elif args.dataset == "como":
-        pass
-    elif args.dataset == "tifs":
-        dataset_test = dataset_cmfd.Dataset_tifs(args)
-    elif args.dataset == "grip":
-        dataset_test = dataset_cmfd.Dataset_grip(args)
-    elif args.dataset == "wwt":
-        dataset_test = dataset_cmfd.Dataset_wwt(args)
-
+    dataset_test = dataset_cmfd.Dataset_CASIA(args)
     data_test = torch.utils.data.DataLoader(
         dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
 
     if args.test:
-        # with torch.no_grad():
-        #     for i, ret in enumerate(data_test):
-        #         if len(ret) == 5:
-        #             Xs, Xt, Ys, Yt, labels = ret
-        #         elif len(ret) == 2:
-        #             X, Y = ret
-        #             Xs, Xt, Ys, Yt = X, X, Y, Y
-        #         Xs, Xt = (Xs.to(device), Xt.to(device))
-        #         _ = model(Xs, Xt)
-        #         if i > 5:
-        #             break
+        with torch.no_grad():
+            for i, ret in enumerate(data_test):
+                if len(ret) == 5:
+                    Xs, Xt, Ys, Yt, labels = ret
+                elif len(ret) == 2:
+                    X, Y = ret
+                    Xs, Xt, Ys, Yt = X, X, Y, Y
+                Xs, Xt = (Xs.to(device), Xt.to(device))
+                _ = model(Xs, Xt)
+                if i > 5:
+                    break
         test.test_cmfd(
             data_test,
             model,
@@ -127,20 +117,10 @@ if __name__ == "__main__":
         raise SystemExit
 
     # load dataset train
-    if args.dataset == "usc":
-        dataset_train = dataset_cmfd.USCISI_CMD_Dataset(
-            args=args, is_training=True
-        )
-    elif args.dataset == "casia":
-        dataset_train = dataset_cmfd.Dataset_CASIA(args)
-    elif args.dataset == "como":
-        pass
-    elif args.dataset == "tifs":
-        dataset_train = dataset_cmfd.Dataset_tifs(args)
-    elif args.dataset == "grip":
-        dataset_train = dataset_cmfd.Dataset_grip(args)
-    elif args.dataset == "wwt":
-        dataset_train = dataset_cmfd.Dataset_wwt(args)
+    dataset_train1 = dataset_cmfd.Dataset_tifs(args)
+    dataset_train2 = dataset_cmfd.Dataset_grip(args)
+
+    dataset_train = torch.utils.data.ConcatDataset((dataset_train1, dataset_train2))
 
     data_train = torch.utils.data.DataLoader(
         dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=0
@@ -157,7 +137,7 @@ if __name__ == "__main__":
             list_loss.append(loss)
             iteration += 1
 
-            if iteration % 100 == 0:
+            if iteration % 20 == 0:
                 scheduler.step(np.mean(list_loss))
                 list_loss = []
 
