@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 
-def focal_loss(x, t, gamma=2, with_weight=False):
+def focal_loss(x, t, gamma=2, with_logits=True, with_weight=False):
     """Focal loss.
     Args:
         x: (tensor) sized [N,1, ...].
@@ -14,15 +14,18 @@ def focal_loss(x, t, gamma=2, with_weight=False):
         (tensor) focal loss.
     """
 
-    x = x.view(-1)
-    t = t.view(-1)
+    x = x.contiguous().view(-1)
+    t = t.contiguous().view(-1)
 
     if with_weight:
         wgt = torch.sum(t) / (t.shape[0])
     else:
         wgt = 0.5
 
-    p = torch.sigmoid(x)
+    if with_logits:
+        p = torch.sigmoid(x)
+    else:
+        p = x
     pt = p * t + (1 - p) * (1 - t)  # pt = p if t > 0 else 1-p
     w = (1 - wgt) * t + wgt * (1 - t)  # w = alpha if t > 0 else 1-alpha
     w = w * (1 - pt).pow(gamma)
