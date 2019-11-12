@@ -301,8 +301,21 @@ class DOAModel_sim(nn.Module):
             in_channels=in_cat, atrous_rates=[12, 24, 36]
         )
 
-        self.head_mask_sim = nn.Sequential(
-            nn.Conv2d(4 * 256, 2 * 256, 1),
+        self.head_mask_p = nn.Sequential(
+            nn.Conv2d(2 * 256, 2 * 256, 1),
+            nn.BatchNorm2d(2 * 256),
+            nn.ReLU(),
+            nn.Conv2d(2 * 256, 256, 3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            nn.Conv2d(256, 256, 3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            nn.Conv2d(256, out_channel, 1),
+        )
+
+        self.head_mask_q = nn.Sequential(
+            nn.Conv2d(2 * 256, 2 * 256, 1),
             nn.BatchNorm2d(2 * 256),
             nn.ReLU(),
             nn.Conv2d(2 * 256, 256, 3, padding=1),
@@ -319,7 +332,8 @@ class DOAModel_sim(nn.Module):
 
         # detection branch
         # self.detection = DetectionBranch(4 * 256)
-        self.head_mask_sim.apply(weights_init_normal)
+        self.head_mask_p.apply(weights_init_normal)
+        self.head_mask_q.apply(weights_init_normal)
 
         self.val_conv_p.apply(weights_init_normal)
         self.val_conv_q.apply(weights_init_normal)
@@ -345,11 +359,20 @@ class DOAModel_sim(nn.Module):
         xq_as_nl = self.gcn_q(xp_as, indq)
 
         # Final Mask
-        x_cat = torch.cat((xp_as, xp_as_nl, xq_as, xq_as_nl), dim=-3)
-        out = self.head_mask_sim(x_cat)
-        out = F.interpolate(
-            out, size=(h, w), mode="bilinear", align_corners=True
+        x_cat_p = torch.cat((xp_as, xp_as_nl), dim=-3)
+        outp = self.head_mask_p(x_cat_p)
+
+        x_cat_q = torch.cat((xq_as, xq_as_nl), dim=-3)
+        outq = self.head_mask_q(x_cat_q)
+
+        outp = F.interpolate(
+            outp, size=(h, w), mode="bilinear", align_corners=True
         )
+        outq = F.interpolate(
+            outq, size=(h, w), mode="bilinear", align_corners=True
+        )
+
+        out = torch.max(outp, outq)
         return out
 
     def set_bn_to_eval(self):
