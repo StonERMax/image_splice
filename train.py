@@ -109,6 +109,8 @@ def train_cmfd(D, model, optimizer, args, iteration, device, logger=None):
         if len(D) == 2:
             X, Y = D
             Xs, Xt, Ys, Yt = X, X, Y, Y
+            if Y.shape[1] == 3:
+                Ys, Yt = Y[:, [1]], Y[:, [0]]
         else:
             Xs, Xt, Ys, Yt, labels = D
         Xs, Xt, Ys, Yt = Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device)
@@ -117,7 +119,7 @@ def train_cmfd(D, model, optimizer, args, iteration, device, logger=None):
             Y = torch.max(Ys, Yt)
         else:
             Y = Yt
-        loss = focal_loss(pred, Y, with_logits=True)
+        loss = BCE_loss(pred, Y, with_logits=True)
         if args.bw:
             gauss = kornia.filters.GaussianBlur2d((5, 5), (3, 3))
             Y_edge = (kornia.sobel(gauss(Y)) > 0.01).float()

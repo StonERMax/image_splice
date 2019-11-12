@@ -28,6 +28,7 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
 
+    args.dataset = "como"
     # model name
     model_name = args.model + "_" + args.dataset + args.suffix
 
