@@ -291,6 +291,112 @@ class Dataset_CASIA(torch.utils.data.Dataset):
         return x_t, y_t
 
 
+class Dataset_casia(torch.utils.data.Dataset):
+    def __init__(self, args=None, both=None):
+        self.args = args
+        self.transform = None
+        if args.model in ("dmac", "dmvn"):
+            self.transform = utils.CustomTransform_vgg(size=args.size)
+        else:
+            self.transform = utils.CustomTransform(size=args.size)
+
+        self.root = Path(os.environ["HOME"]) / "dataset" / "CMFD" / "CASIA"
+
+        self.imroot = self.root / "CASIA2.0"
+        self.gtroot = self.root / "GT"
+
+        imnames = []
+        src_names = []
+        target_names = []
+        gt_names = []
+
+        au_files = sorted((self.imroot / "Au").glob("Au_*"))
+        self.au_base_name = {x.stem: x.suffix for x in au_files}
+
+        for efile in tqdm(sorted((self.imroot / "Tp").glob("Tp_S_*"))):
+            if efile.suffix in (".bmp", ".tif", ".jpg", ".png"):
+                src, forg = self.get_src_dest(efile.name)
+                if src is None or forg is None:
+                    continue
+                gtfile = f"{efile.stem}_gt.png"
+                im_file = self.imroot / "Tp" / efile
+                gt_file = self.gtroot / gtfile
+                src_file = self.imroot / "Au" / src
+                target_file = self.imroot / "Au" / forg
+
+                if (
+                    im_file.exists()
+                    and gt_file.exists()
+                    # and src_file.exists()
+                    and target_file.exists()
+                ):
+                    imnames.append(im_file)
+                    gt_names.append(gt_file)
+                    src_names.append(src_file)
+                    target_names.append(target_file)
+                else:
+                    pass
+        # pos_len = len(imnames)
+        # if both is not None:
+        #     for i, efile in enumerate((self.imroot / "Au").glob("Tp_S_*")):
+        #         if efile.suffix in (".bmp", ".tif", ".jpg", ".png"):
+        #             imnames.append(str(self.imroot / "Au" / efile))
+        #             gt_names.append(None)
+        #         if i >= pos_len:
+        #             break
+        self.df = pd.DataFrame(
+            data={
+                "imfile": imnames,
+                "gt": gt_names,
+                "src": src_names,
+                "target": target_names,
+            },
+            dtype=str,
+        )
+        print(f"number of images {self.df.shape[0]}")
+
+    def get_src_dest(self, fn):
+        src, forg = fn.split("_")[-3:-1]
+        #
+        _type, num = parse("{:l}{}", src)
+        src_base_name = "Au" + "_" + _type + "_" + num
+
+        src_file = None
+        if src_base_name in self.au_base_name:
+            src_file = src_base_name + self.au_base_name[src_base_name]
+
+        #
+        _type, num = parse("{:l}{}", forg)
+        forg_base_name = "Au" + "_" + _type + "_" + num
+
+        forg_file = None
+        if forg_base_name in self.au_base_name:
+            forg_file = forg_base_name + self.au_base_name[forg_base_name]
+
+        return src_file, forg_file
+
+    def __len__(self):
+        return self.df.shape[0]
+
+    def __getitem__(self, index, im_only=False):
+        row = self.df.loc[index]
+
+        imfile = row["imfile"]
+        gtfile = row["gt"]
+
+        imt = skimage.img_as_float32(skimage.io.imread(str(imfile))[:, :, :3])
+        label = 0
+
+        if gtfile is not None:
+            y = skimage.img_as_float32(skimage.io.imread(str(gtfile), as_gray=True))
+            label = 1.
+        else:
+            y = np.zeros(imt.shape[:2], dtype=imt.dtype)
+            label = 0
+        imt, y = self.transform(imt, y)
+        return imt, y
+
+
 class Dataset_tifs(torch.utils.data.Dataset):
     def __init__(self, args=None, is_training=None):
         if args is not None:
@@ -390,3 +496,99 @@ class Dataset_wwt(torch.utils.data.Dataset):
             y = torch.max(torch.cat(im_masks, 0), 0, keepdim=True)[0]
         return x, y
         # output forge mask
+
+
+class Dataset_como_orig(torch.utils.data.Dataset):
+    def __init__(self, args=None, both=None, mode=None):
+        self.args = args
+        self.transform = utils.CustomTransform(size=args.size)
+        self.root = Path(os.environ['HOME']) / 'dataset/CMFD/CoMoFoD_small_v2'
+        self.mode = mode
+        num = np.arange(1, 201)
+        imnames = []
+        gt_names = []
+        post_proc = []
+        for i in num:
+            glob_name = f'{i:03d}_F*.png'
+            for efile in self.root.glob(glob_name):
+                imid, post = self.id_post(efile.stem)
+                gtfile = f'{imid}_B.png'
+
+                # 'BASE' means no manipulation
+                if mode is not None and post != mode:
+                    continue
+                imnames.append(efile.name)
+                gt_names.append(gtfile)
+                post_proc.append(post)
+            if both is not None:
+                glob_name = f'{i:03d}_O*.png'
+                for efile in self.root.glob(glob_name):
+                    imid, post = self.id_post(efile.stem)
+                    if mode is not None and post != mode:
+                        continue
+                    gtfile = f'{imid}_B.png'
+                    imnames.append(efile.name)
+                    gt_names.append(None)
+                    post_proc.append(None)
+        self.df = pd.DataFrame(
+            data={'file': imnames, 'gt': gt_names, 'post': post_proc}, dtype=str)
+
+    def id_post(self, xn):
+        fmt = '{}_F_{}'
+        try:
+            img_id, postproc = parse(fmt, xn)
+        except:
+            img_id = xn.rsplit('_')[0]
+            postproc = 'BASE'
+        return img_id, postproc
+
+    def __len__(self):
+        return self.df.shape[0]
+
+    def load(self, shuffle=True):
+        indices = np.arange(len(self))
+
+        if shuffle:
+            np.random.shuffle(indices)
+
+        for ind in np.array_split(indices, len(indices)//self.args.batch_size):
+            X = []
+            Y = []
+            names = []
+            for i in ind:
+                x, y, imfile = self.__getitem__(i, with_proc=True)
+                X.append(x)
+                Y.append(y)
+                names.append(imfile)
+            X = torch.stack(X, dim=0)
+            Y = torch.stack(Y, dim=0)
+            yield X, Y, names 
+
+    def __getitem__(self, index, im_only=False, with_proc=False):
+        row = self.df.loc[index]
+
+        imfile = row['file']
+        gtfile = row['gt']
+        proc = row['post']
+
+        im = skimage.img_as_float32(skimage.io.imread(
+            str(self.root / imfile))[:, :, :3])
+
+        if gtfile is not None:
+            y = skimage.img_as_float32(skimage.io.imread(
+                str(self.root / gtfile), as_gray=True))
+        else:
+            y = np.zeros(im.shape[:2], dtype=im.dtype)
+
+        if self.args is not None:
+            im = cv2.resize(im, self.args.size, interpolation=1)
+            y = cv2.resize(y, self.args.size, interpolation=0)
+
+        if im_only:
+            return im, y, proc
+        im, y = self.transform(im, y)
+
+        if with_proc:
+            return im, y, imfile
+
+        return im, y

@@ -119,8 +119,9 @@ if __name__ == "__main__":
     # load dataset train
     dataset_train1 = dataset_cmfd.Dataset_tifs(args)
     dataset_train2 = dataset_cmfd.Dataset_grip(args)
+    dataset_train3 = dataset_cmfd.Dataset_como_orig(args)
 
-    dataset_train = torch.utils.data.ConcatDataset((dataset_train1, dataset_train2))
+    dataset_train = torch.utils.data.ConcatDataset((dataset_train1, dataset_train2, dataset_train3))
 
     data_train = torch.utils.data.DataLoader(
         dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=0

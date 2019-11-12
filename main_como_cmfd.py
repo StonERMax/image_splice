@@ -7,7 +7,7 @@ from tqdm import tqdm
 from matplotlib import pyplot as plt
 
 # custom module
-import config
+import config_cmfd
 import models_cmfd
 
 from test import test_casia_cmfd
@@ -21,7 +21,7 @@ if __name__ == "__main__":
     else:
         device = torch.device("cpu")
 
-    args = config.config_casia()
+    args = config_cmfd.config()
 
     # seed
     np.random.seed(args.seed)
@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     print(f"Model Name: {model_name}")
 
-    data_test = dataset_cmfd.Dataset_casia(args)
+    data_test = dataset_cmfd.Dataset_como_orig(args)
 
     # logger
     if not os.path.exists("./logs"):

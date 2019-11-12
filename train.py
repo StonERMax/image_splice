@@ -3,7 +3,7 @@ from torch import nn
 import numpy as np
 import torch.nn.functional as F
 
-from loss import BCE_loss
+from loss import BCE_loss, focal_loss
 import kornia
 
 
@@ -97,8 +97,8 @@ def train_cmfd(D, model, optimizer, args, iteration, device, logger=None):
             Ys_edge = (kornia.sobel(gauss(Ys)) > 0.01).float()
             Yt_edge = (kornia.sobel(gauss(Yt)) > 0.01).float()
 
-            loss_edge_s = torch.sum(-Ys_edge * F.logsigmoid(preds)) / torch.sum(Ys_edge)
-            loss_edge_t = torch.sum(-Yt_edge * F.logsigmoid(predt)) / torch.sum(Yt_edge)
+            loss_edge_s = torch.sum(-Ys_edge * F.logsigmoid(preds)) / (torch.sum(Ys_edge)+1e-8)
+            loss_edge_t = torch.sum(-Yt_edge * F.logsigmoid(predt)) / (torch.sum(Yt_edge)+1e-8)
             loss_edge = loss_edge_s + loss_edge_t
             loss += args.gamma2 * loss_edge
         _str = (
@@ -117,7 +117,12 @@ def train_cmfd(D, model, optimizer, args, iteration, device, logger=None):
             Y = torch.max(Ys, Yt)
         else:
             Y = Yt
-        loss = BCE_loss(pred, Y, with_logits=True)
+        loss = focal_loss(pred, Y, with_logits=True)
+        if args.bw:
+            gauss = kornia.filters.GaussianBlur2d((5, 5), (3, 3))
+            Y_edge = (kornia.sobel(gauss(Y)) > 0.01).float()
+            loss_edge = torch.sum(-Y_edge * F.logsigmoid(pred)) / (torch.sum(Y_edge)+1e-8)
+            loss += args.gamma2 * loss_edge
         _str = (
             f"{iteration:5d}: f: {tval(loss):.4f} "
         )

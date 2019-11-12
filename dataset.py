@@ -179,7 +179,7 @@ class Dataset_casia(torch.utils.data.Dataset):
         au_files = sorted((self.imroot / "Au").glob("Au_*"))
         self.au_base_name = {x.stem: x.suffix for x in au_files}
 
-        for efile in tqdm(sorted((self.imroot / "Tp").glob("Tp_S_*"))):
+        for efile in tqdm(sorted((self.imroot / "Tp").glob("Tp_D_*"))):
             if efile.suffix in (".bmp", ".tif", ".jpg", ".png"):
                 src, forg = self.get_src_dest(efile.name)
                 if src is None or forg is None:

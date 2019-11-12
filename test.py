@@ -507,7 +507,10 @@ def test_casia_cmfd(data, model, args, iteration, device, logger=None, num=None,
     for i, ret in enumerate(data):
         X, Y = ret
         Xs, Xt = X, X
-        Ys, Yt = Y[:, [1]], Y[:, [0]]
+        if Y.shape[1] >= 2:
+            Ys, Yt = Y[:, [1]], Y[:, [0]]
+        else:
+            Ys, Yt = Y, Y
 
         if args.mode == "both":
             preds, predt = model(Xs.to(device), Xt.to(device))

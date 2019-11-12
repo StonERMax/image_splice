@@ -184,5 +184,5 @@ if __name__ == "__main__":
                 print(f"weight saved in {model_name}.pkl")
 
             if args.max_iter is not None and iteration > args.max_iter:
-                break
+                raise SystemExit
     logger.close()
