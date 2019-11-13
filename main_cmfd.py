@@ -93,14 +93,12 @@ if __name__ == "__main__":
     )
 
     # load dataset test
-    if args.dataset == "usc": 
-        dataset_test = dataset_cmfd.USCISI_CMD_Dataset(
-            args=args, is_training=False
-        )
+    if args.dataset == "usc":
+        dataset_test = dataset_cmfd.USCISI_CMD_Dataset(args=args, is_training=False)
     elif args.dataset == "casia":
         dataset_test = dataset_cmfd.Dataset_CASIA(args)
     elif args.dataset == "como":
-        pass
+        dataset_test = dataset_cmfd.Dataset_como_orig(args)
     elif args.dataset == "tifs":
         dataset_test = dataset_cmfd.Dataset_tifs(args)
     elif args.dataset == "grip":
@@ -139,9 +137,7 @@ if __name__ == "__main__":
 
     # load dataset train
     if args.dataset == "usc":
-        dataset_train = dataset_cmfd.USCISI_CMD_Dataset(
-            args=args, is_training=True
-        )
+        dataset_train = dataset_cmfd.USCISI_CMD_Dataset(args=args, is_training=True)
     elif args.dataset == "casia":
         dataset_train = dataset_cmfd.Dataset_CASIA(args)
     elif args.dataset == "como":
@@ -152,6 +148,12 @@ if __name__ == "__main__":
         dataset_train = dataset_cmfd.Dataset_grip(args)
     elif args.dataset == "wwt":
         dataset_train = dataset_cmfd.Dataset_wwt(args)
+
+    # dataset_coco = dataset_cmfd.COCODataset(
+    #     args=args, is_training=True, sample_len=len(dataset_train) // 2
+    # )
+
+    # dataset_train = torch.utils.data.ConcatDataset((dataset_train, dataset_coco))
 
     data_train = torch.utils.data.DataLoader(
         dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=0
@@ -164,7 +166,9 @@ if __name__ == "__main__":
     for ep in tqdm(range(init_ep, args.max_epoch)):
         # train
         for ret in data_train:
-            loss = train.train_cmfd(ret, model, optimizer, args, iteration, device, logger=logger)
+            loss = train.train_cmfd(
+                ret, model, optimizer, args, iteration, device, logger=logger
+            )
             list_loss.append(loss)
             iteration += 1
 

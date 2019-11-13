@@ -169,7 +169,10 @@ def test_cmfd(data, model, args, iteration, device, logger=None, num=None, plot=
             Xs, Xt, Ys, Yt, labels = ret
         elif len(ret) == 2:
             X, Y = ret
-            Xs, Xt, Ys, Yt = X, X, Y[:, [1]], Y[:, [0]]
+            if Y.shape[1] > 1:
+                Xs, Xt, Ys, Yt = X, X, Y[:, [1]], Y[:, [0]]
+            else:
+                Xs, Xt, Ys, Yt = X, X, Y, Y
 
         Xs, Xt, Ys, Yt = (Xs.to(device), Xt.to(device), Ys.to(device), Yt.to(device))
         if args.mode == "both":

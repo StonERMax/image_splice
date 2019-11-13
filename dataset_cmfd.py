@@ -247,11 +247,10 @@ class COCODataset(torch.utils.data.Dataset):
         ))
         img = skimage.color.gray2rgb(img)
         img, _ = self.transform(img)
-        mask = torch.zeros((self.args.out_channel,
-                            *self.args.size), dtype=img.dtype)
-        if self.args.out_channel == 3:
-            mask[2, ...] = 1.
-        return img, mask
+        mask = torch.zeros((1, *self.args.size), dtype=img.dtype)
+        # if self.args.out_channel == 3:
+        #     mask[2, ...] = 1.
+        return img, img.clone(), mask, mask.clone(), 0.
 
 
 class Dataset_CASIA(torch.utils.data.Dataset):

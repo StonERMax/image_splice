@@ -12,13 +12,13 @@ import cv2
 
 
 def get_topk(x, k=10, dim=-3):
-    b, h2, w2, h1, w1 = x.shape
-    # val, _ = torch.topk(x, k=k, dim=dim)
-    # return val
-    xr = x.permute(0, 3, 4, 1, 2).view(b, -1, h2, w2)  # --> b, h1*w1, h2, w2
-    val = F.adaptive_max_pool2d(xr, int(np.sqrt(k)))  # --> b, h1*w1, k, k
-    val = val.view(b, h1, w1, -1).permute(0, 3, 1, 2)  # --> b, k*k, h1, w1
+    b, c, h1, w1 = x.shape
+    val, _ = torch.topk(x, k=k, dim=dim)
     return val
+    # xr = x.permute(0, 3, 4, 1, 2).view(b, -1, h2, w2)  # --> b, h1*w1, h2, w2
+    # val = F.adaptive_max_pool2d(xr, int(np.sqrt(k)))  # --> b, h1*w1, k, k
+    # val = val.view(b, h1, w1, -1).permute(0, 3, 1, 2)  # --> b, k*k, h1, w1
+    # return val
 
 
 def _zero_window(x_in, h, w, rat_s=0.1):
@@ -84,10 +84,10 @@ class Corr(nn.Module):
         )
         x_c = x_c.reshape(b, h1, w1, h2, w2)
         xc_o_q = x_c.view(b, h1 * w1, h2, w2)
-        valq = get_topk(x_c, k=self.topk, dim=-3)
+        valq = get_topk(xc_o_q, k=self.topk, dim=-3)
 
         xc_o_p = xc_o_q.permute(0, 2, 3, 1).view(b, h2 * w2, h1, w1)
-        valp = get_topk(x_c.permute(0, 3, 4, 1, 2), k=self.topk, dim=-3)
+        valp = get_topk(xc_o_p, k=self.topk, dim=-3)
 
         x_soft_p = xc_o_p  # / (xc_o_p.sum(dim=-3, keepdim=True) + 1e-8)
         x_soft_q = xc_o_q  # / (xc_o_q.sum(dim=-3, keepdim=True) + 1e-8)
@@ -152,7 +152,7 @@ class GCN(nn.Module):
 
 
 class DOAModel(nn.Module):
-    def __init__(self, out_channel=1, topk=25, hw=(40, 40)):
+    def __init__(self, out_channel=1, topk=20, hw=(40, 40)):
         super().__init__()
         self.hw = hw
         self.topk = topk
