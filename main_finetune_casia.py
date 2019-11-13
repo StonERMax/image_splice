@@ -86,7 +86,17 @@ if __name__ == "__main__":
         optimizer, factor=0.1, patience=10, verbose=True, threshold=0.1, min_lr=1e-7
     )
 
-    dataset_test = dataset_cmfd.Dataset_CASIA(args)
+    dataset_train1 = dataset_cmfd.Dataset_tifs(args)
+    dataset_train2 = dataset_cmfd.Dataset_grip(args)
+    dataset_train3 = dataset_cmfd.Dataset_como_orig(args)
+
+    dataset_train = torch.utils.data.ConcatDataset((dataset_train1, dataset_train2, dataset_train3))
+
+    data_train = torch.utils.data.DataLoader(
+        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=0
+    )
+
+    dataset_test = dataset_train #dataset_cmfd.Dataset_CASIA(args)
     data_test = torch.utils.data.DataLoader(
         dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
@@ -117,15 +127,6 @@ if __name__ == "__main__":
         raise SystemExit
 
     # load dataset train
-    dataset_train1 = dataset_cmfd.Dataset_tifs(args)
-    dataset_train2 = dataset_cmfd.Dataset_grip(args)
-    dataset_train3 = dataset_cmfd.Dataset_como_orig(args)
-
-    dataset_train = torch.utils.data.ConcatDataset((dataset_train1, dataset_train2, dataset_train3))
-
-    data_train = torch.utils.data.DataLoader(
-        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=0
-    )
     if not os.path.exists("ckpt_cmfd"):
         os.mkdir("ckpt_cmfd")
 
