@@ -1,0 +1,2 @@
+ = 0
+plot(xq[k]); plot(xp[k], 2); plot(val_conv_q[k, :3], 3); plot(val_conv_p[k, :3], 4);

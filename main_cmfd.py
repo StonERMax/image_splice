@@ -28,6 +28,16 @@ def set_grad_false(model, layer_ex=[]):
             param.requires_grad = True
 
 
+def load_ckpt(model, state_dict, layers=[]):
+    new_state = {}
+    for k, v in state_dict.items():
+        for each_l in layers:
+            if k.startswith(each_l):
+                new_state[k] = v
+                break
+    model.load_state_dict(new_state, strict=False)
+
+
 if __name__ == "__main__":
     # device
     if torch.cuda.is_available():
@@ -66,9 +76,10 @@ if __name__ == "__main__":
 
     if args.ckpt is not None:
         checkpoint = torch.load(args.ckpt)
+        # load_ckpt(model, checkpoint['model_state'], ['encoder', 'corrLayer', 'aspp', 'head_mask', 'gcn'])
         model.load_state_dict(checkpoint["model_state"], strict=False)
         if args.tune:
-            set_grad_false(model, ["head"])
+            set_grad_false(model, ["head", "val_conv"])
 
     model_params = filter(lambda x: x.requires_grad, model.parameters())
 

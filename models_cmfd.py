@@ -12,8 +12,12 @@ import cv2
 
 
 def get_topk(x, k=10, dim=-3):
-    # b, c, h, w = x.shape
-    val, _ = torch.topk(x, k=k, dim=dim)
+    b, h2, w2, h1, w1 = x.shape
+    # val, _ = torch.topk(x, k=k, dim=dim)
+    # return val
+    xr = x.permute(0, 3, 4, 1, 2).view(b, -1, h2, w2)  # --> b, h1*w1, h2, w2
+    val = F.adaptive_max_pool2d(xr, int(np.sqrt(k)))  # --> b, h1*w1, k, k
+    val = val.view(b, h1, w1, -1).permute(0, 3, 1, 2)  # --> b, k*k, h1, w1
     return val
 
 
@@ -45,8 +49,18 @@ def _zero_window(x_in, h, w, rat_s=0.1):
     return out
 
 
+def cosine_sim(xp, xq):
+    b, c, h1, w1 = xp.shape
+    _, _, h2, w2 = xq.shape
+
+    xp_s = xp.permute(0, 2, 3, 1).view(b, h1*w1, 1, c)
+    xq_s = xq.permute(0, 2, 3, 1).view(b, 1, h2*w2, c)
+    sim = torch.cosine_similarity(xp_s, xq_s, dim=-1)
+    return sim
+
+
 class Corr(nn.Module):
-    def __init__(self, topk=3):
+    def __init__(self, topk=25):
         super().__init__()
         self.topk = topk
         self.alpha = nn.Parameter(torch.tensor(5.0, dtype=torch.float32))
@@ -58,21 +72,22 @@ class Corr(nn.Module):
         xpn = F.normalize(xp, p=2, dim=-3)
         xqn = F.normalize(xq, p=2, dim=-3)
 
-        x_aff = torch.matmul(
+        x_aff_o = torch.matmul(
             xpn.permute(0, 2, 3, 1).view(b, -1, c), xqn.view(b, c, -1)
         )  # h1 * w1, h2 * w2
 
-        x_aff = _zero_window(x_aff.view(b, -1, h1, w1), h1, w1, rat_s=0.05)
+        x_aff = _zero_window(x_aff_o.view(b, -1, h2, w2), h1, w1, rat_s=0.05)
+        x_aff = x_aff.reshape(b, h1*w1, h2*w2)
 
         x_c = F.softmax(x_aff * self.alpha, dim=-1) * F.softmax(
             x_aff * self.alpha, dim=-2
         )
         x_c = x_c.reshape(b, h1, w1, h2, w2)
         xc_o_q = x_c.view(b, h1 * w1, h2, w2)
-        valq = get_topk(xc_o_q, k=self.topk, dim=-3)
+        valq = get_topk(x_c, k=self.topk, dim=-3)
 
         xc_o_p = xc_o_q.permute(0, 2, 3, 1).view(b, h2 * w2, h1, w1)
-        valp = get_topk(xc_o_p, k=self.topk, dim=-3)
+        valp = get_topk(x_c.permute(0, 3, 4, 1, 2), k=self.topk, dim=-3)
 
         x_soft_p = xc_o_p  # / (xc_o_p.sum(dim=-3, keepdim=True) + 1e-8)
         x_soft_q = xc_o_q  # / (xc_o_q.sum(dim=-3, keepdim=True) + 1e-8)
@@ -137,7 +152,7 @@ class GCN(nn.Module):
 
 
 class DOAModel(nn.Module):
-    def __init__(self, out_channel=1, topk=20, hw=(40, 40)):
+    def __init__(self, out_channel=1, topk=25, hw=(40, 40)):
         super().__init__()
         self.hw = hw
         self.topk = topk
