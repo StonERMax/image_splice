@@ -1,5 +1,5 @@
 k = 0
-plot(xq[k]); plot(xp[k], 2); plot(val_conv_q[k, :3], 3); plot(val_conv_p[k, :3], 4);
+plot(xq[k]); plot(xp[k], 2); plot(valq[k, :3], 3); plot(valp[k, :3], 4);
 plot(torch.sigmoid(outq[k]), 5); plot(torch.sigmoid(outp[k]), 6)
 
 plot(xq[k]); plot(val_conv_q[k, :3], 3); plot(val_conv_p[k, :3], 4); plot(torch.sigmoid(outq[k]), 5); plot(torch.sigmoid(outp[k]), 6)

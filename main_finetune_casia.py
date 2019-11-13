@@ -46,7 +46,7 @@ if __name__ == "__main__":
     torch.cuda.manual_seed_all(args.seed)
 
     args.suffix = "_tune_casia"
-    args.dataset = "casia"
+    # args.dataset = "casia"
     # model name
     model_name = args.model + "_" + args.dataset + "_" + args.mode + args.suffix
 
@@ -86,17 +86,18 @@ if __name__ == "__main__":
         optimizer, factor=0.1, patience=10, verbose=True, threshold=0.1, min_lr=1e-7
     )
 
-    dataset_train1 = dataset_cmfd.Dataset_tifs(args)
-    dataset_train2 = dataset_cmfd.Dataset_grip(args)
-    dataset_train3 = dataset_cmfd.Dataset_como_orig(args)
+    # dataset_train1 = dataset_cmfd.Dataset_tifs(args)
+    # dataset_train2 = dataset_cmfd.Dataset_grip(args)
+    # dataset_train3 = dataset_cmfd.Dataset_como_orig(args)
 
-    dataset_train = torch.utils.data.ConcatDataset((dataset_train1, dataset_train2, dataset_train3))
+    # dataset_train = torch.utils.data.ConcatDataset((dataset_train1, dataset_train2, dataset_train3))
+    dataset_train = dataset_cmfd.USCISI_CMD_Dataset(args=args, is_training=True)
 
     data_train = torch.utils.data.DataLoader(
         dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
 
-    dataset_test = dataset_train #dataset_cmfd.Dataset_CASIA(args)
+    dataset_test = dataset_cmfd.Dataset_CASIA(args)
     data_test = torch.utils.data.DataLoader(
         dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
@@ -142,7 +143,6 @@ if __name__ == "__main__":
             if iteration % 20 == 0:
                 scheduler.step(np.mean(list_loss))
                 list_loss = []
-
                 test.test_cmfd(
                     data_test,
                     model,

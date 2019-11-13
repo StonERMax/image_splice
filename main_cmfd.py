@@ -110,6 +110,11 @@ if __name__ == "__main__":
         dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
 
+    dataset_test2 = dataset_cmfd.Dataset_CASIA(args)
+    data_test2 = torch.utils.data.DataLoader(
+        dataset_test2, batch_size=args.batch_size, shuffle=True, num_workers=0
+    )
+
     if args.test:
         # with torch.no_grad():
         #     for i, ret in enumerate(data_test):
@@ -171,6 +176,19 @@ if __name__ == "__main__":
             )
             list_loss.append(loss)
             iteration += 1
+
+            if iteration % 120 == 0:
+                print("Test on CASIA:")
+                test.test_cmfd(
+                    data_test2,
+                    model,
+                    args,
+                    iteration=None,
+                    device=device,
+                    logger=None,
+                    num=5,
+                )
+                print("----"*5)
 
             if iteration % 100 == 0:
                 scheduler.step(np.mean(list_loss))

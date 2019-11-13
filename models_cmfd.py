@@ -21,7 +21,7 @@ import cv2
 #     # return val
 
 
-def _zero_window(x_in, h, w, rat_s=0.1):
+def _zero_window(x_in, h, w, rat_s=0.05):
     sigma = h * rat_s, w * rat_s
     # c = h * w
     b, c, h2, w2 = x_in.shape
@@ -60,7 +60,7 @@ class Corr(nn.Module):
         super().__init__()
         self.topk = topk
 
-        self.alpha = nn.Parameter(torch.tensor(10.0, dtype=torch.float32))
+        self.alpha = nn.Parameter(torch.tensor(1.0, dtype=torch.float32))
 
     def forward(self, xp, xq):
         b, c, h1, w1 = xp.shape
@@ -69,13 +69,16 @@ class Corr(nn.Module):
         xpn = F.normalize(xp, p=2, dim=-3)
         xqn = F.normalize(xq, p=2, dim=-3)
 
-        x_aff = torch.matmul(
+        x_aff_o = torch.matmul(
             xpn.permute(0, 2, 3, 1).view(b, -1, c), xqn.view(b, c, -1)
         )  # h1 * w1, h2 * w2
 
-        x_c = F.softmax(x_aff * self.alpha, dim=-1) * F.softmax(
-            x_aff * self.alpha, dim=-2
-        )
+        x_aff = _zero_window(x_aff_o.view(b, h1*w1, h2, w2), h1, w1).reshape(b, h1*w1, h2*w2)
+        # x_c = F.softmax(x_aff * self.alpha, dim=-1) * F.softmax(
+        #     x_aff * self.alpha, dim=-2
+        # )
+        x_c = x_aff
+
         x_c = x_c.reshape(b, h1, w1, h2, w2)
         xc_o_q = x_c.view(b, h1 * w1, h2, w2)
         valq = get_topk(xc_o_q, k=self.topk, dim=-3)
