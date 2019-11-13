@@ -74,10 +74,10 @@ class Corr(nn.Module):
         )  # h1 * w1, h2 * w2
 
         x_aff = _zero_window(x_aff_o.view(b, h1*w1, h2, w2), h1, w1).reshape(b, h1*w1, h2*w2)
-        # x_c = F.softmax(x_aff * self.alpha, dim=-1) * F.softmax(
-        #     x_aff * self.alpha, dim=-2
-        # )
-        x_c = x_aff
+        x_c = F.softmax(x_aff * self.alpha, dim=-1) * F.softmax(
+            x_aff * self.alpha, dim=-2
+        )
+        # x_c = x_aff
 
         x_c = x_c.reshape(b, h1, w1, h2, w2)
         xc_o_q = x_c.view(b, h1 * w1, h2, w2)
