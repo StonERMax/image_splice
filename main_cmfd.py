@@ -13,6 +13,7 @@ import train
 
 import test
 import dataset_cmfd
+import dataset_new
 
 
 def set_grad_false(model, layer_ex=[]):
@@ -158,7 +159,8 @@ if __name__ == "__main__":
     #     args=args, is_training=True, sample_len=len(dataset_train)
     # )
 
-    # dataset_train = torch.utils.data.ConcatDataset((dataset_train, dataset_coco))
+    dataset_back = dataset_new.COCODatasetBack(args, is_training=True, sample_len=len(dataset_train)//2)
+    dataset_train = torch.utils.data.ConcatDataset((dataset_train, dataset_back))
 
     data_train = torch.utils.data.DataLoader(
         dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=0

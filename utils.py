@@ -17,6 +17,10 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import collections
 from sklearn.metrics import roc_auc_score, roc_curve, auc
+import imgaug as ia
+import imgaug.augmenters as iaa
+from imgaug.augmentables.segmaps import SegmentationMapsOnImage
+
 
 
 def get_MCC(hist):
@@ -476,3 +480,38 @@ class Preprocessor():
 
         value = cv2.compareHist(hist1, hist2, compare_method)
         return value
+
+
+class ImAug():
+    def __init__(self):
+        sometimes = lambda aug: iaa.Sometimes(0.50, aug)
+
+        self.seq_for_coco_back = iaa.Sequential([
+            sometimes(iaa.Affine(rotate=(-45, 45))),  # rotate by -45 to 45 degrees (affects segmaps)
+            # sometimes(iaa.ElasticTransformation(alpha=50, sigma=5)),  # apply water effect (affects segmaps)
+            # sometimes(iaa.Fliplr(0.10)), # horizontally flip 10% of the images
+        ], random_order=True)
+
+    @staticmethod
+    def apply_contrast(im):
+        seq = iaa.ContrastNormalization((0.75, 1.5))
+        im = seq(images=skimage.img_as_ubyte(im))
+        im = skimage.img_as_float32(im)
+        return im
+
+    @staticmethod
+    def apply_water(mask):
+        seq = iaa.ElasticTransformation(alpha=50, sigma=5)
+        segmap = SegmentationMapsOnImage(skimage.img_as_ubyte(mask)[..., None], shape=mask.shape)
+        mask = seq(segmentation_maps=segmap)
+        mask = skimage.img_as_float32(mask.get_arr().squeeze())
+        return mask
+
+    def apply_coco_back(self, im, mask):
+        im = skimage.img_as_ubyte(im)
+        mask = skimage.img_as_ubyte(mask)[..., None]
+        segmap = SegmentationMapsOnImage(mask, shape=im.shape)
+        images_aug_i, segmaps_aug_i = self.seq_for_coco_back(image=im, segmentation_maps=segmap)
+        im = skimage.img_as_float32(images_aug_i)
+        mask = skimage.img_as_float32(segmaps_aug_i.get_arr().squeeze())
+        return im, mask
