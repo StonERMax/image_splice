@@ -76,15 +76,15 @@ if __name__ == "__main__":
 
     if args.ckpt is not None:
         checkpoint = torch.load(args.ckpt)
-        # load_ckpt(model, checkpoint['model_state'], ['encoder', 'corrLayer', 'aspp', 'head_mask', 'gcn'])
+        # load_ckpt(model, checkpoint['model_state'], ['encoder', 'corrLayer', 'aspp', 'gcn'])
         model.load_state_dict(checkpoint["model_state"], strict=False)
         if args.tune:
             set_grad_false(model, ["head", "val_conv"])
 
     model_params = filter(lambda x: x.requires_grad, model.parameters())
 
-    # if torch.cuda.device_count() > 1:
-    #     model = nn.DataParallel(model)
+    if torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model)
 
     # optimizer
     optimizer = torch.optim.Adam(model_params, lr=args.lr)

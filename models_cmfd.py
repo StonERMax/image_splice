@@ -154,8 +154,9 @@ class DOAModel(nn.Module):
         self.hw = hw
         self.topk = topk
 
-        self.encoder_p = Extractor_VGG19()
+        # self.encoder_p = Extractor_VGG19()
         self.encoder_q = Extractor_VGG19()
+        self.encoder_p = self.encoder_q
 
         self.corrLayer = Corr(topk=topk)
 
@@ -170,14 +171,16 @@ class DOAModel(nn.Module):
             nn.Sigmoid(),
         )
 
-        self.val_conv_q = nn.Sequential(
-            nn.Conv2d(topk, 16, 3, padding=1),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.Conv2d(16, 16, 3, padding=1),
-            nn.Conv2d(16, 1, 1),
-            nn.Sigmoid(),
-        )
+        self.val_conv_q = self.val_conv_p
+
+        # self.val_conv_q = nn.Sequential(
+        #     nn.Conv2d(topk, 16, 3, padding=1),
+        #     nn.BatchNorm2d(16),
+        #     nn.ReLU(),
+        #     nn.Conv2d(16, 16, 3, padding=1),
+        #     nn.Conv2d(16, 1, 1),
+        #     nn.Sigmoid(),
+        # )
 
         self.aspp_mask = models.segmentation.deeplabv3.ASPP(
             in_channels=in_cat, atrous_rates=[12, 24, 36]
@@ -188,10 +191,7 @@ class DOAModel(nn.Module):
         )
 
         self.head_mask_p = nn.Sequential(
-            nn.Conv2d(2 * 256, 2 * 256, 1),
-            nn.BatchNorm2d(2 * 256),
-            nn.ReLU(),
-            nn.Conv2d(2 * 256, 256, 3, padding=1),
+            nn.Conv2d(2 * 256 + topk, 256, 3, padding=1),
             nn.BatchNorm2d(256),
             nn.ReLU(),
             nn.Conv2d(256, 256, 3, padding=1),
@@ -201,10 +201,7 @@ class DOAModel(nn.Module):
         )
 
         self.head_mask_q = nn.Sequential(
-            nn.Conv2d(2 * 256, 2 * 256, 1),
-            nn.BatchNorm2d(2 * 256),
-            nn.ReLU(),
-            nn.Conv2d(2 * 256, 256, 3, padding=1),
+            nn.Conv2d(2 * 256 + topk, 256, 3, padding=1),
             nn.BatchNorm2d(256),
             nn.ReLU(),
             nn.Conv2d(256, 256, 3, padding=1),
@@ -228,27 +225,27 @@ class DOAModel(nn.Module):
         input1, input2 = xq, xp
         b, c, h, w = xp.shape
         xp_feat = self.encoder_p(xp, out_size=self.hw)
-        xq_feat = self.encoder_q(xq, out_size=self.hw)
+        xq_feat = xp_feat  #self.encoder_q(xq, out_size=self.hw)
 
         valp, valq, indp, indq = self.corrLayer(xp_feat, xq_feat)
 
         # attention weight
         val_conv_p = self.val_conv_p(valp)
-        val_conv_q = self.val_conv_q(valq)
+        val_conv_q = val_conv_p  #self.val_conv_q(valq)
 
         #### Mask part : M  ####
-        xp_as = self.aspp_forge(xp_feat) * val_conv_p
-        xq_as = self.aspp_mask(xq_feat) * val_conv_q
+        xp_as = self.aspp_forge(xp_feat * val_conv_p)
+        xq_as = self.aspp_mask(xq_feat * val_conv_q)
 
         # Corrensponding mask and forge
         xp_as_nl = self.gcn_p(xq_as, indp)
         xq_as_nl = self.gcn_q(xp_as, indq)
 
         # Final Mask
-        x_cat_p = torch.cat((xp_as, xp_as_nl), dim=-3)
+        x_cat_p = torch.cat((xp_as, xp_as_nl, valp), dim=-3)
         outp = self.head_mask_p(x_cat_p)
 
-        x_cat_q = torch.cat((xq_as, xq_as_nl), dim=-3)
+        x_cat_q = torch.cat((xq_as, xq_as_nl, valq), dim=-3)
         outq = self.head_mask_q(x_cat_q)
 
         # final detection
