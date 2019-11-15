@@ -22,14 +22,14 @@ import imgaug.augmenters as iaa
 from imgaug.augmentables.segmaps import SegmentationMapsOnImage
 
 
-
 def get_MCC(hist):
     tn, fp, fn, tp = hist
-    denominator = np.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn))
+    denominator = np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
     if denominator == 0:
         return 0
-    mcc = (tp*tn - fp*fn)/denominator
+    mcc = (tp * tn - fp * fn) / denominator
     return mcc
+
 
 def fscore(T_score):
     Fp, Fn, Tp = T_score[1:]
@@ -111,7 +111,7 @@ class CustomTransform_vgg:
         else:
             self.size = size
         self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-        self.std = np.array([1./255, 1./255, 1./255], dtype=np.float32)
+        self.std = np.array([1.0 / 255, 1.0 / 255, 1.0 / 255], dtype=np.float32)
         self.to_tensor = transforms.ToTensor()
 
     def resize(self, img=None, mask=None):
@@ -122,9 +122,7 @@ class CustomTransform_vgg:
 
         if mask is not None:
             if mask.shape[0] != self.size[0] or mask.shape[1] != self.size[1]:
-                mask = cv2.resize(
-                    mask, self.size, interpolation=cv2.INTER_NEAREST
-                )
+                mask = cv2.resize(mask, self.size, interpolation=cv2.INTER_NEAREST)
         return img, mask
 
     def inverse(self, x, mask=False):
@@ -168,9 +166,7 @@ class CustomTransform:
 
         if mask is not None:
             if mask.shape[0] != self.size[0] or mask.shape[1] != self.size[1]:
-                mask = cv2.resize(
-                    mask, self.size, interpolation=cv2.INTER_NEAREST
-                )
+                mask = cv2.resize(mask, self.size, interpolation=cv2.INTER_NEAREST)
         return img, mask
 
     def inverse(self, x, mask=False):
@@ -197,7 +193,9 @@ class CustomTransform:
         return img, mask
 
 
-def custom_transform_images(images=None, masks=None, size=320, tsfm=None, other_tfm=None):
+def custom_transform_images(
+    images=None, masks=None, size=320, tsfm=None, other_tfm=None
+):
     if isinstance(size, int) or isinstance(size, float):
         size = (size, size)
     else:
@@ -231,7 +229,7 @@ def add_overlay(im, m1, m2=None, alpha=0.5, c1=[0, 1, 0], c2=[1, 0, 0]):
         M1[m1 > 0.5] = c1
         M = M1
     Im = cv2.addWeighted(im, 1, M, alpha, 0, None)
-    Im = np.clip(Im, 0, 1.)
+    Im = np.clip(Im, 0, 1.0)
     return Im
 
 
@@ -403,7 +401,9 @@ class Metric_image(object):
             self.pred.append(_pred)
         if log:
             pr, re, f, _ = precision_recall_fscore_support(
-                np.array(_gt) > self.thres, np.array(_pred) > self.thres, average="binary"
+                np.array(_gt) > self.thres,
+                np.array(_pred) > self.thres,
+                average="binary",
             )
             print(f"precision: {pr:.4f}, recall: {re:.4f}, f-score: {f :.4f} ")
 
@@ -423,7 +423,7 @@ class Metric_image(object):
         print(f"precision: {pr:.4f}, recall: {re:.4f}, f-score: {f :.4f} ")
 
 
-class Preprocessor():
+class Preprocessor:
     def __init__(self, args):
         self.args = args
 
@@ -436,19 +436,19 @@ class Preprocessor():
         mask_closed = morphology.binary_closing(mask, structure=np.ones((5, 5)))
 
         # do opening
-        mask_opened = morphology.binary_closing(
-            mask_closed, structure=np.ones((5, 5)))
+        mask_opened = morphology.binary_closing(mask_closed, structure=np.ones((5, 5)))
 
         # hole filling
         mask_filled = morphology.binary_fill_holes(
-            mask_opened, structure=np.ones((8, 8)))
+            mask_opened, structure=np.ones((8, 8))
+        )
 
         # get maximum connected component
         labels, _ = measurements.label(mask_filled)
         if len(np.unique(labels)) == 1:
             return np.zeros_like(mask)
 
-        mask_maxlab = labels == np.argmax(np.bincount(labels.flat)[1:])+1
+        mask_maxlab = labels == np.argmax(np.bincount(labels.flat)[1:]) + 1
 
         return mask_maxlab.astype(np.float)
 
@@ -468,10 +468,10 @@ class Preprocessor():
         # Use the 0-th and 1-st channels
         channels = [0, 1]
 
-        hist_base = cv2.calcHist([im_hsv], channels, mask,
-                                 histSize, ranges, accumulate=False)
-        cv2.normalize(hist_base, hist_base, alpha=0,
-                     beta=1, norm_type=cv2.NORM_MINMAX)
+        hist_base = cv2.calcHist(
+            [im_hsv], channels, mask, histSize, ranges, accumulate=False
+        )
+        cv2.normalize(hist_base, hist_base, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
         return hist_base
 
     def comp_hist(self, x1, x2, mask1=None, mask2=None, compare_method=0):
@@ -482,19 +482,29 @@ class Preprocessor():
         return value
 
 
-class ImAug():
+class ImAug:
     def __init__(self):
         sometimes = lambda aug: iaa.Sometimes(0.50, aug)
 
-        self.seq_for_coco_back = iaa.Sequential([
-            sometimes(iaa.Affine(rotate=(-45, 45))),  # rotate by -45 to 45 degrees (affects segmaps)
-            # sometimes(iaa.ElasticTransformation(alpha=50, sigma=5)),  # apply water effect (affects segmaps)
-            # sometimes(iaa.Fliplr(0.10)), # horizontally flip 10% of the images
-        ], random_order=True)
+        self.seq_for_coco_back = iaa.Sequential(
+            [
+                sometimes(
+                    iaa.Affine(rotate=(-45, 45))
+                ),  # rotate by -45 to 45 degrees (affects segmaps)
+                # sometimes(iaa.ElasticTransformation(alpha=50, sigma=5)),  # apply water effect (affects segmaps)
+                # sometimes(iaa.Fliplr(0.10)), # horizontally flip 10% of the images
+            ],
+            random_order=True,
+        )
 
     @staticmethod
-    def apply_contrast(im):
-        seq = iaa.ContrastNormalization((0.75, 1.5))
+    def apply_blur(im):
+        seq = iaa.Sometimes(
+            0.10,
+            iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05 * 255), per_channel=0.5),
+        )
+        # blur images with a sigma of 0 to 3.0
+
         im = seq(images=skimage.img_as_ubyte(im))
         im = skimage.img_as_float32(im)
         return im
@@ -502,7 +512,9 @@ class ImAug():
     @staticmethod
     def apply_water(mask):
         seq = iaa.ElasticTransformation(alpha=50, sigma=5)
-        segmap = SegmentationMapsOnImage(skimage.img_as_ubyte(mask)[..., None], shape=mask.shape)
+        segmap = SegmentationMapsOnImage(
+            skimage.img_as_ubyte(mask)[..., None], shape=mask.shape
+        )
         mask = seq(segmentation_maps=segmap)
         mask = skimage.img_as_float32(mask.get_arr().squeeze())
         return mask
@@ -511,7 +523,9 @@ class ImAug():
         im = skimage.img_as_ubyte(im)
         mask = skimage.img_as_ubyte(mask)[..., None]
         segmap = SegmentationMapsOnImage(mask, shape=im.shape)
-        images_aug_i, segmaps_aug_i = self.seq_for_coco_back(image=im, segmentation_maps=segmap)
+        images_aug_i, segmaps_aug_i = self.seq_for_coco_back(
+            image=im, segmentation_maps=segmap
+        )
         im = skimage.img_as_float32(images_aug_i)
         mask = skimage.img_as_float32(segmaps_aug_i.get_arr().squeeze())
         return im, mask

@@ -59,7 +59,6 @@ class COCODatasetBack(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.imids)
 
-
     def transform_mask(self, img, mask, ann):
         h, w = img.shape[:2]
         mask_bb = ann['bbox']
@@ -67,11 +66,11 @@ class COCODatasetBack(torch.utils.data.Dataset):
         
         # scale wrt original mask
         s_h, s_w = (
-            np.random.choice(np.linspace(0.8, 1.2, num=10)),
-            np.random.choice(np.linspace(0.8, 1.2, num=10))
+            np.random.choice(np.linspace(0.6, 1.4, num=10)),
+            np.random.choice(np.linspace(0.6, 1.4, num=10))
         )
         # new mask shape
-        m_h, m_w = int(np.clip(s_h * mask_h, 0.1 * h, 0.4 * h)), int(np.clip(s_w * mask_w, 0.3*w/2, 0.5 * w/2))
+        m_h, m_w = int(np.clip(s_h * mask_h, 0.2 * h, 0.4 * h)), int(np.clip(s_w * mask_w, 0.2*w, 0.4 * w))
         # new mask scale wrt original mask
         sx, sy = m_w / mask_w, m_h / mask_h
 
@@ -135,11 +134,11 @@ class COCODatasetBack(torch.utils.data.Dataset):
 
         if self.is_training:
             im_fn, new_mask_f = self.im_aug.apply_coco_back(im_fn, new_mask_f)
+            im_fn = ImAug.apply_blur(im_fn)
 
         im_cmfd = img * (1 - new_mask_f[..., None]) + im_fn * new_mask_f[..., None]
 
         return im_cmfd, new_mask, new_mask_f
-
 
     def __getitem__(self, idx=None):
         coco = self.coco
@@ -171,15 +170,13 @@ class COCODatasetBack(torch.utils.data.Dataset):
         img, mask_s = self.transform(img, mask_s)
         _,  mask_f = self.transform(None, mask_f)
         # return img, mask_s, mask_f
-        mask = torch.zeros((self.args.out_channel,
-                            *self.args.size), dtype=img.dtype)
+
         if self.args.out_channel == 3:
-            mask[[0]] = mask_f
-            mask[[1]] = mask_s
-            mask[[2]] = 1. - torch.max(mask_s, mask_f)
+            return img, img, mask_s.float(), mask_f, 1.0
         else:
-            mask = torch.max(mask_s, mask_f)
+            mask = torch.max(mask_s.float(), mask_f)
         return img, mask
+
 
 if __name__ == '__main__':
     # np.random.seed(1)
@@ -191,6 +188,3 @@ if __name__ == '__main__':
     io.imsave('3.png', mf)
 
     print("saved")
-
-
-

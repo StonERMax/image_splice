@@ -75,12 +75,13 @@ if __name__ == "__main__":
     iteration = args.resume
     init_ep = 0
 
+    # TODO: check here
     if args.ckpt is not None:
         checkpoint = torch.load(args.ckpt)
-        # load_ckpt(model, checkpoint['model_state'], ['encoder', 'corrLayer', 'aspp', 'gcn'])
-        model.load_state_dict(checkpoint["model_state"], strict=False)
+        load_ckpt(model, checkpoint['model_state'], ['encoder', 'corr', 'aspp', 'gcn', 'val'])
+        # model.load_state_dict(checkpoint["model_state"], strict=False)
         if args.tune:
-            set_grad_false(model, ["head", "val_conv"])
+            set_grad_false(model, ["head", "val"])
 
     model_params = filter(lambda x: x.requires_grad, model.parameters())
 
@@ -108,12 +109,12 @@ if __name__ == "__main__":
         dataset_test = dataset_cmfd.Dataset_wwt(args)
 
     data_test = torch.utils.data.DataLoader(
-        dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=0
+        dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=1
     )
 
     dataset_test2 = dataset_cmfd.Dataset_CASIA(args)
     data_test2 = torch.utils.data.DataLoader(
-        dataset_test2, batch_size=args.batch_size, shuffle=True, num_workers=0
+        dataset_test2, batch_size=args.batch_size, shuffle=True, num_workers=1
     )
 
     if args.test:
@@ -155,15 +156,14 @@ if __name__ == "__main__":
     elif args.dataset == "wwt":
         dataset_train = dataset_cmfd.Dataset_wwt(args)
 
-    # dataset_coco = dataset_cmfd.COCODataset(
-    #     args=args, is_training=True, sample_len=len(dataset_train)
-    # )
-
+    dataset_coco = dataset_cmfd.COCODataset(
+        args=args, is_training=True, sample_len=len(dataset_train)//2
+    )
     dataset_back = dataset_new.COCODatasetBack(args, is_training=True, sample_len=len(dataset_train)//2)
-    dataset_train = torch.utils.data.ConcatDataset((dataset_train, dataset_back))
+    dataset_train = torch.utils.data.ConcatDataset((dataset_train, dataset_back, dataset_coco))
 
     data_train = torch.utils.data.DataLoader(
-        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=0
+        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=4
     )
     if not os.path.exists("ckpt_cmfd"):
         os.mkdir("ckpt_cmfd")
@@ -179,7 +179,7 @@ if __name__ == "__main__":
             list_loss.append(loss)
             iteration += 1
 
-            if iteration % 120 == 0:
+            if iteration % 100 == 0:
                 print("Test on CASIA:")
                 test.test_cmfd(
                     data_test2,

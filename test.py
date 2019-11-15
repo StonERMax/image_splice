@@ -48,7 +48,9 @@ def to_np(x):
 def rev_inv(im, to_numpy=True):
     mean = torch.tensor([0.485, 0.456, 0.406], device=im.device).view(3, 1, 1)
     if im.max() > 10:
-        std = torch.tensor([1.0 / 255, 1.0 / 255, 1.0 / 255], device=im.device).view(3, 1, 1)
+        std = torch.tensor([1.0 / 255, 1.0 / 255, 1.0 / 255], device=im.device).view(
+            3, 1, 1
+        )
     else:
         std = torch.tensor([0.229, 0.224, 0.225], device=im.device).view(3, 1, 1)
     im = im * std + mean
@@ -148,7 +150,7 @@ def test_cmfd(data, model, args, iteration, device, logger=None, num=None, plot=
     model.eval()
 
     if args.mode == "both":
-        names = ["source", "forge"]
+        names = ["source", "forge", "all"]
     else:
         names = ["mask"]
     metric = utils.Metric(names=names, thres=args.thres)
@@ -195,7 +197,10 @@ def test_cmfd(data, model, args, iteration, device, logger=None, num=None, plot=
         print(f"{i}:")
 
         if args.mode == "both":
-            metric.update([to_np(Ys), to_np(Yt)], [to_np(preds), to_np(predt)])
+            metric.update(
+                [to_np(Ys), to_np(Yt), to_np(torch.max(Ys, Yt))],
+                [to_np(preds), to_np(predt), to_np(torch.max(preds, predt))],
+            )
         elif args.mode == "mani":
             metric.update([to_np(Yt)], [to_np(preds)])
         else:
@@ -231,7 +236,9 @@ def test_cmfd(data, model, args, iteration, device, logger=None, num=None, plot=
 
 
 @torch.no_grad()
-def test_temporal(data, model, args, iteration, device, logger=None, num=None, plot=False):
+def test_temporal(
+    data, model, args, iteration, device, logger=None, num=None, plot=False
+):
     model.eval()
     metric = utils.Metric()
     # im_pred = []
@@ -261,7 +268,7 @@ def test_temporal(data, model, args, iteration, device, logger=None, num=None, p
         metric.update(
             [to_np(Ys)[labels == 1], to_np(Yt)[labels == 1]],
             [to_np(preds)[labels == 1], to_np(predt)[labels == 1]],
-            batch_mode=False
+            batch_mode=False,
         )
 
         # out_ = to_np(pred_det).argmax() == labels.argmax()
@@ -281,7 +288,9 @@ def test_temporal(data, model, args, iteration, device, logger=None, num=None, p
 
 
 @torch.no_grad()
-def test_det_vid(data, model, args, iteration, device, logger=None, num=None, plot=False):
+def test_det_vid(
+    data, model, args, iteration, device, logger=None, num=None, plot=False
+):
 
     model.eval()
 
@@ -300,7 +309,9 @@ def test_det_vid(data, model, args, iteration, device, logger=None, num=None, pl
         pred_det = fnp(torch.sigmoid(pred_det))
 
         print(name, end=" : ")
-        metric_im.update(labels.flatten(), pred_det.flatten(), thres=args.thres, log=True)
+        metric_im.update(
+            labels.flatten(), pred_det.flatten(), thres=args.thres, log=True
+        )
 
         if num is not None and i >= num:
             break
@@ -398,14 +409,14 @@ def test_dmac(data, model, args, iteration, device, logger=None, num=None, plot=
             loss_p = BCE_loss(predt, Yt, with_logits=True)
             loss_q = BCE_loss(preds, Ys, with_logits=True)
             loss = loss_p + loss_q
-        
+
         if args.model == "dmac":
             predt = torch.softmax(predt, dim=1)[:, [1]]
             preds = torch.softmax(preds, dim=1)[:, [1]]
         else:
             predt = torch.sigmoid(predt)
             preds = torch.sigmoid(preds)
-        
+
         loss_list.append(to_np(loss))
 
         metric.update([to_np(Ys), to_np(Yt)], [to_np(preds), to_np(predt)])
@@ -494,7 +505,9 @@ def test_casia(data, model, args, iteration, device, logger=None, num=None, plot
 
 
 @torch.no_grad()
-def test_casia_cmfd(data, model, args, iteration, device, logger=None, num=None, plot=False):
+def test_casia_cmfd(
+    data, model, args, iteration, device, logger=None, num=None, plot=False
+):
 
     model.eval()
     # metric_im = utils.Metric_image()
@@ -556,7 +569,9 @@ def test_casia_cmfd(data, model, args, iteration, device, logger=None, num=None,
 
 
 @torch.no_grad()
-def test_casia_det(data, model, args, iteration, device, logger=None, num=None, plot=False):
+def test_casia_det(
+    data, model, args, iteration, device, logger=None, num=None, plot=False
+):
     model.eval()
     metric_im = utils.Metric_image(thres=0.77, with_auc=True)
     if iteration is not None:
@@ -629,7 +644,9 @@ def test_casia_det(data, model, args, iteration, device, logger=None, num=None, 
 
 
 @torch.no_grad()
-def test_dmac_casia(data, model, args, iteration, device, logger=None, num=None, plot=False):
+def test_dmac_casia(
+    data, model, args, iteration, device, logger=None, num=None, plot=False
+):
 
     model.eval()
 

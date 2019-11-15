@@ -23,14 +23,16 @@ from pycocotools.coco import COCO
 from tqdm import tqdm
 from collections import defaultdict
 import random
+from utils import ImAug
+
 
 HOME = os.environ['HOME']
 
 
 class USCISI_CMD_Dataset(torch.utils.data.Dataset):
-
     def __init__(self, args=None, is_training=True, to_tensor=True, sample_len=None):
-
+        
+        self.is_training = is_training
         if is_training:
             sample_file = "train.keys"
         else:
@@ -161,6 +163,9 @@ class USCISI_CMD_Dataset(torch.utils.data.Dataset):
     def _preprocess(self, sample):
         image, cmd_mask, trans_mat = sample
         image = skimage.img_as_float32(image)
+
+        if self.is_training:
+            image = ImAug.apply_blur(image)
 
         if self.transform is not None:
             image, cmd_mask = self.transform(image, cmd_mask)

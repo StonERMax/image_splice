@@ -154,9 +154,9 @@ class DOAModel(nn.Module):
         self.hw = hw
         self.topk = topk
 
-        # self.encoder_p = Extractor_VGG19()
+        self.encoder_p = Extractor_VGG19()
         self.encoder_q = Extractor_VGG19()
-        self.encoder_p = self.encoder_q
+        # self.encoder_p = self.encoder_q
 
         self.corrLayer = Corr(topk=topk)
 
@@ -231,7 +231,7 @@ class DOAModel(nn.Module):
 
         # attention weight
         val_conv_p = self.val_conv_p(valp)
-        val_conv_q = val_conv_p  # self.val_conv_q(valq)
+        val_conv_q = self.val_conv_q(valq)
 
         #### Mask part : M  ####
         xp_as = self.aspp_forge(xp_feat) * val_conv_p
