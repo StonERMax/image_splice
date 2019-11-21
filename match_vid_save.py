@@ -85,6 +85,8 @@ if __name__ == "__main__":
 
         N = X.shape[0]
         print(name, " : ", N)
+        if N < 20:
+            continue
 
         forge_time = np.arange(forge_time[0], forge_time[1]+1)
         gt_time = np.arange(gt_time[0], gt_time[1]+1)

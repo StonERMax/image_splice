@@ -81,14 +81,14 @@ if __name__ == "__main__":
                 if i > 5:
                     break
         test(
-            data_test,
+            data_test.load(),
             model,
             args,
             iteration=None,
             device=device,
             logger=None,
             num=5,
-            plot=True,
+            plot=False,
         )
         logger.close()
         raise SystemExit

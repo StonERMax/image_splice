@@ -64,7 +64,7 @@ if __name__ == "__main__":
     tsfm = utils.CustomTransform(size=args.size)
 
     # * path to save
-    root = Path("tmp_affinity") / args.dataset / args.model
+    # root = Path("tmp_affinity") / args.dataset / args.model
 
     mask_processor = utils.Preprocessor(args)
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     counter = 0
     dataset = Dataset_vid(args=args, is_training=False)
-    root = Path("tmp_video_match_mani") / args.dataset / args.model
+    root = Path("tmp_video_match") / args.dataset / args.model
 
     for ret in tqdm(
         dataset.load_videos_all(
