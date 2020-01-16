@@ -229,8 +229,10 @@ if __name__ == "__main__":
 
         folder_gt = folder_name / "gt"
         folder_pred = folder_name / "pred"
+        folder_orig = folder_name / "orig"
         folder_gt.mkdir(parents=True, exist_ok=True)
         folder_pred.mkdir(parents=True, exist_ok=True)
+        folder_orig.mkdir(parents=True, exist_ok=True)
 
         for i_cnt in range(N):
             # im = tsfm.inverse(X[i_cnt])
@@ -247,6 +249,11 @@ if __name__ == "__main__":
             skimage.io.imsave(
                 str(folder_pred / f"{i_cnt}.jpg"),
                 skimage.img_as_ubyte(im_with_pred),
+            )
+
+            skimage.io.imsave(
+                str(folder_orig / f"{i_cnt}.jpg"),
+                skimage.img_as_ubyte(im),
             )
 
         # plot volume
