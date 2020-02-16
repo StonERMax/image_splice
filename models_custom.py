@@ -22,7 +22,7 @@ class Corr(nn.Module):
         super().__init__()
         self.topk = topk
 
-        self.alpha = nn.Parameter(torch.tensor(1.0, dtype=torch.float32))
+        self.alpha = nn.Parameter(torch.tensor(10.0, dtype=torch.float32))
 
     def forward(self, xp, xq):
         b, c, h1, w1 = xp.shape
@@ -39,13 +39,13 @@ class Corr(nn.Module):
             x_aff * self.alpha, dim=-2
         )
         x_c = x_c.reshape(b, h1, w1, h2, w2)
-        xc_o_q = x_c.view(b, h1 * w1, h2, w2)
+        xc_o_q = x_c.reshape(b, h1 * w1, h2, w2)
         valq = get_topk(xc_o_q, k=self.topk, dim=-3)
 
-        xc_o_p = xc_o_q.permute(0, 2, 3, 1).view(b, h2 * w2, h1, w1)
+        xc_o_p = xc_o_q.permute(0, 2, 3, 1).reshape(b, h2 * w2, h1, w1)
         valp = get_topk(xc_o_p, k=self.topk, dim=-3)
 
-        x_soft_p = xc_o_p  # / (xc_o_p.sum(dim=-3, keepdim=True) + 1e-8)
+        x_soft_p = xc_o_p.contiguous()  # / (xc_o_p.sum(dim=-3, keepdim=True) + 1e-8)
         x_soft_q = xc_o_q  # / (xc_o_q.sum(dim=-3, keepdim=True) + 1e-8)
 
         return valp, valq, x_soft_p, x_soft_q
@@ -148,7 +148,7 @@ class GCN(nn.Module):
         b, c, h2, w2 = x.shape
         _, _, h1, w1 = ind.shape
 
-        x = x.reshape(b, c, -1).permute(0, 2, 1)  # b, h2w2, c
+        x = x.reshape(b, c, -1).permute(0, 2, 1).contiguous()  # b, h2w2, c
         ind = ind.reshape(b, h2 * w2, h1 * w1).permute(0, 2, 1)
         # b, h1w1, h2w2
 
@@ -158,36 +158,39 @@ class GCN(nn.Module):
         # D_mhalf = torch.sqrt(torch.inverse(D))  # b, h1w1, h1w1
 
         eye = torch.eye(ind.shape[-1], dtype=ind.dtype)
-        ind_with_e = ind + eye.view(1, *eye.shape).to(ind.device)
+        ind_with_e = ind + eye.reshape(1, *eye.shape).to(ind.device)
         A = torch.bmm(D_mhalf, torch.bmm(ind_with_e, D_mhalf))  # b, h1w1, h2w2
 
-        out_inter = torch.bmm(A, x).permute(0, 2, 1).reshape(b, c, h1, w1)
+        out_inter = torch.bmm(A, x).permute(0, 2, 1).reshape(b, c, h1, w1).contiguous()
         out = self.conv(out_inter)
         return out
 
 
-class DOAModel(nn.Module):
+class CustomModel(nn.Module):
     def __init__(self, out_channel=1, topk=20, hw=(40, 40)):
         super().__init__()
         self.hw = hw
         self.topk = topk
 
-        self.encoder = Extractor_VGG19()
+        self.encoder = Extractor_custom()
 
         self.corrLayer = Corr(topk=topk)
 
-        in_cat = 896
+        in_cat = 512
 
         self.val_conv = nn.Sequential(
             nn.Conv2d(topk, 16, 3, padding=1),
             nn.BatchNorm2d(16),
             nn.ReLU(),
-            nn.Conv2d(16, 16, 3, padding=1),
-            nn.BatchNorm2d(16),
+            nn.Conv2d(16, 32, 3, padding=1),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.Conv2d(16, 16, 3, padding=1),
-            nn.Conv2d(16, 1, 1),
-            nn.Sigmoid(),
+            nn.Conv2d(32, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 128, 3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
         )
 
         self.aspp_mask = models.segmentation.deeplabv3.ASPP(
@@ -195,11 +198,11 @@ class DOAModel(nn.Module):
         )
 
         self.aspp_forge = models.segmentation.deeplabv3.ASPP(
-            in_channels=in_cat, atrous_rates=[6, 12, 24]
+            in_channels=in_cat, atrous_rates=[12, 24, 36]
         )
 
         self.head_mask_p = nn.Sequential(
-            nn.Conv2d(2 * 256, 2 * 256, 1),
+            nn.Conv2d(2 * 256+128, 2 * 256, 1),
             nn.BatchNorm2d(2 * 256),
             nn.ReLU(),
             nn.Conv2d(2 * 256, 256, 3, padding=1),
@@ -212,7 +215,7 @@ class DOAModel(nn.Module):
         )
 
         self.head_mask_q = nn.Sequential(
-            nn.Conv2d(2 * 256, 2 * 256, 1),
+            nn.Conv2d(2 * 256+128, 2 * 256, 1),
             nn.BatchNorm2d(2 * 256),
             nn.ReLU(),
             nn.Conv2d(2 * 256, 256, 3, padding=1),
@@ -247,8 +250,8 @@ class DOAModel(nn.Module):
     def forward(self, xq, xp):
         input1, input2 = xq, xp
         b, c, h, w = xp.shape
-        xp_feat = self.encoder(xp, out_size=self.hw)
-        xq_feat = self.encoder(xq, out_size=self.hw)
+        xp_feat = self.encoder(xp)
+        xq_feat = self.encoder(xq)
 
         valp, valq, indp, indq = self.corrLayer(xp_feat, xq_feat)
 
@@ -257,11 +260,11 @@ class DOAModel(nn.Module):
         val_conv_q = self.drop(self.val_conv(valq))
 
         #### Mask part : M  ####
-        xp_as1 = self.drop2d(self.aspp_mask(xp_feat)) * val_conv_p
-        xq_as1 = self.drop2d(self.aspp_mask(xq_feat)) * val_conv_q
+        xp_as1 = self.drop2d(self.aspp_mask(xp_feat))
+        xq_as1 = self.drop2d(self.aspp_mask(xq_feat))
 
-        xp_as2 = self.drop2d(self.aspp_forge(xp_feat)) * val_conv_p
-        xq_as2 = self.drop2d(self.aspp_forge(xq_feat)) * val_conv_q
+        xp_as2 = self.drop2d(self.aspp_forge(xp_feat))
+        xq_as2 = self.drop2d(self.aspp_forge(xq_feat))
 
         xp_as = self.drop2d(self.conv_as(torch.cat((xp_as1, xp_as2), dim=-3)))
         xq_as = self.drop2d(self.conv_as(torch.cat((xq_as1, xq_as2), dim=-3)))
@@ -271,10 +274,10 @@ class DOAModel(nn.Module):
         xq_as_nl = self.drop2d(self.gcn(xp_as, indq))
 
         # Final Mask
-        x_cat_p = torch.cat((xp_as, xp_as_nl), dim=-3)
+        x_cat_p = torch.cat((xp_as, xp_as_nl, val_conv_p), dim=-3)
         outp = self.head_mask_p(x_cat_p)
 
-        x_cat_q = torch.cat((xq_as, xq_as_nl), dim=-3)
+        x_cat_q = torch.cat((xq_as, xq_as_nl, val_conv_q), dim=-3)
         outq = self.head_mask_q(x_cat_q)
 
         outp = F.interpolate(
@@ -375,247 +378,105 @@ class Extractor_VGG19(nn.Module):
         return x_all
 
 
-class Discriminator(nn.Module):
-    def __init__(self, in_channels=4):
-        super(Discriminator, self).__init__()
+class Extractor_custom(nn.Module):
+    def __init__(self, in_channel=3):
+        super().__init__()
+        self.inception = InceptionBlock(in_channel, 64)
 
-        def discriminator_block(in_filters, out_filters, normalization=True):
-            """Returns downsampling layers of each discriminator block"""
-            layers = [
-                nn.Conv2d(in_filters, out_filters, 4, stride=2, padding=1)
-            ]
-            if normalization:
-                layers.append(nn.BatchNorm2d(out_filters))
-            layers.append(nn.LeakyReLU(0.2, inplace=True))
-            return layers
+        blocks = []
+        filters = [64, 128, 256, 512]
+        for i in range(1, len(filters)):
+            blocks.append(
+                ConvBlock(
+                    filters[i-1],
+                    filters[i],
+                    batchnorm=(False if i == 1 else True),
+                    kernel_size=3,
+                    stride=2,
+                    padding=1,
+                )
+            )
 
-        self.model = nn.Sequential(
-            *discriminator_block(in_channels, 32, normalization=False),
-            *discriminator_block(32, 64),
-            *discriminator_block(64, 128),
-            *discriminator_block(128, 256),
-            *discriminator_block(256, 512),
-            nn.ZeroPad2d((1, 0, 1, 0)),
-            nn.Conv2d(512, 1, 4, padding=1, bias=False)
-            # nn.LeakyReLU(0.2, inplace=True)
-        )
+        self.encoder = nn.Sequential(*blocks)
 
-        # self.final = nn.Linear(10*10*1, 1)
-
-        self.apply(weights_init_normal)
-
-    def forward(self, img_A, Y):
-        # Concatenate image and condition image by channels to produce input
-        img_input = torch.cat((img_A, Y), 1)
-
-        x = self.model(img_input)
+    def forward(self, x):
+        x = self.inception(x)
+        x = self.encoder(x)
+        # H, W -> H/8, W/8
         return x
 
 
-def get_dmac(model_name="dmac", pretrain=True):
-
-    if model_name == "dmac":
-        from other_model import dmac
-        model = dmac.DMAC_VGG(NoLabels=2, gpu_idx=0, dim=(320, 320))
-        model_path = "./weights/DMAC-adv.pth"
-    elif model_name == "dmvn":
-        from other_model import dmvn
-        model = dmvn.DMVN_VGG(NoLabels=2, gpu_idx=0, dim=(320, 320))
-        model_path = "./weights/DMVN-BN.pth"
-    else:
-        raise AssertionError
-    if pretrain:
-        state_dict = torch.load(model_path, map_location='cuda:0')
-        model.load_state_dict(state_dict)
-    return model
+def conv_block(in_c, out_c, **kwargs):
+    return nn.Sequential(
+        nn.Conv2d(in_c, out_c, bias=False, **kwargs), nn.ReLU()
+    )
 
 
-class CorrDetector(nn.Module):
-    def __init__(self, pool_stride=8):
+class InceptionBlock(nn.Module):
+    def __init__(self, in_channels, out_channels):
         super().__init__()
-        "The pooling of images needs to be researched."
-        # self.img_pool = nn.AvgPool2d(pool_stride, stride=pool_stride)
-
-        self.input_dim = 3
-
-        "Feature extraction blocks."
-        self.conv = nn.Sequential(
-            nn.Conv2d(self.input_dim, 16, 3, 1, 1),
-            nn.BatchNorm2d(16),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(16, 32, 3, 1, 1),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-            nn.Conv2d(32, 64, 3, 1, 1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 128, 3, 1, 1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
+        ch5x5red = out_channels // 2
+        out_tmp = out_channels // 2
+        self.branch1 = conv_block(in_channels, out_tmp, kernel_size=1)
+        self.branch2 = conv_block(in_channels, out_tmp, kernel_size=3, padding=1)
+        self.branch3 = nn.Sequential(
+            conv_block(in_channels, ch5x5red, kernel_size=3, padding=1),
+            conv_block(ch5x5red, out_tmp, kernel_size=3, padding=1),
         )
-
-        "Detection branch."
-        self.classifier_det = nn.Sequential(
-            nn.Linear(128 * 10 * 10, 1024),
-            nn.ReLU(inplace=True),
-            nn.Dropout(),
-            nn.Linear(1024, 1),
+        self.branch4 = nn.Sequential(
+            conv_block(in_channels, ch5x5red, kernel_size=3, padding=1),
+            conv_block(ch5x5red, ch5x5red, kernel_size=3, padding=1),
+            conv_block(ch5x5red, out_tmp, kernel_size=3, padding=1),
         )
-
-        self.apply(weights_init_normal)
-
-    def forward(self, x, m):
-
-        _, _, h, w = x.shape
-        m = F.interpolate(
-            m, size=(h//2, w//2), align_corners=True, mode="bilinear"
-        )
-        x = F.interpolate(
-            x, size=(h//2, w//2), align_corners=True, mode="bilinear"
-        )
-
-        m1 = m[:, [0]]
-        m2 = m[:, [1]]
-
-        x1 = torch.mul(x, m1)
-        x2 = torch.mul(x, m2)
-
-        x1 = self.conv(x1)
-        x2 = self.conv(x2)
-
-        x1 = F.adaptive_avg_pool2d(x1, (10, 10))
-        x2 = F.adaptive_avg_pool2d(x2, (10, 10))
-
-        x1 = x1.view(x1.size(0), -1)
-        x2 = x2.view(x2.size(0), -1)
-
-        x12_abs = torch.abs(x1 - x2)
-
-        x_det = self.classifier_det(x12_abs)
-        return x_det
-    
-    def set_bn_to_eval(self):
-        def fn(m):
-            classname = m.__class__.__name__
-            if classname.find("BatchNorm") != -1:
-                m.eval()
-
-        self.apply(fn)
-
-
-
-class Base_DetSegModel(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-        self.in1 = nn.Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.in2 = nn.Conv2d(3, 64, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
-        self.in3 = nn.Conv2d(3, 64, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3))
-
-        self.in_reduce = nn.Conv2d(3 * 64, 64, kernel_size=(1, 1), stride=(1, 1))
-
-        self.conv_det = nn.Sequential(
-            nn.Conv2d(3 * 64, 64, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  # 
-            nn.Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(128, 128, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  #
-            nn.Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1)),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  #
-        )
-
-        self.lin_det = nn.Sequential(
-            nn.Linear(256, 128),
-            nn.BatchNorm1d(128),
-            nn.ReLU(inplace=True),
-            nn.Linear(128, 32),
-            nn.BatchNorm1d(32),
-            nn.ReLU(inplace=True),
-            nn.Linear(32, 1),
-        )
-
-        self.pool = nn.AdaptiveMaxPool2d(1)
-
-    def forward(self, x):
-        b = x.shape[0]
-        x1 = self.in1(x)
-        x2 = self.in2(x)
-        x3 = self.in3(x)
-        x_cat = torch.cat((x1, x2, x3), dim=-3)
-        out_seg = self.conv_det(x_cat)
-
-        x_seg = self.pool(out_seg)
-        out_det = x_seg.view(b, -1)
-        out_det = self.lin_det(out_det)
-
-        return out_det, out_seg
-
-    def set_bn_to_eval(self):
-        def fn(m):
-            classname = m.__class__.__name__
-            if classname.find("BatchNorm") != -1:
-                m.eval()
-
-        self.apply(fn)
-
-
-def set_bn_eval(m):
-    classname = m.__class__.__name__
-    if classname.find('BatchNorm') != -1:
-        m.eval()
-
-
-class DetSegModel(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-        self.base = Base_DetSegModel()
-        self.aspp = models.segmentation.deeplabv3.ASPP(
-            in_channels=256, atrous_rates=[12, 24, 36]
-        )
-
-        self.head = nn.Sequential(
-            nn.Conv2d(256, 256, 3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-            nn.Conv2d(256, 256, 3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-            nn.Conv2d(256, 1, 1),
-        )
+        self.final_conv = conv_block(4 * out_tmp, out_channels, kernel_size=1)
         self.apply(weights_init_normal)
 
     def forward(self, x):
-        b, c, h, w = x.shape
-        out_det, base_seg = self.base(x)
+        branch1 = self.branch1(x)
+        branch2 = self.branch2(x)
+        branch3 = self.branch3(x)
+        branch4 = self.branch4(x)
+        output_comb = torch.cat([branch1, branch2, branch3, branch4], dim=-3)
+        outputs = self.final_conv(output_comb)
+        return outputs
 
-        seg = self.aspp(base_seg)
-        seg = self.head(base_seg)
-        seg = F.interpolate(
-            seg, size=(h, w), mode="bilinear", align_corners=True
+
+class ConvBlock(nn.Module):
+    def __init__(
+        self,
+        in_channel,
+        out_channel,
+        batchnorm=True,
+        kernel_size=3,
+        stride=1,
+        padding=0,
+        bias=True,
+        relu_type="lrelu",
+    ):
+        super().__init__()
+        self.conv_block = nn.Conv2d(
+            in_channel,
+            out_channel,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            bias=bias,
         )
-        return out_det, seg
+        if batchnorm:
+            self.batchnorm = nn.BatchNorm2d(out_channel)
+        else:
+            self.batchnorm = None
 
-    def set_bn_to_eval(self):
-        def fn(m):
-            classname = m.__class__.__name__
-            if classname.find("BatchNorm") != -1:
-                m.eval()
+        if relu_type == "lrelu":
+            self.relu = nn.LeakyReLU(0.2)
+        else:
+            self.relu = nn.ReLU()
+        
+        self.apply(weights_init_normal)
 
-        self.apply(fn)
+    def forward(self, x):
+        x = self.conv_block(x)
+        if self.batchnorm is not None:
+            x = self.batchnorm(x)
+        x = self.relu(x)
+        return x

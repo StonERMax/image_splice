@@ -47,8 +47,8 @@ def train(D, model, optimizer, args, iteration, device, logger=None):
         Ys_edge = (kornia.sobel(gauss(Ys)) > 0.01).float()
         Yt_edge = (kornia.sobel(gauss(Yt)) > 0.01).float()
 
-        loss_edge_s = torch.sum(-Ys_edge * F.logsigmoid(preds)) / torch.sum(Ys_edge)
-        loss_edge_t = torch.sum(-Yt_edge * F.logsigmoid(predt)) / torch.sum(Yt_edge)
+        loss_edge_s = torch.sum(-Ys_edge * F.logsigmoid(preds)) / (torch.sum(Ys_edge)+1e-8)
+        loss_edge_t = torch.sum(-Yt_edge * F.logsigmoid(predt)) / (torch.sum(Yt_edge)+1e-8)
         loss_edge = loss_edge_s + loss_edge_t
         loss += args.gamma2 * loss_edge
 

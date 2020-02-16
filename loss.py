@@ -58,7 +58,7 @@ def dice_loss(y, labels):
 
 def BCE_loss(y, labels, with_weight=False, with_logits=True):
     y = y.contiguous().view(-1)
-    labels = labels.contiguous().view(-1)
+    labels = labels.view(-1)
 
     if not with_weight:
         wgt = torch.ones_like(labels)
