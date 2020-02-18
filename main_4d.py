@@ -75,6 +75,12 @@ if __name__ == "__main__":
         args, mode=args.mode, is_training=False
     )
 
+    # load casia
+    args_casia = config.config_casia()
+    data_test_casia = dataset.Dataset_casia_det(args)
+
+
+
     if args.test:
         test(
             data_test,
@@ -83,7 +89,7 @@ if __name__ == "__main__":
             iteration=None,
             device=device,
             logger=None,
-            num=50,
+            num=20,
             plot=args.plot,
         )
         logger.close()
