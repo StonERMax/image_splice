@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 
 # custom module
 import config_cmfd
-import models_cmfd
+import models_cmfd_exp
 import train
 
 import test
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     torch.cuda.manual_seed_all(args.seed)
 
     # model name
-    model_name = args.model + "_" + args.dataset + "_" + args.mode + args.suffix
+    model_name = "exp_patch_" + args.model + "_" + args.dataset + "_" + args.mode + args.suffix
 
     print(f"Model Name: {model_name}")
 
@@ -64,12 +64,7 @@ if __name__ == "__main__":
     logger = SummaryWriter("./logs/" + model_name)
 
     # model
-    if args.mode == "both":
-        model = models_cmfd.DOAModel()
-    elif args.mode == "mani":
-        model = models_cmfd.DOAModel_man()
-    else:
-        model = models_cmfd.DOAModel_sim()
+    model = models_cmfd_exp.DOAModel()
 
     model.to(device)
     iteration = args.resume
@@ -78,15 +73,15 @@ if __name__ == "__main__":
     # TODO: check here
     if args.ckpt is not None:
         checkpoint = torch.load(args.ckpt)
-        load_ckpt(model, checkpoint['model_state'], ['encoder', 'corr', 'aspp', 'gcn', 'val'])
+        load_ckpt(model, checkpoint['model_state'], ['encoder'])
         # model.load_state_dict(checkpoint["model_state"], strict=False)
         if args.tune:
             set_grad_false(model, ["head", "val"])
 
     model_params = filter(lambda x: x.requires_grad, model.parameters())
 
-    if torch.cuda.device_count() > 1:
-        model = nn.DataParallel(model)
+    # if torch.cuda.device_count() > 1:
+    #     model = nn.DataParallel(model)
 
     # optimizer
     optimizer = torch.optim.Adam(model_params, lr=args.lr)
@@ -163,7 +158,7 @@ if __name__ == "__main__":
     dataset_train = torch.utils.data.ConcatDataset((dataset_train, dataset_back, dataset_coco))
 
     data_train = torch.utils.data.DataLoader(
-        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=4
+        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
     if not os.path.exists("ckpt_cmfd"):
         os.mkdir("ckpt_cmfd")
