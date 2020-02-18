@@ -1,7 +1,15 @@
 conda activate torch
+set -x CUDA_VISIBLE_DEVICES 1
 
-set -x CUDA_VISIBLE_DEVICES 0
+# git checkout ablation_a1
+# env CUDA_VISIBLE_DEVICES=1 python main.py  \
+#  --model wo_a1 --suffix _exp --max-epoch 5
 
-env CUDA_VISIBLE_DEVICES=0 python -m pdb main_train_vid.py --ckpt ./ckpt/base_coco_exp.pkl --max-epoch 50 --suffix _exp --dataset davis
-python  match_vid_save_with_mani.py --ckpt ./ckpt/base_tmp_youtube_exp.pkl --ckptM ./ckpt/detseg_base_tmp_youtube.pkl
-python  match_vid_load_with_mani.py --ckpt ./ckpt/base_tmp_youtube_exp.pkl --ckptM ./ckpt/detseg_base_tmp_youtube.pkl
+git checkout ablation_a1
+env CUDA_VISIBLE_DEVICES=1 python main_train_temporal.py  --tune\
+ --model wo_a1 --suffix _exp --max-epoch 50 --ckpt ./ckpt/wo_a1_coco_exp.pkl
+
+
+git checkout ablation_a1
+env CUDA_VISIBLE_DEVICES=1 python main_train_temporal.py  --lr 1e-4 --batch-size 2\
+ --model wo_a1 --suffix _exp --max-epoch 50 --ckpt ./ckpt/temporal_wo_a1_tmp_youtube_exp.pkl

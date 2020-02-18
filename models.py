@@ -90,7 +90,9 @@ def plot(x, name="1", size=(240, 240)):
     if x.shape[0] == 2:
         x = torch.cat((x, x[[0]]), dim=-3)
     if size is not None:
-        x = F.interpolate(x.unsqueeze(0), size=size, mode="bilinear").squeeze(0)
+        x = F.interpolate(x.unsqueeze(0), size=size, mode="bilinear").squeeze(
+            0
+        )
 
     def fn(x):
         return (x - x.min()) / (x.max() - x.min() + 1e-8)
@@ -140,7 +142,9 @@ class GCN(nn.Module):
         self.in_feat = in_feat
 
         self.conv = nn.Sequential(
-            nn.Conv2d(in_feat, out_feat, 1), nn.BatchNorm2d(out_feat), nn.ReLU()
+            nn.Conv2d(in_feat, out_feat, 1),
+            nn.BatchNorm2d(out_feat),
+            nn.ReLU(),
         )
         self.conv.apply(weights_init_normal)
 
@@ -178,17 +182,17 @@ class DOAModel(nn.Module):
 
         in_cat = 896
 
-        self.val_conv = nn.Sequential(
-            nn.Conv2d(topk, 16, 3, padding=1),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.Conv2d(16, 16, 3, padding=1),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.Conv2d(16, 16, 3, padding=1),
-            nn.Conv2d(16, 1, 1),
-            nn.Sigmoid(),
-        )
+        # self.val_conv = nn.Sequential(
+        #     nn.Conv2d(topk, 16, 3, padding=1),
+        #     nn.BatchNorm2d(16),
+        #     nn.ReLU(),
+        #     nn.Conv2d(16, 16, 3, padding=1),
+        #     nn.BatchNorm2d(16),
+        #     nn.ReLU(),
+        #     nn.Conv2d(16, 16, 3, padding=1),
+        #     nn.Conv2d(16, 1, 1),
+        #     nn.Sigmoid(),
+        # )
 
         self.aspp_mask = models.segmentation.deeplabv3.ASPP(
             in_channels=in_cat, atrous_rates=[12, 24, 36]
@@ -236,11 +240,10 @@ class DOAModel(nn.Module):
         self.drop = lambda x: x   #nn.Dropout(p=0.5)
 
         # detection branch
-        # self.detection = DetectionBranch(4 * 256)
         self.head_mask_p.apply(weights_init_normal)
         self.head_mask_q.apply(weights_init_normal)
 
-        self.val_conv.apply(weights_init_normal)
+        # self.val_conv.apply(weights_init_normal)
         self.conv_as.apply(weights_init_normal)
 
 
@@ -345,6 +348,7 @@ def weights_init_normal(m):
     except AttributeError:
         return
 
+
 class Extractor_VGG19(nn.Module):
     def __init__(self):
         super().__init__()
@@ -416,16 +420,18 @@ def get_dmac(model_name="dmac", pretrain=True):
 
     if model_name == "dmac":
         from other_model import dmac
+
         model = dmac.DMAC_VGG(NoLabels=2, gpu_idx=0, dim=(320, 320))
         model_path = "./weights/DMAC-adv.pth"
     elif model_name == "dmvn":
         from other_model import dmvn
+
         model = dmvn.DMVN_VGG(NoLabels=2, gpu_idx=0, dim=(320, 320))
         model_path = "./weights/DMVN-BN.pth"
     else:
         raise AssertionError
     if pretrain:
-        state_dict = torch.load(model_path, map_location='cuda:0')
+        state_dict = torch.load(model_path, map_location="cuda:0")
         model.load_state_dict(state_dict)
     return model
 
@@ -470,10 +476,10 @@ class CorrDetector(nn.Module):
 
         _, _, h, w = x.shape
         m = F.interpolate(
-            m, size=(h//2, w//2), align_corners=True, mode="bilinear"
+            m, size=(h // 2, w // 2), align_corners=True, mode="bilinear"
         )
         x = F.interpolate(
-            x, size=(h//2, w//2), align_corners=True, mode="bilinear"
+            x, size=(h // 2, w // 2), align_corners=True, mode="bilinear"
         )
 
         m1 = m[:, [0]]
@@ -510,11 +516,19 @@ class Base_DetSegModel(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.in1 = nn.Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.in2 = nn.Conv2d(3, 64, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
-        self.in3 = nn.Conv2d(3, 64, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3))
+        self.in1 = nn.Conv2d(
+            3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)
+        )
+        self.in2 = nn.Conv2d(
+            3, 64, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2)
+        )
+        self.in3 = nn.Conv2d(
+            3, 64, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3)
+        )
 
-        self.in_reduce = nn.Conv2d(3 * 64, 64, kernel_size=(1, 1), stride=(1, 1))
+        self.in_reduce = nn.Conv2d(
+            3 * 64, 64, kernel_size=(1, 1), stride=(1, 1)
+        )
 
         self.conv_det = nn.Sequential(
             nn.Conv2d(3 * 64, 64, kernel_size=(1, 1), stride=(1, 1)),
@@ -523,7 +537,7 @@ class Base_DetSegModel(nn.Module):
             nn.Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1)),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  # 
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),  #
             nn.Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1)),
             nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
@@ -577,7 +591,7 @@ class Base_DetSegModel(nn.Module):
 
 def set_bn_eval(m):
     classname = m.__class__.__name__
-    if classname.find('BatchNorm') != -1:
+    if classname.find("BatchNorm") != -1:
         m.eval()
 
 
@@ -619,3 +633,6 @@ class DetSegModel(nn.Module):
                 m.eval()
 
         self.apply(fn)
+    def freeze_bn(self):
+        self.apply(set_bn_eval)
+
