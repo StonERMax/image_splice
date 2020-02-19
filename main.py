@@ -13,6 +13,7 @@ from train import train
 
 from test import test
 import dataset
+# import dataset_cmfd
 
 
 if __name__ == "__main__":
@@ -65,28 +66,27 @@ if __name__ == "__main__":
     # optimizer
     optimizer = torch.optim.Adam(model_params, lr=args.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        factor=0.1,
-        patience=10,
-        verbose=True,
-        threshold=0.1,
-        min_lr=1e-7,
+        optimizer, factor=0.1, patience=10, verbose=True, threshold=0.1, min_lr=1e-7
     )
 
     # load dataset
-    data_test = dataset.Dataset_COCO_CISDL(
-        args, mode=args.mode, is_training=False
+    data_test_cisdl = dataset.Dataset_COCO_CISDL(
+        args, mode=args.mode, is_training=False, no_back=False, test_fore_only=True
+    )
+    dataset_test = data_test_cisdl
+
+    data_test = torch.utils.data.DataLoader(
+        dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
 
     if args.test:
-        if not args.eval_bn:
-            with torch.no_grad():
-                for i, ret in enumerate(data_test.load()):
-                    Xs, Xt, Ys, Yt, labels = ret
-                    Xs, Xt = (Xs.to(device), Xt.to(device))
-                    _ = model(Xs, Xt)
-                    if i > 5:
-                        break
+        with torch.no_grad():
+            for i, ret in enumerate(data_test):
+                Xs, Xt, Ys, Yt, labels = ret
+                Xs, Xt = (Xs.to(device), Xt.to(device))
+                _ = model(Xs, Xt)
+                if i > 5:
+                    break
         test(
             data_test,
             model,
@@ -94,25 +94,24 @@ if __name__ == "__main__":
             iteration=None,
             device=device,
             logger=None,
-            num=10,
+            num=args.num,
             plot=args.plot,
         )
         logger.close()
         raise SystemExit
 
-        # TODO: There is a discrepency between test loss and train loss,
-        # even when same dataset is used. Check out why!
+    dataset_train = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=True, no_back=False)
 
-    data_train = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=True)
+    data_train = torch.utils.data.DataLoader(
+        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=4
+    )
 
     list_loss = []
 
     for ep in tqdm(range(init_ep, args.max_epoch)):
         # train
-        for ret in data_train.load():
-            loss = train(
-                ret, model, optimizer, args, iteration, device, logger=logger
-            )
+        for ret in data_train:
+            loss = train(ret, model, optimizer, args, iteration, device, logger=logger)
             list_loss.append(loss)
             iteration += 1
 
@@ -120,15 +119,15 @@ if __name__ == "__main__":
                 scheduler.step(np.mean(list_loss))
                 list_loss = []
 
-                test(
-                    data_test,
-                    model,
-                    args,
-                    iteration=None,
-                    device=device,
-                    logger=None,
-                    num=5,
-                )
+                # test(
+                #     data_test,
+                #     model,
+                #     args,
+                #     iteration=None,
+                #     device=device,
+                #     logger=None,
+                #     num=5,
+                # )
 
                 state = (
                     model.module.state_dict()

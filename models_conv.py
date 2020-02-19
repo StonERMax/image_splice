@@ -13,6 +13,83 @@ from models import plot, get_topk
 from models_custom import Extractor_custom
 
 
+
+class ZeroWindow:
+    def __init__(self):
+        self.store = {}
+
+    def __call__(self, x_in, h, w, rat_s=0.1):
+        sigma = h * rat_s, w * rat_s
+        # c = h * w
+        b, c, h2, w2 = x_in.shape
+        key = str(x_in.shape) + str(rat_s)
+        if key not in self.store:
+            ind_r = torch.arange(h2).float()
+            ind_c = torch.arange(w2).float()
+            ind_r = ind_r.view(1, 1, -1, 1).expand_as(x_in)
+            ind_c = ind_c.view(1, 1, 1, -1).expand_as(x_in)
+
+            # center
+            c_indices = torch.from_numpy(np.indices((h, w))).float()
+            c_ind_r = c_indices[0].reshape(-1)
+            c_ind_c = c_indices[1].reshape(-1)
+
+            cent_r = c_ind_r.reshape(1, c, 1, 1).expand_as(x_in)
+            cent_c = c_ind_c.reshape(1, c, 1, 1).expand_as(x_in)
+
+            def fn_gauss(x, u, s):
+                return torch.exp(-(x - u) ** 2 / (2 * s ** 2))
+
+            gaus_r = fn_gauss(ind_r, cent_r, sigma[0])
+            gaus_c = fn_gauss(ind_c, cent_c, sigma[1])
+            out_g = 1 - gaus_r * gaus_c
+            out_g = out_g.to(x_in.device)
+            out_g.requires_grad = False
+            self.store[key] = out_g
+        else:
+            out_g = self.store[key]
+        out = out_g * x_in
+        return out
+
+
+class CorrCMFD(nn.Module):
+    def __init__(self, topk=3):
+        super().__init__()
+        self.topk = topk
+        self.patch_4d = nn.Sequential(
+            Conv4d(1, 16, (3, 3, 3, 3), padding=1),
+            Conv4d(16, 1, (3, 3, 3, 3), padding=1)
+        )
+
+        self.zero_window = ZeroWindow()
+
+        self.apply(weights_init_normal)
+
+    def forward(self, x):
+        b, c, h1, w1 = x.shape
+        h2, w2 = h1, w1
+
+        xn = F.normalize(x, p=2, dim=-3)
+
+        x_aff_o = torch.matmul(
+            xn.permute(0, 2, 3, 1).view(b, -1, c), xn.view(b, c, -1)
+        )  # h1 * w1, h2 * w2
+
+        x_aff = self.zero_window(x_aff_o.view(b, -1, h1, w1), h1, w1, rat_s=0.05).reshape(
+            b, h1 * w1, h2 * w2
+        )
+
+        x_fc = x_aff.reshape(b, 1, h1, w1, h2, w2)
+        x_c = self.patch_4d(x_fc).reshape(b, h1, w1, h2, w2)
+
+        xc_o_q = x_c.reshape(b, h1 * w1, h2, w2)
+        valq = get_topk(xc_o_q, k=self.topk, dim=-3)
+
+        return valq
+
+
+
+
 class Corr(nn.Module):
     def __init__(self, topk=3):
         super().__init__()
@@ -21,6 +98,7 @@ class Corr(nn.Module):
             Conv4d(1, 16, (3, 3, 3, 3), padding=1),
             Conv4d(16, 1, (3, 3, 3, 3), padding=1)
         )
+
         self.apply(weights_init_normal)
 
     def forward(self, xp, xq):
@@ -86,7 +164,45 @@ class CustomModel(nn.Module):
         )
         outp, outq = outpq[:b], outpq[b:]
 
-        return outq, outp, None
+        return outq, outp
+
+
+class CustomModelCMFDSim(nn.Module):
+    def __init__(self, out_channel=1, topk=100, hw=(40, 40)):
+        super().__init__()
+        self.hw = hw
+        self.topk = topk
+
+        self.encoder = Extractor_custom()
+        self.corrLayer = CorrCMFD(topk=topk)
+
+        self.val_conv = nn.Sequential(
+            nn.Conv2d(topk, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 32, 3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.Conv2d(32, out_channel, 1)
+        )
+        self.val_conv.apply(weights_init_normal)
+
+
+    def forward(self, xq, xp):
+        input1, input2 = xq, xp
+        b, c, h, w = xp.shape
+        xp_feat = self.encoder(xp)
+        val = self.corrLayer(xp_feat)  # b x h1 x w1 x h2 x w2
+        # attention weight
+        val_conv_pq = self.val_conv(val)
+        outpq = F.interpolate(
+            val_conv_pq, size=(h, w), mode="bilinear"
+        )
+        return outpq
+
 
 
 def weights_init_normal(m):

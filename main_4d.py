@@ -11,7 +11,7 @@ import config
 import models_conv as models
 from train import train
 
-from test import test
+from test import test, test_casia_det, test_casia
 import dataset
 
 
@@ -71,39 +71,58 @@ if __name__ == "__main__":
     )
 
     # load dataset
-    data_test = dataset.Dataset_COCO_CISDL(
-        args, mode=args.mode, is_training=False
+    data_test_cisdl = dataset.Dataset_COCO_CISDL(
+        args, mode=args.mode, is_training=False, no_back=False, test_fore_only=True
+    )
+    dataset_test = data_test_cisdl
+
+    data_test = torch.utils.data.DataLoader(
+        dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
 
-    # load casia
     args_casia = config.config_casia()
-    data_test_casia = dataset.Dataset_casia_det(args)
-
-
+    data_test_casia = dataset.Dataset_casia(args)
+    data_loader_casia = torch.utils.data.DataLoader(
+        data_test_casia, batch_size=args.batch_size, shuffle=True, num_workers=0
+    )
 
     if args.test:
-        test(
-            data_test,
+        # test(
+        #     data_test,
+        #     model,
+        #     args,
+        #     iteration=None,
+        #     device=device,
+        #     logger=None,
+        #     num=args.num,
+        #     plot=args.plot,
+        # )
+
+        test_casia(
+            data_loader_casia,
             model,
             args,
             iteration=None,
             device=device,
             logger=None,
-            num=20,
+            num=args.num,
             plot=args.plot,
         )
         logger.close()
         raise SystemExit
 
-    data_train = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=True)
+    dataset_train = dataset.Dataset_COCO_CISDL(args, mode=None, is_training=True, no_back=False)
+
+    data_train = torch.utils.data.DataLoader(
+        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=4
+    )
+
     list_loss = []
 
     for ep in tqdm(range(init_ep, args.max_epoch)):
         # train
-        for ret in data_train.load():
-            loss = train(
-                ret, model, optimizer, args, iteration, device, logger=logger
-            )
+        for ret in data_train:
+            loss = train(ret, model, optimizer, args, iteration, device, logger=logger)
             list_loss.append(loss)
             iteration += 1
 
